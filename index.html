@@ -42,7 +42,7 @@
         .page {
             width: var(--a4-width, 210mm);
             min-height: var(--a4-height, 297mm);
-            padding: var(--a4-padding, 20mm);
+            padding: 10mm; /* Reduced padding for dual column layout */
             margin: 1rem auto;
             border: 1px solid #D3D3D3;
             background: white;
@@ -50,10 +50,48 @@
             box-sizing: border-box;
             color: #000; /* Ensure text is black for printing */
         }
+        
+        .two-column-layout {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            height: 100%;
+        }
 
+        .mark-sheet-half {
+            width: 49%; /* Ensures both fit with a small gap */
+            padding: 0 5mm; /* Inner horizontal padding */
+            box-sizing: border-box;
+            border-left: 1px dashed #aaa; /* Visual separation */
+        }
+        
+        /* Remove dashed border from the first (ORIGINAL) copy */
+        .mark-sheet-half:first-child {
+            border-left: none; 
+            padding-left: 0;
+        }
+
+        /* --- NEW STYLES FOR TOP HEADER --- */
+        .top-details-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5mm; /* Space before University header */
+            font-size: 0.9rem;
+        }
+
+        .qp-code-top {
+            font-weight: bold;
+        }
+
+        .copy-label-top {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
         .page-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 0.1rem; 
         }
         
         .page-header h3, .page-header h4 {
@@ -61,27 +99,40 @@
             font-weight: bold;
         }
 
+        /* Paper Name right above the table */
+        .paper-name-bar {
+            text-align: center;
+            margin: 5mm 0 2mm 0; /* Space above and below */
+        }
+        .paper-name-bar h5 {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        /* --- END NEW STYLES --- */
+
+
         .mark-sheet-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
+            margin-top: 1rem;
+            font-size: 0.75rem; /* Smaller font for tighter fit */
         }
 
         .mark-sheet-table th,
         .mark-sheet-table td {
             border: 1px solid #000;
-            padding: 0.5rem;
+            padding: 0.3rem; /* Reduced padding */
             text-align: left;
         }
 
         .mark-sheet-table th {
             background-color: #f4f4f4;
+            font-weight: bold;
         }
 
-        .marks-col { width: 20%; }
-        .words-col { width: 40%; }
-        .regno-col { width: 40%; }
+        .marks-col { width: 25%; } /* Adjusted column widths */
+        .words-col { width: 45%; }
+        .regno-col { width: 30%; }
         
         /* Ensure table rows don't break across pages if it gets long */
         .mark-sheet-table tr {
@@ -89,27 +140,77 @@
         }
 
         .signature-section {
-            margin-top: 4rem;
-            font-size: 0.9rem;
+            margin-top: 1.5rem;
+            font-size: 0.75rem; /* Smaller font for tighter fit */
             page-break-inside: avoid; /* Keep signatures with content */
         }
         
         .signature-block {
-            margin-top: 2.5rem;
+            margin-top: 1rem;
         }
         
         .examiner-name {
-            margin-top: 0.25rem;
+            margin-top: 0.1rem;
             font-weight: 500;
         }
         
         .exam-details {
             display: flex;
-            justify-content: space-between;
-            margin-top: 2rem;
-            font-size: 0.9rem;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
             font-weight: 500;
         }
+        
+        /* Remove the old copy-label style */
+        .copy-label {
+            display: none;
+        } 
+
+        /* Custom Dropdown Styling */
+        .autocomplete-container {
+            position: relative;
+        }
+        .suggestions {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 0 0 6px 6px;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* Marks Entry Table Styling */
+        #marksEntryArea table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #marksEntryArea th, #marksEntryArea td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #marksEntryArea input {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+        }
+
 
         /* Print-specific styles */
         @media print {
@@ -131,7 +232,15 @@
                 border: none;
                 box-shadow: none;
                 padding: 0;
-                page-break-after: always; /* Ensure each .page is a new print page */
+                /* Ensure both copies stay on one page */
+                page-break-after: always; 
+                page-break-before: always;
+            }
+            
+            .mark-sheet-half {
+                /* Remove visual border for final print */
+                border-left: none !important;
+                padding: 0 2mm !important;
             }
         }
     </style>
@@ -141,163 +250,177 @@
     <div class="container-wrapper max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
         <header class="no-print mb-6 pb-4 border-b border-gray-200">
             <h1 class="text-3xl font-bold text-gray-800">Mark Sheet Generator</h1>
-            <p class="text-gray-600 mt-1">Upload CSV files to generate a printable A4 mark sheet.</p>
+            <p class="text-gray-600 mt-1">Generate a printable A4 mark sheet from remote student data.</p>
         </header>
 
         <!-- Instructions Section -->
         <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
             <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
             <ol class="list-decimal list-inside space-y-2">
-                <li><strong>Prepare CSVs:</strong> Create two CSV files as shown in the examples below.
-                    <ul class="list-disc list-inside ml-6 mt-2 text-sm space-y-1">
-                        <li><code>exam_data.csv</code>: Contains exam details. (See format below)</li>
-                        <li><code>student_data.csv</code>: Contains student register numbers, linked by QP Code. (See format below)</li>
-                    </ul>
-                </li>
-                <li><strong>Upload Files:</strong> Upload both CSV files using the forms in Step 1.</li>
-                <li><strong>Select Exam:</strong> Choose the desired **QP Code** from the dropdown in Step 2. The form will auto-fill.</li>
-                <li><strong>Generate:</strong> Click the **Generate Mark Sheet** button.</li>
-                <li><strong>Download:</strong> A preview will appear below. Click **Download as PDF** to save the file.</li>
+                <li><strong>Load Data:</strong> The application automatically loads all **Faculty** and **Student** data on startup from remote CSV files. Wait for the success messages.</li>
+                <li><strong>Select Exam (3 letters):</strong> Use the **QP Code** input. Suggestions appear after typing 3 or more letters. This fills **Paper Name**.</li>
+                <li><strong>Load Nominal Roll:</strong> Click **Load Nominal Roll** to get the mark entry table.</li>
+                <li>**Enter Marks:** Input the marks in figures (**Max 100**). **Marks in Words will be auto-generated.**</li>
+                <li>**Generate & Print:** Click **Generate Printable Mark Sheet** and then **Print Mark Sheet** to save or print the file.</li>
             </ol>
-            
-            <!-- CSV Format Examples -->
-            <div class="grid md:grid-cols-2 gap-4 mt-4 text-xs">
-                <div class="bg-white p-3 rounded border border-blue-200">
-                    <p class="font-mono font-semibold mb-1">exam_data.csv (Example)</p>
-                    <pre class="overflow-x-auto">QPCode,Date,Session,Additional,Chief,Chairman,CourseName,StartRegNo,NumPapers
-D113398,2024-12-09,AN,"Dr. Sojan Jose","Dr. Suresh V","Dr. Rasmi AR",Introducing Print and Digital Narratives,VPAYAEC017,12
-E224455,2024-12-10,FN,"Dr. Meena K","Dr. John P","Dr. Alex M",Ways with Words,VPAYBEN001,25</pre>
-                </div>
-                <div class="bg-white p-3 rounded border border-blue-200">
-                     <p class="font-mono font-semibold mb-1">student_data.csv (Example)</p>
-                    <pre class="overflow-x-auto">QPCode,RegisterNumber
-D113398,VPAYAEC017
-D113398,VPAYAEC058
-D113398,VPAYAHD002
-...
-E224455,VPAYBEN001
-E224455,VPAYBEN002
-...</pre>
-                </div>
-            </div>
         </div>
 
-        <!-- Step 1: File Uploads -->
+        <!-- Step 1: Exam Details Form -->
         <div class="form-section no-print mb-6">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Upload Data Files</h2>
-            <div class="grid md:grid-cols-2 gap-6">
-                <div class="form-group">
-                    <label for="examCsvInput" class="block text-sm font-medium text-gray-700 mb-1">Upload Exam Data (<code>exam_data.csv</code>)</label>
-                    <input type="file" id="examCsvInput" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
-                </div>
-                <div class="form-group">
-                    <label for="studentCsvInput" class="block text-sm font-medium text-gray-700 mb-1">Upload Student Data (<code>student_data.csv</code>)</label>
-                    <input type="file" id="studentCsvInput" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
-                </div>
-            </div>
-        </div>
-
-        <!-- Step 2: Exam Details Form -->
-        <div class="form-section no-print mb-6">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Select Exam & Verify Details</h2>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Select Exam & Set Valuation Details</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- QP Code -->
+                <!-- QP Code (Searchable) -->
                 <div class="form-group md:col-span-1">
-                    <label for="qpCodeSelect" class="block text-sm font-medium text-gray-700">QP Code</label>
-                    <select id="qpCodeSelect" disabled class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:cursor-not-allowed">
-                        <option value="">-- Upload CSV files first --</option>
-                    </select>
+                    <label for="qpCodeInput" class="block text-sm font-medium text-gray-700">QP Code (Searchable)</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="qpCodeInput" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="qpCodeSuggestions" class="suggestions hidden"></div>
+                    </div>
                 </div>
-                <!-- Date -->
-                <div class="form-group md:col-span-1">
-                    <label for="examDate" class="block text-sm font-medium text-gray-700">Date</label>
-                    <input type="date" id="examDate" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                </div>
-                <!-- Session -->
-                <div class="form-group md:col-span-1">
-                    <label for="sessionSelect" class="block text-sm font-medium text-gray-700">Session</label>
-                    <select id="sessionSelect" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <option value="FN">FN (Forenoon)</option>
-                        <option value="AN">AN (Afternoon)</option>
-                    </select>
-                </div>
-                <!-- Course Name -->
-                <div class="form-group md:col-span-3">
-                    <label for="courseName" class="block text-sm font-medium text-gray-700">Course Name (from CSV)</label>
+                <!-- Course Name (Read Only) -->
+                <div class="form-group md:col-span-2">
+                    <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name (from CSV)</label>
                     <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
                 </div>
+            </div>
+            <hr class="my-6 border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <!-- Date of Mark Entry (Manual Input) -->
+                <div class="form-group md:col-span-1">
+                    <label for="markEntryDate" class="block text-sm font-medium text-gray-700">Date of Mark Entry</label>
+                    <input type="date" id="markEntryDate" value="<?php echo date('Y-m-d'); ?>" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+
+                <!-- Session of Valuation (Searchable) -->
+                <div class="form-group md:col-span-1">
+                    <label for="valuationSession" class="block text-sm font-medium text-gray-700">Session of Valuation</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="valuationSession" placeholder="Type AN or FN" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="valuationSessionSuggestions" class="suggestions hidden"></div>
+                    </div>
+                </div>
+                
+                <!-- Start/First Reg No (Searchable) -->
+                <div class="form-group md:col-span-1">
+                    <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (Searchable)</label>
+                    <div class="autocomplete-container">
+                        <input type="text" id="startRegNo" placeholder="Select QP Code first, then type 4+ letters" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="startRegNoSuggestions" class="suggestions hidden"></div>
+                    </div>
+                </div>
+                <!-- Number of Papers (Limit 25) -->
+                <div class="form-group md:col-span-1">
+                    <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (Max 25)</label>
+                    <input type="number" id="numPapers" min="1" max="25" value="10" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Examiner Details Form -->
+        <div class="form-section no-print mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable Dropdown)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Additional Examiner -->
                 <div class="form-group md:col-span-1">
                     <label for="additionalExaminerName" class="block text-sm font-medium text-gray-700">Additional Examiner (Name)</label>
-                    <input type="text" id="additionalExaminerName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="autocomplete-container">
+                        <input type="text" id="additionalExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="additionalExaminerSuggestions" class="suggestions hidden"></div>
+                    </div>
                     <label for="additionalExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
                     <input type="text" id="additionalExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
                 </div>
                 <!-- Chief Examiner -->
                 <div class="form-group md:col-span-1">
                     <label for="chiefExaminerName" class="block text-sm font-medium text-gray-700">Chief Examiner (Name)</label>
-                    <input type="text" id="chiefExaminerName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="autocomplete-container">
+                        <input type="text" id="chiefExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="chiefExaminerSuggestions" class="suggestions hidden"></div>
+                    </div>
                     <label for="chiefExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
                     <input type="text" id="chiefExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
                 </div>
                 <!-- Chairman -->
                 <div class="form-group md:col-span-1">
                     <label for="chairmanName" class="block text-sm font-medium text-gray-700">Chairman (Name)</label>
-                    <input type="text" id="chairmanName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <div class="autocomplete-container">
+                        <input type="text" id="chairmanName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <div id="chairmanSuggestions" class="suggestions hidden"></div>
+                    </div>
                     <label for="chairmanDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
                     <input type="text" id="chairmanDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
-                </div>
-                <!-- Start/First Reg No -->
-                <div class="form-group md:col-span-2">
-                    <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (from CSV)</label>
-                    <input type="text" id="startRegNo" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
-                </div>
-                <!-- Number of Papers -->
-                <div class="form-group md:col-span-1">
-                    <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (from CSV)</label>
-                    <input type="number" id="numPapers" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
                 </div>
             </div>
         </div>
         
         <!-- Action Buttons -->
         <div class="no-print mt-6 flex gap-4">
-            <button id="generateButton" disabled class="py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all">
-                Generate Mark Sheet
-            </button>
-            <button id="downloadButton" class="py-2 px-5 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75" style="display: none;">
-                Download as PDF
+            <button id="loadRollButton" class="py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all">
+                Load Nominal Roll
             </button>
         </div>
         
         <!-- Error/Status Message Box -->
         <div id="messageBox" class="no-print mt-4 p-4 rounded-md text-sm" style="display: none;"></div>
 
+        <!-- Step 3: Marks Entry Area (Initially Hidden) -->
+        <div id="marksEntryArea" class="form-section no-print mt-8 p-5 border border-dashed border-gray-300 rounded-lg" style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 3: Enter Marks</h2>
+            <div id="marksTableContainer">
+                <!-- Marks Entry Table will be inserted here -->
+            </div>
+            <button id="generateButton" disabled class="py-2 px-5 mt-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all">
+                Generate Printable Mark Sheet
+            </button>
+        </div>
+
         <!-- This is where the A4 page preview will be rendered -->
         <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
+            <!-- Print Button (Repositioned to the top of the output) -->
+            <button id="printButton" class="py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 no-print mx-auto block" style="display: none;">
+                Print Mark Sheet
+            </button>
             <!-- Generated content will go here -->
         </div>
     </div>
 
     <script>
-        let examData = [];
         let studentData = [];
         let facultyData = [];
-        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?output=csv';
+        let qpCodeList = []; 
+        let currentNominalRoll = []; // Stores the filtered list of students for marks entry
+        
+        // --- Remote CSV URLs ---
+        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtavnX2ddJ1Zzq7IJL0eGf2iZQ1s62ad5ahu6QkxvCAl83vLD6YDG9QQ-itEMDtlI3K9vJOMU9HYKt/pub?gid=1392809272&single=true&output=csv'; 
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
+        
+        // Define the expected header keys for easier mapping
+        const FACULTY_NAME_KEY = 'NAME';
+        const FACULTY_DESIGNATION_KEY = 'Designation of Faculty';
+        
+        // --- Student Data Keys ---
+        const STUDENT_QPCODE_KEY = 'QPCode';
+        const STUDENT_REGNO_KEY = 'RegNO';
+        const STUDENT_PAPER_KEY = 'Paper'; // The specific paper name/code for the exam header
+        const STUDENT_COURSE_KEY = 'Subject'; // The general subject name
+        // --------------------------------------------------------------------------
 
         // DOM element references
-        const examCsvInput = document.getElementById('examCsvInput');
-        const studentCsvInput = document.getElementById('studentCsvInput');
-        const qpCodeSelect = document.getElementById('qpCodeSelect');
+        const qpCodeInput = document.getElementById('qpCodeInput');
+        const qpCodeSuggestions = document.getElementById('qpCodeSuggestions');
+        const loadRollButton = document.getElementById('loadRollButton'); 
         const generateButton = document.getElementById('generateButton');
-        const downloadButton = document.getElementById('downloadButton');
         const outputArea = document.getElementById('outputArea');
         const messageBox = document.getElementById('messageBox');
+        const marksEntryArea = document.getElementById('marksEntryArea'); 
+        const marksTableContainer = document.getElementById('marksTableContainer');
+        const printButton = document.getElementById('printButton'); // New Print Button
 
         // Form Fields
-        const examDate = document.getElementById('examDate');
-        const sessionSelect = document.getElementById('sessionSelect');
-        const courseName = document.getElementById('courseName');
+        const markEntryDate = document.getElementById('markEntryDate');
+        const valuationSession = document.getElementById('valuationSession');
+        const valuationSessionSuggestions = document.getElementById('valuationSessionSuggestions');
+        const courseName = document.getElementById('courseName'); // Now holds Paper Name
         
         // Examiner Name Fields
         const additionalExaminerName = document.getElementById('additionalExaminerName');
@@ -309,269 +432,493 @@ E224455,VPAYBEN002
         const chiefExaminerDesignation = document.getElementById('chiefExaminerDesignation');
         const chairmanDesignation = document.getElementById('chairmanDesignation');
         
+        // Suggestion Containers
+        const additionalExaminerSuggestions = document.getElementById('additionalExaminerSuggestions');
+        const chiefExaminerSuggestions = document.getElementById('chiefExaminerSuggestions');
+        const chairmanSuggestions = document.getElementById('chairmanSuggestions');
+
+
         const startRegNo = document.getElementById('startRegNo');
+        const startRegNoSuggestions = document.getElementById('startRegNoSuggestions');
         const numPapers = document.getElementById('numPapers');
+
+        // Valuation session options for autocomplete
+        const sessionOptions = ['FN', 'AN'];
+
+
+        // --- New Function: Digit-by-Digit Word Conversion ---
+        function numberToDigitWords(numStr) {
+            if (!numStr) return '';
+            const digitMap = {
+                '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
+                '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine'
+            };
+            
+            // Ensure input is treated as a string, then map digits
+            const digits = String(numStr).trim().split('');
+            const words = digits.map(digit => digitMap[digit] || ''); 
+            
+            return words.join(' ');
+        }
+        // --- End New Function ---
+
 
         // --- Event Listeners ---
         
-        // 0. Load Faculty Data on page load
-        document.addEventListener('DOMContentLoaded', loadFacultyData);
-
-        // 1. Handle Exam CSV Upload
-        examCsvInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        examData = results.data;
-                        if (examData.length > 0 && examData[0].QPCode) {
-                            populateQPDropdown();
-                            checkEnableGenerate();
-                            showMessage('Exam data loaded successfully.', 'success');
-                        } else {
-                            showMessage('Invalid exam CSV format. Make sure the header row is correct, e.g., "QPCode".', 'error');
-                        }
-                    },
-                    error: (err) => {
-                        showMessage(`Error parsing exam CSV: ${err.message}`, 'error');
-                    }
-                });
-            }
+        // 0. Load Data on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStudentData();
+            loadFacultyData();
         });
 
-        // 2. Handle Student CSV Upload
-        studentCsvInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        studentData = results.data;
-                         if (studentData.length > 0 && studentData[0].QPCode && studentData[0].RegisterNumber) {
-                            checkEnableGenerate();
-                            showMessage('Student data loaded successfully.', 'success');
-                         } else {
-                            showMessage('Invalid student CSV format. Make sure header row is correct, e.g., "QPCode" and "RegisterNumber".', 'error');
-                         }
-                    },
-                    error: (err) => {
-                        showMessage(`Error parsing student CSV: ${err.message}`, 'error');
-                    }
-                });
-            }
-        });
-        
-        // 3. Auto-fill form when QP Code is selected
-        qpCodeSelect.addEventListener('change', () => {
-            const selectedQP = qpCodeSelect.value;
-            if (selectedQP) {
-                const data = examData.find(row => row.QPCode === selectedQP);
-                if (data) {
-                    // Use a simple YYYY-MM-DD format check, works for ISO dates
-                    const dateFromCSV = data.Date;
-                    if (dateFromCSV && /^\d{4}-\d{2}-\d{2}$/.test(dateFromCSV)) {
-                         examDate.value = dateFromCSV;
-                    } else if (dateFromCSV) {
-                        // Attempt to parse other common formats like DD/MM/YYYY
-                        try {
-                            const parts = dateFromCSV.split(/[\/-]/); // split by / or -
-                            if (parts.length === 3) {
-                                // Assuming DD/MM/YYYY or DD-MM-YYYY
-                                examDate.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-                            } else {
-                                examDate.value = ''; // Clear if format is unknown
-                            }
-                        } catch (e) {
-                             examDate.value = ''; // Clear on error
-                        }
-                    } else {
-                        examDate.value = ''; // Clear if no date
-                    }
-
-                    sessionSelect.value = data.Session || 'AN';
-                    courseName.value = data.CourseName || '';
-                    
-                    // Set Examiner Names and find their designations
-                    const addlName = data.Additional || '';
-                    additionalExaminerName.value = addlName;
-                    const addlFaculty = facultyData.find(f => f.NAME === addlName);
-                    additionalExaminerDesignation.value = addlFaculty ? addlFaculty['Designation of Faculty'] : '';
-
-                    const chiefName = data.Chief || '';
-                    chiefExaminerName.value = chiefName;
-                    const chiefFaculty = facultyData.find(f => f.NAME === chiefName);
-                    chiefExaminerDesignation.value = chiefFaculty ? chiefFaculty['Designation of Faculty'] : '';
-
-                    const chairName = data.Chairman || '';
-                    chairmanName.value = chairName;
-                    const chairFaculty = facultyData.find(f => f.NAME === chairName);
-                    chairmanDesignation.value = chairFaculty ? chairFaculty['Designation of Faculty'] : '';
-
-                    startRegNo.value = data.StartRegNo || '';
-                    numPapers.value = data.NumPapers || '';
-                }
-            } else {
-                // Clear form if no QP code is selected
-                examDate.value = '';
-                sessionSelect.value = 'FN';
-                courseName.value = '';
-                additionalExaminerName.value = '';
-                additionalExaminerDesignation.value = '';
-                chiefExaminerName.value = '';
-                chiefExaminerDesignation.value = '';
-                chairmanName.value = '';
-                chairmanDesignation.value = '';
-                startRegNo.value = '';
-                numPapers.value = '';
-            }
-        });
-
-        // 4. Generate Mark Sheet Button
-        generateButton.addEventListener('click', () => {
-            const selectedQP = qpCodeSelect.value;
+        // -----------------------------------------------------------
+        // 1. Nominal Roll Loading Logic (Replaces old Generate)
+        // -----------------------------------------------------------
+        loadRollButton.addEventListener('click', () => {
+            const selectedQP = qpCodeInput.value.trim();
+            const startRegNoValue = startRegNo.value.trim();
+            const numPapersValue = parseInt(numPapers.value, 10);
+            
+            // Basic validation
             if (!selectedQP) {
                 showMessage('Please select a QP Code.', 'error');
                 return;
             }
-            
-            // Filter students for the selected QP Code
-            const students = studentData.filter(s => s.QPCode === selectedQP);
-            
-            if (students.length === 0) {
-                showMessage('No students found for the selected QP Code. Check your student_data.csv file.', 'error');
+            if (!startRegNoValue) {
+                showMessage('Please enter the Start/First Register Number.', 'error');
+                return;
+            }
+            if (!numPapersValue || numPapersValue <= 0) {
+                showMessage('Please enter a valid number for Number of Papers.', 'error');
+                return;
+            }
+
+            // Filter students by QP Code and sort
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+
+            // Find the starting index
+            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
+
+            if (startIndex === -1) {
+                 showMessage(`Start Register Number (${startRegNoValue}) not found for QP Code ${selectedQP}. Please select from suggestions.`, 'error');
+                 return;
+            }
+
+            // Slice the array to get the required number of students
+            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
+
+            if (currentNominalRoll.length === 0) {
+                showMessage('No students matched the criteria (Start Reg No and Number of Papers).', 'error');
                 return;
             }
             
-            // Build the HTML for the mark sheet
-            const sheetHTML = generateSheetHTML(students);
-            outputArea.innerHTML = sheetHTML;
-            downloadButton.style.display = 'inline-block';
-            showMessage('Mark sheet preview generated successfully. You can now download it as a PDF.', 'success');
+            // Generate Marks Entry Table
+            generateMarksEntryTable(currentNominalRoll);
+            marksEntryArea.style.display = 'block';
+            generateButton.disabled = false;
+            printButton.style.display = 'none'; // Hide print button until final generation
+            // Clear output but keep the print button element
+            document.getElementById('markSheetPage')?.remove();
+            showMessage(`Nominal Roll loaded successfully. ${currentNominalRoll.length} students found. Please enter marks below.`, 'success');
+        });
+
+        // Generate the interactive table for entering marks (Simplified)
+        function generateMarksEntryTable(students) {
+            let tableHTML = `
+                <table class="marks-input-table">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th>#</th>
+                            <th class="regno-col">Register Number</th>
+                            <th>Marks in Figures (Max 100)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            students.forEach((student, index) => {
+                const regNo = student[STUDENT_REGNO_KEY];
+                tableHTML += `
+                    <tr data-regno="${regNo}">
+                        <td>${index + 1}</td>
+                        <td class="font-medium">${regNo}</td>
+                        <td><input type="number" min="0" max="100" class="marks-figure-input" data-regno="${regNo}" placeholder="e.g., 50" oninput="validateMark(this)"></td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                </tbody>
+            </table>
+            `;
+
+            marksTableContainer.innerHTML = tableHTML;
+        }
+
+        // NEW: Instant Mark Validation Function
+        window.validateMark = function(input) {
+            let value = parseInt(input.value, 10);
+            if (value > 100) {
+                input.value = ''; // Clear value if over 100
+                showMessage(`Mark must not exceed 100. Entry cleared.`, 'error');
+            }
+        };
+
+
+        // -----------------------------------------------------------
+        // 2. Final Printable Mark Sheet Generation Logic
+        // -----------------------------------------------------------
+        generateButton.addEventListener('click', () => {
+            const markEntryDateValue = markEntryDate.value;
+            const valuationSessionValue = valuationSession.value.trim().toUpperCase();
+            
+            if (!markEntryDateValue || !valuationSessionValue) {
+                showMessage('Please fill in Date of Mark Entry and Session of Valuation.', 'error');
+                return;
+            }
+
+            // Collect entered marks
+            const marksData = {};
+            let isAllMarksFiguresEntered = true; 
+            
+            const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
+            
+            markInputs.forEach(input => {
+                const regNo = input.dataset.regno;
+                const figures = input.value.trim(); 
+                
+                const numFigures = parseInt(figures, 10);
+
+                if (!figures) {
+                    isAllMarksFiguresEntered = false;
+                }
+                
+                // Final validation check (should be caught by oninput, but good for safety)
+                if (numFigures > 100 || numFigures < 0) {
+                     showMessage(`Marks for ${regNo} must be between 0 and 100. Please correct.`, 'error');
+                     isAllMarksFiguresEntered = false;
+                }
+
+                marksData[regNo] = { figures: figures };
+            });
+
+            if (!isAllMarksFiguresEntered) {
+                showMessage('Please ensure "Marks in Figures" is entered for ALL students and is between 0 and 100.', 'error');
+                return;
+            }
+
+            // Build the HTML for the mark sheet (dual column)
+            const sheetHTML = generateSheetHTML(currentNominalRoll, marksData);
+            
+            // Clear old page content
+            document.getElementById('markSheetPage')?.remove();
+            
+            // Insert the new page content after the Print button
+            outputArea.insertAdjacentHTML('beforeend', sheetHTML);
+
+            printButton.style.display = 'block'; // Show the print button at the top of the output area
+            showMessage('Printable Mark Sheet generated successfully. Click "Print Mark Sheet" above the preview.', 'success');
         });
         
-        // 5. PDF Download Button
-        downloadButton.addEventListener('click', () => {
-            const element = document.getElementById('markSheetPage');
-            if (!element) {
-                showMessage('No mark sheet to download. Please generate one first.', 'error');
+        // -----------------------------------------------------------
+        // (Other Event Listeners remain the same)
+        // -----------------------------------------------------------
+        
+        // 3. QP Code Search and Selection Logic
+        qpCodeInput.addEventListener('keyup', (e) => {
+             // Check if data is available first
+             if (qpCodeList.length === 0) {
+                 showMessage('QP Code data not loaded yet. Please wait or check the student data URL.', 'error');
+                 qpCodeSuggestions.classList.add('hidden');
+                 return;
+             }
+
+             const inputQP = qpCodeInput.value.trim();
+             // 3-letter threshold
+             if (inputQP.length < 3) {
+                qpCodeSuggestions.classList.add('hidden');
+                qpCodeSuggestions.innerHTML = '';
+                return;
+             }
+
+             const searchTerm = inputQP.toUpperCase();
+             const filteredQPs = qpCodeList.filter(code => 
+                 code.includes(searchTerm)
+             ).slice(0, 10);
+
+             showSuggestions(filteredQPs, qpCodeInput, qpCodeSuggestions, (code) => {
+                 qpCodeInput.value = code;
+                 handleQPCodeSelection(code);
+             });
+             // Hide marks entry area when QP code changes
+             marksEntryArea.style.display = 'none';
+             document.getElementById('markSheetPage')?.remove();
+             generateButton.disabled = true;
+             printButton.style.display = 'none';
+        });
+
+        // Hide suggestions when focus is lost
+        qpCodeInput.addEventListener('blur', () => setTimeout(() => qpCodeSuggestions.classList.add('hidden'), 150));
+        
+        // Separate function to handle the selection/final value setting
+        function handleQPCodeSelection(selectedQP) {
+            courseName.value = '';
+            startRegNo.value = '';
+            startRegNoSuggestions.innerHTML = '';
+            startRegNoSuggestions.classList.add('hidden');
+            
+            if (selectedQP) {
+                const sortedStudents = studentData.filter(row => row[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+                const firstRow = sortedStudents[0];
+                
+                if (firstRow) {
+                    // FIX: Use STUDENT_PAPER_KEY for the form's course name display as requested
+                    courseName.value = firstRow[STUDENT_PAPER_KEY] || ''; 
+                }
+            }
+        }
+
+        // 4. Register Number Search Logic (No change)
+        startRegNo.addEventListener('keyup', (e) => {
+             const selectedQP = qpCodeInput.value.trim();
+             const inputRegNo = startRegNo.value.trim();
+             
+             if (!selectedQP) {
+                 startRegNoSuggestions.classList.add('hidden');
+                 startRegNoSuggestions.innerHTML = '';
+                 startRegNo.placeholder = "Select QP Code first!";
+                 return;
+             }
+             startRegNo.placeholder = "Type 4+ letters";
+
+             if (inputRegNo.length < 4) {
+                startRegNoSuggestions.classList.add('hidden');
+                startRegNoSuggestions.innerHTML = '';
+                return;
+             }
+
+             const searchTerm = inputRegNo.toUpperCase();
+             const studentsForQP = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP);
+             const regNumbers = [...new Set(studentsForQP.map(s => s[STUDENT_REGNO_KEY]))].sort(); 
+             const filteredRegNos = regNumbers.filter(reg => 
+                 reg.toUpperCase().includes(searchTerm)
+             ).slice(0, 10);
+
+             showSuggestions(filteredRegNos, startRegNo, startRegNoSuggestions, (regNo) => {
+                 startRegNo.value = regNo;
+                 startRegNoSuggestions.classList.add('hidden');
+             });
+        });
+
+        startRegNo.addEventListener('blur', () => setTimeout(() => startRegNoSuggestions.classList.add('hidden'), 150));
+
+        // 4b. Valuation Session Search Logic (No change)
+        valuationSession.addEventListener('keyup', (e) => {
+            const inputSession = valuationSession.value.trim();
+            if (inputSession.length < 1) {
+                valuationSessionSuggestions.classList.add('hidden');
+                valuationSessionSuggestions.innerHTML = '';
                 return;
             }
-            
-            const qpCode = qpCodeSelect.value || 'marksheet';
-            
-            const opt = {
-                margin:       [0.5, 0.5, 0.5, 0.5], // top, left, bottom, right in inches
-                filename:     `${qpCode}_MarkSheet.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-            };
-            
-            // Show loading state
-            downloadButton.disabled = true;
-            downloadButton.textContent = 'Generating PDF...';
-            
-            html2pdf().from(element).set(opt).save().then(() => {
-                downloadButton.disabled = false;
-                downloadButton.textContent = 'Download as PDF';
-                showMessage('PDF download complete.', 'success');
-            }).catch(err => {
-                downloadButton.disabled = false;
-                downloadButton.textContent = 'Download as PDF';
-                showMessage(`PDF generation failed: ${err.message}`, 'error');
+            const searchTerm = inputSession.toUpperCase();
+            const filteredSessions = sessionOptions.filter(session =>
+                session.includes(searchTerm)
+            );
+            showSuggestions(filteredSessions, valuationSession, valuationSessionSuggestions, (session) => {
+                valuationSession.value = session;
+                valuationSessionSuggestions.classList.add('hidden');
             });
         });
         
-        // 6. Add event listeners for examiner name inputs to update designation
-        additionalExaminerName.addEventListener('input', updateDesignation);
-        chiefExaminerName.addEventListener('input', updateDesignation);
-        chairmanName.addEventListener('input', updateDesignation);
+        valuationSession.addEventListener('blur', () => setTimeout(() => valuationSessionSuggestions.classList.add('hidden'), 150));
 
-        // --- Helper Functions ---
 
-        // Load Faculty Data from Google Sheet
+        // 5. Number of Papers Limit Logic (No change)
+        numPapers.addEventListener('input', () => {
+            let value = parseInt(numPapers.value, 10);
+            const max = 25;
+            if (isNaN(value) || value < 1) {
+                numPapers.value = 1;
+            } else if (value > max) {
+                numPapers.value = max;
+                showMessage(`Maximum number of papers limited to ${max}.`, 'info');
+            }
+        });
+
+        // 7. Print Button Listener
+        printButton.addEventListener('click', () => {
+            // Triggers the browser's native print dialogue
+            window.print();
+        });
+        
+        // 8. Add event listeners for faculty autocomplete logic (No change)
+        additionalExaminerName.addEventListener('keyup', (e) => handleNameInput(e, additionalExaminerName, additionalExaminerSuggestions, additionalExaminerDesignation, 3));
+        chiefExaminerName.addEventListener('keyup', (e) => handleNameInput(e, chiefExaminerName, chiefExaminerSuggestions, chiefExaminerDesignation, 3));
+        chairmanName.addEventListener('keyup', (e) => handleNameInput(e, chairmanName, chairmanSuggestions, chairmanDesignation, 3));
+
+        // Use 'blur' event to hide suggestions when focus is lost (except when clicking a suggestion)
+        additionalExaminerName.addEventListener('blur', () => setTimeout(() => additionalExaminerSuggestions.classList.add('hidden'), 150));
+        chiefExaminerName.addEventListener('blur', () => setTimeout(() => chiefExaminerSuggestions.classList.add('hidden'), 150));
+        chairmanName.addEventListener('blur', () => setTimeout(() => chairmanSuggestions.classList.add('hidden'), 150));
+        
+        // Use 'change' event (triggered on blur if value changed) to set designation reliably
+        additionalExaminerName.addEventListener('change', () => setDesignation(additionalExaminerName, additionalExaminerDesignation));
+        chiefExaminerName.addEventListener('change', () => setDesignation(chiefExaminerName, chiefExaminerDesignation));
+        chairmanName.addEventListener('change', () => setDesignation(chairmanName, chairmanDesignation));
+
+
+        // --- Data Loading and Initialization Functions (No Change) ---
+
+        // Load Student Data
+        function loadStudentData() {
+             Papa.parse(studentCsvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: function(header) {
+                    return header.trim();
+                },
+                complete: (results) => {
+                    studentData = results.data;
+                    
+                    // Filter out rows where the QPCode or RegNO is missing
+                    studentData = studentData.filter(row => row[STUDENT_QPCODE_KEY] && row[STUDENT_REGNO_KEY]);
+
+                    if (studentData.length > 0) {
+                        qpCodeList = [...new Set(studentData.map(row => row[STUDENT_QPCODE_KEY]))].filter(code => code);
+                        checkEnableGenerate();
+                        
+                        // Check if QP list is successfully generated
+                        if (qpCodeList.length > 0) {
+                            showMessage(`Student data loaded successfully. Found ${qpCodeList.length} unique QP Codes. Search for a QP Code to proceed.`, 'success');
+                        } else {
+                             showMessage('Student data loaded, but no valid QP Codes were found. Check your CSV headers and data.', 'error');
+                        }
+                    } else {
+                        showMessage('Student data loaded, but no valid entries were found (missing QPCode or RegNO). Check the CSV format.', 'error');
+                    }
+                },
+                error: (err) => {
+                    showMessage(`Error fetching student CSV from URL: ${err.message}.`, 'error');
+                }
+            });
+        }
+
+        // Load Faculty Data
         function loadFacultyData() {
              Papa.parse(facultyCsvUrl, {
                 download: true,
                 header: true,
                 skipEmptyLines: true,
+                header: true,
+                transformHeader: function(header) {
+                    return header.trim();
+                },
                 complete: (results) => {
                     facultyData = results.data;
-                    if (facultyData.length > 0 && facultyData[0].NAME && facultyData[0]['Designation of Faculty']) {
-                        populateFacultyDatalist();
-                        showMessage('Faculty list loaded successfully.', 'success');
+                    
+                    const actualNameKey = results.meta.fields.find(f => f.toUpperCase().includes('NAME')) || FACULTY_NAME_KEY;
+                    const actualDesignationKey = results.meta.fields.find(f => f.toUpperCase().includes('DESIGNATION')) || FACULTY_DESIGNATION_KEY;
+
+                    facultyData = facultyData.map(row => {
+                        const newRow = {};
+                        newRow[FACULTY_NAME_KEY] = row[actualNameKey] || '';
+                        newRow[FACULTY_DESIGNATION_KEY] = row[actualDesignationKey] || '';
+                        return newRow;
+                    }).filter(row => row[FACULTY_NAME_KEY] !== ''); // Remove rows with empty names
+
+
+                    if (facultyData.length > 0) {
+                        showMessage('Faculty list loaded successfully. You can now search for examiners (type 3+ letters).', 'success');
                     } else {
-                        showMessage('Could not load faculty data or format is incorrect. Check Google Sheet columns: NAME, Designation of Faculty', 'error');
+                        showMessage(`Faculty data loaded, but no valid names were found. Please check the CSV file.`, 'error');
                     }
                 },
                 error: (err) => {
-                    showMessage(`Error fetching faculty CSV: ${err.message}`, 'error');
+                    showMessage(`Error fetching faculty CSV from URL: ${err.message}. Searchable dropdowns will not work.`, 'error');
                 }
             });
         }
         
-        // Populate the shared <datalist> for searchable inputs
-        function populateFacultyDatalist() {
-            const datalist = document.createElement('datalist');
-            datalist.id = 'facultyNames';
-            
-            const fragment = document.createDocumentFragment();
-            const uniqueNames = new Set(); // Avoid duplicate names in datalist
-            
-            facultyData.forEach(faculty => {
-                if (faculty.NAME && !uniqueNames.has(faculty.NAME)) {
-                    const option = document.createElement('option');
-                    option.value = faculty.NAME;
-                    fragment.appendChild(option);
-                    uniqueNames.add(faculty.NAME);
-                }
-            });
-            
-            datalist.appendChild(fragment);
-            document.body.appendChild(datalist); // Append datalist to the body
-        }
-        
-        // Update designation field when a name is selected/typed
-        function updateDesignation(event) {
-            const inputName = event.target.value;
-            const targetDesignationId = event.target.id.replace('Name', 'Designation');
-            const desigInput = document.getElementById(targetDesignationId);
-            
-            if (!desigInput) return; // Safety check
-
-            const faculty = facultyData.find(f => f.NAME === inputName);
-            if (faculty) {
-                desigInput.value = faculty['Designation of Faculty'] || '';
-            } else {
-                desigInput.value = ''; // Clear if name doesn't match
-            }
-        }
-
-        // Populate QP Code Dropdown from examData
-        function populateQPDropdown() {
-            qpCodeSelect.innerHTML = '<option value="">-- Select a QP Code --</option>';
-            const qpCodes = new Set(examData.map(row => row.QPCode));
-            qpCodes.forEach(code => {
-                if(code) {
-                    const option = document.createElement('option');
-                    option.value = code;
-                    option.textContent = code;
-                    qpCodeSelect.appendChild(option);
-                }
-            });
-            qpCodeSelect.disabled = false;
-        }
-
-        // Check if generate button can be enabled
+        // Check if generate button can be enabled (now only checks data load status)
         function checkEnableGenerate() {
-            if (examData.length > 0 && studentData.length > 0) {
-                generateButton.disabled = false;
+            if (studentData.length > 0 && facultyData.length > 0) {
+                loadRollButton.disabled = false;
             }
         }
         
+        // --- Custom Autocomplete Logic (No Change) ---
+        
+        // Generic function to show suggestions
+        function showSuggestions(filteredList, nameInput, suggestionsContainer, selectCallback) {
+            suggestionsContainer.innerHTML = '';
+            
+            if (filteredList.length === 0) {
+                suggestionsContainer.classList.add('hidden');
+                return;
+            }
+
+            filteredList.forEach(itemText => {
+                const item = document.createElement('div');
+                item.classList.add('suggestion-item', 'hover:bg-gray-100', 'p-2', 'cursor-pointer');
+                item.textContent = itemText;
+                
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); // Prevents blur on the input
+                    selectCallback(itemText);
+                    suggestionsContainer.classList.add('hidden');
+                });
+                
+                suggestionsContainer.appendChild(item);
+            });
+
+            suggestionsContainer.classList.remove('hidden');
+        }
+
+        // Handles name input filtering and suggestion display (for faculty)
+        function handleNameInput(event, nameInput, suggestionsContainer, designationInput, minLength) {
+            const inputName = nameInput.value.trim();
+            
+            // Immediately clear designation when typing starts
+            designationInput.value = ''; 
+            
+            if (inputName.length < minLength) {
+                suggestionsContainer.classList.add('hidden');
+                suggestionsContainer.innerHTML = '';
+                return;
+            }
+
+            const searchTerm = inputName.toLowerCase();
+            const filteredFaculty = facultyData.filter(f => 
+                (f[FACULTY_NAME_KEY] || '').toLowerCase().includes(searchTerm)
+            ).map(f => f[FACULTY_NAME_KEY])
+            .slice(0, 10); // Limit to 10 suggestions for performance
+
+            showSuggestions(filteredFaculty, nameInput, suggestionsContainer, (name) => {
+                 nameInput.value = name;
+                 suggestionsContainer.classList.add('hidden');
+                 setDesignation(nameInput, designationInput);
+            });
+        }
+        
+        // Updates designation field based on name input value
+        function setDesignation(nameInput, desigInput) {
+            const inputName = nameInput.value.trim();
+            if (!inputName) {
+                desigInput.value = '';
+                return;
+            }
+
+            const faculty = facultyData.find(f => f[FACULTY_NAME_KEY] === inputName);
+            if (faculty) {
+                desigInput.value = faculty[FACULTY_DESIGNATION_KEY] || '';
+            } else {
+                desigInput.value = ''; // Clear if name doesn't match a faculty member
+            }
+        }
+        
+        // --- UI Feedback Function (No Change) ---
+
         // Show status/error messages
         function showMessage(message, type = 'info') {
             messageBox.style.display = 'block';
@@ -588,20 +935,32 @@ E224455,VPAYBEN002
             }
         }
 
-        // Main HTML Generation Function
-        function generateSheetHTML(students) {
-            const currentQP = qpCodeSelect.value;
-            let formattedDate = '';
-            try {
-                 // Format date as DD/MM/YYYY for display
-                 formattedDate = new Date(examDate.value + 'T00:00:00').toLocaleDateString('en-GB');
-            } catch (e) {
-                formattedDate = examDate.value; // Fallback to raw value
+        // Helper function to format date from YYYY-MM-DD to DD/MM/YY
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('-');
+            if (parts.length === 3) {
+                // YYYY-MM-DD -> DD/MM/YY
+                return `${parts[2]}/${parts[1]}/${parts[0].slice(2)}`; 
             }
-           
-            const currentSession = sessionSelect.value;
-            const currentCourse = courseName.value;
+            return dateString;
+        }
+
+        // --- Helper Function to create one Mark Sheet Copy ---
+        function createSingleMarkSheet(students, copyType, marksData) {
+            const currentQP = qpCodeInput.value.trim();
             
+            // Use the 'Paper' key from the student data for the paper name (2nd column in CSV)
+            const firstRow = students.length > 0 ? students[0] : {};
+            const paperName = firstRow[STUDENT_PAPER_KEY] || 'PAPER NAME MISSING'; 
+            
+            const rawDate = markEntryDate.value;
+            const formattedMarkEntryDate = formatDate(rawDate);
+            const valuationSessionValue = valuationSession.value.trim().toUpperCase();
+            
+            // Combine date and session for footer
+            const footerDateSession = `${formattedMarkEntryDate} ${valuationSessionValue}`;
+
             // Get names and designations, combine them
             const addlName = additionalExaminerName.value;
             const addlDesig = additionalExaminerDesignation.value;
@@ -617,37 +976,48 @@ E224455,VPAYBEN002
             
             // Build student table rows
             let studentRows = '';
+            // No total figures calculation/row needed as per latest request.
+
             students.forEach(student => {
+                const regNo = student[STUDENT_REGNO_KEY];
+                
+                // Get marks from the user-entered data
+                const marks = marksData[regNo] || { figures: '' };
+                const figures = marks.figures;
+                
+                // Auto-generate words in the required digit-by-digit format
+                const autoGeneratedWords = numberToDigitWords(figures);
+                
                 studentRows += `
                     <tr>
-                        <td class="regno-col">${student.RegisterNumber || ''}</td>
-                        <td class="marks-col"></td>
-                        <td class="words-col"></td>
+                        <td class="regno-col">${regNo || ''}</td>
+                        <td class="marks-col">${figures}</td>
+                        <td class="words-col"><span style="font-size: 0.6rem; word-wrap: break-word;">${autoGeneratedWords}</span></td>
                     </tr>
                 `;
             });
             
-            // Add a "Total" row
-            studentRows += `
-                <tr>
-                    <td class="regno-col"><strong>Total</strong></td>
-                    <td class="marks-col"></td>
-                    <td class="words-col"></td>
-                </tr>
-            `;
+            // REMOVED: Total row no longer needed.
 
-            // Return the full page HTML
-            // Note: The A4 page styles are applied via the .page class
             return `
-            <div class="page" id="markSheetPage">
-                <div class="page-header">
-                    <h3 class="text-xl">UNIVERSITY OF CALICUT</h3>
-                    <h4 class="text-lg">MARK SHEET</h4>
-                    <!-- You might want to make this text dynamic, but hardcoding for this example -->
-                    <h4 class="text-lg">1st Semester FYUGP Examination November 2024</h4>
-                    <h4 class="text-lg">${currentCourse}--(${currentQP})</h4>
+                <!-- 1. Top Details: QP Code (Left) and Copy Type (Right) -->
+                <div class="top-details-bar">
+                    <span class="qp-code-top">${currentQP}</span>
+                    <span class="copy-label-top">${copyType}</span>
                 </div>
                 
+                <!-- 2. Main University Header (Centered) -->
+                <div class="page-header">
+                    <h4 class="text-sm">UNIVERSITY OF CALICUT</h4>
+                    <h4 class="text-sm">MARK SHEET</h4>
+                </div>
+
+                <!-- 3. Paper Name Bar (Just above the table) -->
+                <div class="paper-name-bar">
+                    <h5 class="text-xs font-semibold">${paperName}--(${currentQP})</h5> 
+                </div>
+                
+                <!-- 4. Mark Table -->
                 <table class="mark-sheet-table">
                     <thead>
                         <tr>
@@ -661,28 +1031,45 @@ E224455,VPAYBEN002
                     </tbody>
                 </table>
                 
+                <!-- 5. Signature Section -->
                 <div class="signature-section">
-                    <div class="grid grid-cols-2 gap-8">
-                        <div class="signature-block">
-                            <strong>Addl. Examiner</strong>
-                            <div class="examiner-name mt-12">${addlCombined}</div>
-                        </div>
-                        
-                        <div class_ ="signature-block">
-                            <strong>Chief Examiner</strong>
-                            <div class="examiner-name mt-12">${chiefCombined}</div>
-                        </div>
-                        
-                        <div class="signature-block">
-                            <strong>Chairman</strong>
-                            <div class="examiner-name mt-12">${chairCombined}</div>
-                        </div>
+                    <div class="signature-block">
+                        <strong>Addl. Examiner</strong>
+                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${addlCombined}</div>
+                    </div>
+                    
+                    <div class="signature-block">
+                        <strong>Chief Examiner</strong>
+                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${chiefCombined}</div>
+                    </div>
+                    
+                    <div class="signature-block">
+                        <strong>Chairman</strong>
+                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${chairCombined}</div>
                     </div>
                 </div>
                 
-                <div classRead-only exam-details">
-                    <span>Date: ${formattedDate} ${currentSession}</span>
-                    <span>QP Code: ${currentQP}</span>
+                <!-- 6. Footer (Date/Session only) -->
+                <div class="exam-details">
+                    <div>${footerDateSession}</div>
+                </div>
+            `;
+        }
+
+        // --- Main HTML Generation Function (Dual Column) ---
+        function generateSheetHTML(students, marksData) {
+            const originalCopy = createSingleMarkSheet(students, 'ORIGINAL', marksData);
+            const duplicateCopy = createSingleMarkSheet(students, 'DUPLICATE', marksData);
+
+            return `
+            <div class="page" id="markSheetPage">
+                <div class="two-column-layout">
+                    <div class="mark-sheet-half">
+                        ${originalCopy}
+                    </div>
+                    <div class="mark-sheet-half">
+                        ${duplicateCopy}
+                    </div>
                 </div>
             </div>
             `;
