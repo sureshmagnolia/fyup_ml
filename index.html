@@ -358,6 +358,10 @@
             <button id="loadRollButton" class="py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all">
                 Load Nominal Roll
             </button>
+            <!-- NEW: Reset Button -->
+            <button id="resetButton" class="py-2 px-5 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition-all">
+                Reset Saved Data
+            </button>
         </div>
         
         <!-- Error/Status Message Box -->
@@ -390,6 +394,9 @@
         let qpCodeList = []; 
         let currentNominalRoll = []; // Stores the filtered list of students for marks entry
         
+        // --- LOCAL STORAGE KEY ---
+        const LOCAL_STORAGE_KEY = 'marksheetFormData';
+
         // --- Remote CSV URLs ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtavnX2ddJ1Zzq7IJL0eGf2iZQ1s62ad5ahu6QkxvCAl83vLD6YDG9QQ-itEMDtlI3K9vJOMU9HYKt/pub?gid=1392809272&single=true&output=csv'; 
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
@@ -415,6 +422,7 @@
         const marksEntryArea = document.getElementById('marksEntryArea'); 
         const marksTableContainer = document.getElementById('marksTableContainer');
         const printButton = document.getElementById('printButton'); // New Print Button
+        const resetButton = document.getElementById('resetButton'); // New Reset Button
 
         // Form Fields
         const markEntryDate = document.getElementById('markEntryDate');
@@ -462,14 +470,128 @@
         }
         // --- End New Function ---
 
+        // --- LOCAL STORAGE FUNCTIONS ---
+
+        function saveFormData() {
+            // Collect primary form data
+            const formData = {
+                qpCodeInput: qpCodeInput.value,
+                markEntryDate: markEntryDate.value,
+                valuationSession: valuationSession.value,
+                startRegNo: startRegNo.value,
+                numPapers: numPapers.value,
+                additionalExaminerName: additionalExaminerName.value,
+                chiefExaminerName: chiefExaminerName.value,
+                chairmanName: chairmanName.value,
+                marks: {}
+            };
+
+            // Collect entered marks if the table is visible
+            if (marksEntryArea.style.display !== 'none') {
+                const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
+                markInputs.forEach(input => {
+                    const regNo = input.dataset.regno;
+                    formData.marks[regNo] = input.value.trim();
+                });
+            }
+
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+            } catch (e) {
+                console.error('Could not save data to local storage:', e);
+            }
+        }
+
+        function loadFormData() {
+            try {
+                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (!savedData) return null;
+
+                const data = JSON.parse(savedData);
+
+                // Populate fields
+                qpCodeInput.value = data.qpCodeInput || '';
+                markEntryDate.value = data.markEntryDate || '';
+                valuationSession.value = data.valuationSession || '';
+                startRegNo.value = data.startRegNo || '';
+                numPapers.value = data.numPapers || '10'; 
+
+                additionalExaminerName.value = data.additionalExaminerName || '';
+                chiefExaminerName.value = data.chiefExaminerName || '';
+                chairmanName.value = data.chairmanName || '';
+                
+                // Trigger designation update and mark loading only if core data is present
+                setDesignation(additionalExaminerName, additionalExaminerDesignation);
+                setDesignation(chiefExaminerName, chiefExaminerDesignation);
+                setDesignation(chairmanName, chairmanDesignation);
+
+                // Trigger the QP code change handler to populate the Paper Name field
+                if (data.qpCodeInput) {
+                    handleQPCodeSelection(data.qpCodeInput);
+                }
+
+                return data.marks || {}; // Return marks data
+            } catch (e) {
+                console.error('Could not load data from local storage:', e);
+            }
+            return null;
+        }
+
+        function resetData() {
+            try {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                
+                // Clear all form fields
+                qpCodeInput.value = '';
+                markEntryDate.value = '';
+                valuationSession.value = '';
+                startRegNo.value = '';
+                numPapers.value = '10';
+                additionalExaminerName.value = '';
+                chiefExaminerName.value = '';
+                chairmanName.value = '';
+                additionalExaminerDesignation.value = '';
+                chiefExaminerDesignation.value = '';
+                chairmanDesignation.value = '';
+
+                // Clear dynamic areas
+                marksEntryArea.style.display = 'none';
+                marksTableContainer.innerHTML = '';
+                document.getElementById('markSheetPage')?.remove();
+                generateButton.disabled = true;
+                printButton.style.display = 'none';
+                
+                showMessage('All saved data has been reset.', 'info');
+
+            } catch (e) {
+                console.error('Could not reset data:', e);
+            }
+        }
+        // --- END LOCAL STORAGE FUNCTIONS ---
+
 
         // --- Event Listeners ---
         
         // 0. Load Data on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Load remote data first
             loadStudentData();
             loadFacultyData();
         });
+        
+        // Reset Button Listener
+        resetButton.addEventListener('click', resetData);
+
+        // Bind saveFormData to key events (on change/input)
+        qpCodeInput.addEventListener('change', saveFormData); 
+        markEntryDate.addEventListener('input', saveFormData);
+        valuationSession.addEventListener('change', saveFormData);
+        startRegNo.addEventListener('change', saveFormData);
+        numPapers.addEventListener('input', saveFormData);
+        additionalExaminerName.addEventListener('change', saveFormData);
+        chiefExaminerName.addEventListener('change', saveFormData);
+        chairmanName.addEventListener('change', saveFormData);
+
 
         // -----------------------------------------------------------
         // 1. Nominal Roll Loading Logic (Replaces old Generate)
@@ -513,17 +635,20 @@
             }
             
             // Generate Marks Entry Table
-            generateMarksEntryTable(currentNominalRoll);
+            // Pass an empty object for marks since this is a manual load event, not an auto-reload
+            generateMarksEntryTable(currentNominalRoll, {}); 
+            
             marksEntryArea.style.display = 'block';
             generateButton.disabled = false;
             printButton.style.display = 'none'; // Hide print button until final generation
-            // Clear output but keep the print button element
             document.getElementById('markSheetPage')?.remove();
             showMessage(`Nominal Roll loaded successfully. ${currentNominalRoll.length} students found. Please enter marks below.`, 'success');
+
+            saveFormData(); // Save state after loading nominal roll
         });
 
         // Generate the interactive table for entering marks (Simplified)
-        function generateMarksEntryTable(students) {
+        function generateMarksEntryTable(students, savedMarks = {}) {
             let tableHTML = `
                 <table class="marks-input-table">
                     <thead>
@@ -538,11 +663,13 @@
             
             students.forEach((student, index) => {
                 const regNo = student[STUDENT_REGNO_KEY];
+                const savedMark = savedMarks[regNo] || ''; // Retrieve saved mark
+                
                 tableHTML += `
                     <tr data-regno="${regNo}">
                         <td>${index + 1}</td>
                         <td class="font-medium">${regNo}</td>
-                        <td><input type="number" min="0" max="100" class="marks-figure-input" data-regno="${regNo}" placeholder="e.g., 50" oninput="validateMark(this)"></td>
+                        <td><input type="number" min="0" max="100" class="marks-figure-input" data-regno="${regNo}" placeholder="e.g., 50" value="${savedMark}" oninput="validateMark(this); saveFormData()"></td>
                     </tr>
                 `;
             });
@@ -589,11 +716,10 @@
                 
                 const numFigures = parseInt(figures, 10);
 
-                if (!figures) {
+                if (figures === "") {
                     isAllMarksFiguresEntered = false;
                 }
                 
-                // Final validation check (should be caught by oninput, but good for safety)
                 if (numFigures > 100 || numFigures < 0) {
                      showMessage(`Marks for ${regNo} must be between 0 and 100. Please correct.`, 'error');
                      isAllMarksFiguresEntered = false;
@@ -649,6 +775,7 @@
              showSuggestions(filteredQPs, qpCodeInput, qpCodeSuggestions, (code) => {
                  qpCodeInput.value = code;
                  handleQPCodeSelection(code);
+                 saveFormData(); // Save after selection
              });
              // Hide marks entry area when QP code changes
              marksEntryArea.style.display = 'none';
@@ -668,11 +795,10 @@
             startRegNoSuggestions.classList.add('hidden');
             
             if (selectedQP) {
-                const sortedStudents = studentData.filter(row => row[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
-                const firstRow = sortedStudents[0];
+                // Find the first matching student to get paper name
+                const firstRow = studentData.find(row => row[STUDENT_QPCODE_KEY] === selectedQP);
                 
                 if (firstRow) {
-                    // FIX: Use STUDENT_PAPER_KEY for the form's course name display as requested
                     courseName.value = firstRow[STUDENT_PAPER_KEY] || ''; 
                 }
             }
@@ -707,6 +833,7 @@
              showSuggestions(filteredRegNos, startRegNo, startRegNoSuggestions, (regNo) => {
                  startRegNo.value = regNo;
                  startRegNoSuggestions.classList.add('hidden');
+                 saveFormData(); // Save after selection
              });
         });
 
@@ -727,6 +854,7 @@
             showSuggestions(filteredSessions, valuationSession, valuationSessionSuggestions, (session) => {
                 valuationSession.value = session;
                 valuationSessionSuggestions.classList.add('hidden');
+                saveFormData(); // Save after selection
             });
         });
         
@@ -743,6 +871,7 @@
                 numPapers.value = max;
                 showMessage(`Maximum number of papers limited to ${max}.`, 'info');
             }
+            saveFormData(); // Save after input
         });
 
         // 7. Print Button Listener
@@ -762,12 +891,37 @@
         chairmanName.addEventListener('blur', () => setTimeout(() => chairmanSuggestions.classList.add('hidden'), 150));
         
         // Use 'change' event (triggered on blur if value changed) to set designation reliably
-        additionalExaminerName.addEventListener('change', () => setDesignation(additionalExaminerName, additionalExaminerDesignation));
-        chiefExaminerName.addEventListener('change', () => setDesignation(chiefExaminerName, chiefExaminerDesignation));
-        chairmanName.addEventListener('change', () => setDesignation(chairmanName, chairmanDesignation));
+        additionalExaminerName.addEventListener('change', () => { setDesignation(additionalExaminerName, additionalExaminerDesignation); saveFormData(); });
+        chiefExaminerName.addEventListener('change', () => { setDesignation(chiefExaminerName, chiefExaminerDesignation); saveFormData(); });
+        chairmanName.addEventListener('change', () => { setDesignation(chairmanName, chairmanDesignation); saveFormData(); });
 
 
-        // --- Data Loading and Initialization Functions (No Change) ---
+        // --- Data Loading and Initialization Functions ---
+
+        // Function to attempt reloading the nominal roll if data is present
+        function autoReloadNominalRoll(marksData) {
+            const selectedQP = qpCodeInput.value.trim();
+            const startRegNoValue = startRegNo.value.trim();
+            const numPapersValue = parseInt(numPapers.value, 10);
+            
+            if (!selectedQP || !startRegNoValue || !numPapersValue || studentData.length === 0) return;
+
+            // Logic identical to loadRollButton.addEventListener('click')
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
+
+            if (startIndex === -1) return;
+
+            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
+
+            if (currentNominalRoll.length > 0) {
+                // Pass marksData to the table generation
+                generateMarksEntryTable(currentNominalRoll, marksData); 
+                marksEntryArea.style.display = 'block';
+                generateButton.disabled = false;
+                showMessage(`Saved session restored for QP Code ${selectedQP}. Click 'Generate Printable Mark Sheet' to finalize.`, 'info');
+            }
+        }
 
         // Load Student Data
         function loadStudentData() {
@@ -788,9 +942,16 @@
                         qpCodeList = [...new Set(studentData.map(row => row[STUDENT_QPCODE_KEY]))].filter(code => code);
                         checkEnableGenerate();
                         
-                        // Check if QP list is successfully generated
                         if (qpCodeList.length > 0) {
                             showMessage(`Student data loaded successfully. Found ${qpCodeList.length} unique QP Codes. Search for a QP Code to proceed.`, 'success');
+                            
+                            // *** NEW: Trigger loadFormData and auto-reload after student data is ready ***
+                            const savedMarksData = loadFormData();
+                            if (savedMarksData) {
+                                // Delay slightly to ensure browser rendering is complete
+                                setTimeout(() => autoReloadNominalRoll(savedMarksData), 100); 
+                            }
+                            // *************************************************************************
                         } else {
                              showMessage('Student data loaded, but no valid QP Codes were found. Check your CSV headers and data.', 'error');
                         }
@@ -898,6 +1059,7 @@
                  nameInput.value = name;
                  suggestionsContainer.classList.add('hidden');
                  setDesignation(nameInput, designationInput);
+                 saveFormData(); // Save after selection
             });
         }
         
