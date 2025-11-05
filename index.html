@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V3</title>
+    <title>Mark Sheet Generator V5</title>
     <!-- 
       This app uses two external libraries:
       1. PapaParse: For easy and robust CSV parsing in the browser.
@@ -212,20 +212,17 @@
         }
 
 
-        /* *** CRITICAL FIX: Print-specific styles ***
-         Ensure only the generated mark sheet is visible and the background is white.
-        */
+        /* *** CRITICAL FIX: Print-specific styles *** */
         @media print {
             body {
-                background-color: #fff !important; /* Force white background for the page */
+                background-color: #fff !important; 
                 margin: 0;
                 padding: 0;
             }
             .no-print {
-                display: none !important; /* Hide all form, buttons, and instructions */
+                display: none !important;
             }
             
-            /* Target the root container and remove its styling/shadows */
             .container-wrapper {
                 background-color: #fff !important;
                 box-shadow: none !important;
@@ -244,9 +241,13 @@
                 page-break-before: always;
             }
             
+            /* FIX: Ensure the dashed separator border is visible in print mode */
             .mark-sheet-half {
-                border-left: none !important;
                 padding: 0 2mm !important;
+            }
+            
+            .mark-sheet-half:not(:first-child) {
+                border-left: 1px dashed #000 !important; /* Force black dashed border */
             }
         }
     </style>
