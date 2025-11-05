@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator</title>
+    <title>Mark Sheet Generator V3</title>
     <!-- 
       This app uses two external libraries:
       1. PapaParse: For easy and robust CSV parsing in the browser.
@@ -460,7 +460,7 @@
         const sessionOptions = ['FN', 'AN'];
 
 
-        // --- New Function: Digit-by-Digit Word Conversion ---
+        // --- New Function: Digit-by-Digit Word Conversion (FIXED for single digit padding) ---
         function numberToDigitWords(numStr) {
             if (!numStr) return '';
             const digitMap = {
@@ -468,8 +468,14 @@
                 '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine'
             };
             
-            // Ensure input is treated as a string, then map digits
-            const digits = String(numStr).trim().split('');
+            let processedStr = String(numStr).trim();
+
+            // FIX: Check if it's a single digit (0-9) and pad with '0' for word conversion
+            if (processedStr.length === 1 && /^\d$/.test(processedStr)) {
+                processedStr = '0' + processedStr; // e.g., '4' becomes '04'
+            }
+            
+            const digits = processedStr.split('');
             const words = digits.map(digit => digitMap[digit] || ''); 
             
             return words.join(' ');
@@ -640,9 +646,11 @@
                 return;
             }
             
+            // Get marks from local storage (if any) before generating the entry table
+            const savedMarksData = loadFormData();
+            
             // Generate Marks Entry Table
-            // Pass an empty object for marks since this is a manual load event, not an auto-reload
-            generateMarksEntryTable(currentNominalRoll, {}); 
+            generateMarksEntryTable(currentNominalRoll, savedMarksData || {}); 
             
             marksEntryArea.style.display = 'block';
             generateButton.disabled = false;
