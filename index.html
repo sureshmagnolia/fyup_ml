@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mark Sheet Generator</title>
+    <!-- 
+      This app uses two external libraries:
+      1. PapaParse: For easy and robust CSV parsing in the browser.
+      2. html2pdf.js: For generating a PDF from the HTML preview.
+    -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    // A4 paper size for print preview
+                    spacing: {
+                        'a4-w': '210mm',
+                        'a4-h': '297mm',
+                        'a4-p': '20mm',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', 'sans-serif';
+        }
+
+        /* Styles for the A4 page preview */
+        .page {
+            width: var(--a4-width, 210mm);
+            min-height: var(--a4-height, 297mm);
+            padding: var(--a4-padding, 20mm);
+            margin: 1rem auto;
+            border: 1px solid #D3D3D3;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            color: #000; /* Ensure text is black for printing */
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .page-header h3, .page-header h4 {
+            margin: 0.25rem 0;
+            font-weight: bold;
+        }
+
+        .mark-sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .mark-sheet-table th,
+        .mark-sheet-table td {
+            border: 1px solid #000;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        .mark-sheet-table th {
+            background-color: #f4f4f4;
+        }
+
+        .marks-col { width: 20%; }
+        .words-col { width: 40%; }
+        .regno-col { width: 40%; }
+        
+        /* Ensure table rows don't break across pages if it gets long */
+        .mark-sheet-table tr {
+            page-break-inside: avoid;
+        }
+
+        .signature-section {
+            margin-top: 4rem;
+            font-size: 0.9rem;
+            page-break-inside: avoid; /* Keep signatures with content */
+        }
+        
+        .signature-block {
+            margin-top: 2.5rem;
+        }
+        
+        .examiner-name {
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+        
+        .exam-details {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: #fff;
+            }
+            .no-print {
+                display: none;
+            }
+            .container-wrapper {
+                margin: 0;
+                padding: 0;
+                box-shadow: none;
+            }
+            .page {
+                width: 100%;
+                min-height: initial;
+                margin: 0;
+                border: none;
+                box-shadow: none;
+                padding: 0;
+                page-break-after: always; /* Ensure each .page is a new print page */
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+    <div class="container-wrapper max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
+        <header class="no-print mb-6 pb-4 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800">Mark Sheet Generator</h1>
+            <p class="text-gray-600 mt-1">Upload CSV files to generate a printable A4 mark sheet.</p>
+        </header>
+
+        <!-- Instructions Section -->
+        <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
+            <ol class="list-decimal list-inside space-y-2">
+                <li><strong>Prepare CSVs:</strong> Create two CSV files as shown in the examples below.
+                    <ul class="list-disc list-inside ml-6 mt-2 text-sm space-y-1">
+                        <li><code>exam_data.csv</code>: Contains exam details. (See format below)</li>
+                        <li><code>student_data.csv</code>: Contains student register numbers, linked by QP Code. (See format below)</li>
+                    </ul>
+                </li>
+                <li><strong>Upload Files:</strong> Upload both CSV files using the forms in Step 1.</li>
+                <li><strong>Select Exam:</strong> Choose the desired **QP Code** from the dropdown in Step 2. The form will auto-fill.</li>
+                <li><strong>Generate:</strong> Click the **Generate Mark Sheet** button.</li>
+                <li><strong>Download:</strong> A preview will appear below. Click **Download as PDF** to save the file.</li>
+            </ol>
+            
+            <!-- CSV Format Examples -->
+            <div class="grid md:grid-cols-2 gap-4 mt-4 text-xs">
+                <div class="bg-white p-3 rounded border border-blue-200">
+                    <p class="font-mono font-semibold mb-1">exam_data.csv (Example)</p>
+                    <pre class="overflow-x-auto">QPCode,Date,Session,Additional,Chief,Chairman,CourseName,StartRegNo,NumPapers
+D113398,2024-12-09,AN,"Dr. Sojan Jose","Dr. Suresh V","Dr. Rasmi AR",Introducing Print and Digital Narratives,VPAYAEC017,12
+E224455,2024-12-10,FN,"Dr. Meena K","Dr. John P","Dr. Alex M",Ways with Words,VPAYBEN001,25</pre>
+                </div>
+                <div class="bg-white p-3 rounded border border-blue-200">
+                     <p class="font-mono font-semibold mb-1">student_data.csv (Example)</p>
+                    <pre class="overflow-x-auto">QPCode,RegisterNumber
+D113398,VPAYAEC017
+D113398,VPAYAEC058
+D113398,VPAYAHD002
+...
+E224455,VPAYBEN001
+E224455,VPAYBEN002
+...</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: File Uploads -->
+        <div class="form-section no-print mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Upload Data Files</h2>
+            <div class="grid md:grid-cols-2 gap-6">
+                <div class="form-group">
+                    <label for="examCsvInput" class="block text-sm font-medium text-gray-700 mb-1">Upload Exam Data (<code>exam_data.csv</code>)</label>
+                    <input type="file" id="examCsvInput" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                </div>
+                <div class="form-group">
+                    <label for="studentCsvInput" class="block text-sm font-medium text-gray-700 mb-1">Upload Student Data (<code>student_data.csv</code>)</label>
+                    <input type="file" id="studentCsvInput" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Exam Details Form -->
+        <div class="form-section no-print mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Select Exam & Verify Details</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- QP Code -->
+                <div class="form-group md:col-span-1">
+                    <label for="qpCodeSelect" class="block text-sm font-medium text-gray-700">QP Code</label>
+                    <select id="qpCodeSelect" disabled class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-50 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:cursor-not-allowed">
+                        <option value="">-- Upload CSV files first --</option>
+                    </select>
+                </div>
+                <!-- Date -->
+                <div class="form-group md:col-span-1">
+                    <label for="examDate" class="block text-sm font-medium text-gray-700">Date</label>
+                    <input type="date" id="examDate" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                </div>
+                <!-- Session -->
+                <div class="form-group md:col-span-1">
+                    <label for="sessionSelect" class="block text-sm font-medium text-gray-700">Session</label>
+                    <select id="sessionSelect" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="FN">FN (Forenoon)</option>
+                        <option value="AN">AN (Afternoon)</option>
+                    </select>
+                </div>
+                <!-- Course Name -->
+                <div class="form-group md:col-span-3">
+                    <label for="courseName" class="block text-sm font-medium text-gray-700">Course Name (from CSV)</label>
+                    <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+                <!-- Additional Examiner -->
+                <div class="form-group md:col-span-1">
+                    <label for="additionalExaminerName" class="block text-sm font-medium text-gray-700">Additional Examiner (Name)</label>
+                    <input type="text" id="additionalExaminerName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="additionalExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                    <input type="text" id="additionalExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+                <!-- Chief Examiner -->
+                <div class="form-group md:col-span-1">
+                    <label for="chiefExaminerName" class="block text-sm font-medium text-gray-700">Chief Examiner (Name)</label>
+                    <input type="text" id="chiefExaminerName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="chiefExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                    <input type="text" id="chiefExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+                <!-- Chairman -->
+                <div class="form-group md:col-span-1">
+                    <label for="chairmanName" class="block text-sm font-medium text-gray-700">Chairman (Name)</label>
+                    <input type="text" id="chairmanName" list="facultyNames" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <label for="chairmanDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                    <input type="text" id="chairmanDesignation" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+                <!-- Start/First Reg No -->
+                <div class="form-group md:col-span-2">
+                    <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (from CSV)</label>
+                    <input type="text" id="startRegNo" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+                <!-- Number of Papers -->
+                <div class="form-group md:col-span-1">
+                    <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (from CSV)</label>
+                    <input type="number" id="numPapers" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Buttons -->
+        <div class="no-print mt-6 flex gap-4">
+            <button id="generateButton" disabled class="py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all">
+                Generate Mark Sheet
+            </button>
+            <button id="downloadButton" class="py-2 px-5 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75" style="display: none;">
+                Download as PDF
+            </button>
+        </div>
+        
+        <!-- Error/Status Message Box -->
+        <div id="messageBox" class="no-print mt-4 p-4 rounded-md text-sm" style="display: none;"></div>
+
+        <!-- This is where the A4 page preview will be rendered -->
+        <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
+            <!-- Generated content will go here -->
+        </div>
+    </div>
+
+    <script>
+        let examData = [];
+        let studentData = [];
+        let facultyData = [];
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?output=csv';
+
+        // DOM element references
+        const examCsvInput = document.getElementById('examCsvInput');
+        const studentCsvInput = document.getElementById('studentCsvInput');
+        const qpCodeSelect = document.getElementById('qpCodeSelect');
+        const generateButton = document.getElementById('generateButton');
+        const downloadButton = document.getElementById('downloadButton');
+        const outputArea = document.getElementById('outputArea');
+        const messageBox = document.getElementById('messageBox');
+
+        // Form Fields
+        const examDate = document.getElementById('examDate');
+        const sessionSelect = document.getElementById('sessionSelect');
+        const courseName = document.getElementById('courseName');
+        
+        // Examiner Name Fields
+        const additionalExaminerName = document.getElementById('additionalExaminerName');
+        const chiefExaminerName = document.getElementById('chiefExaminerName');
+        const chairmanName = document.getElementById('chairmanName');
+
+        // Examiner Designation Fields
+        const additionalExaminerDesignation = document.getElementById('additionalExaminerDesignation');
+        const chiefExaminerDesignation = document.getElementById('chiefExaminerDesignation');
+        const chairmanDesignation = document.getElementById('chairmanDesignation');
+        
+        const startRegNo = document.getElementById('startRegNo');
+        const numPapers = document.getElementById('numPapers');
+
+        // --- Event Listeners ---
+        
+        // 0. Load Faculty Data on page load
+        document.addEventListener('DOMContentLoaded', loadFacultyData);
+
+        // 1. Handle Exam CSV Upload
+        examCsvInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        examData = results.data;
+                        if (examData.length > 0 && examData[0].QPCode) {
+                            populateQPDropdown();
+                            checkEnableGenerate();
+                            showMessage('Exam data loaded successfully.', 'success');
+                        } else {
+                            showMessage('Invalid exam CSV format. Make sure the header row is correct, e.g., "QPCode".', 'error');
+                        }
+                    },
+                    error: (err) => {
+                        showMessage(`Error parsing exam CSV: ${err.message}`, 'error');
+                    }
+                });
+            }
+        });
+
+        // 2. Handle Student CSV Upload
+        studentCsvInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (results) => {
+                        studentData = results.data;
+                         if (studentData.length > 0 && studentData[0].QPCode && studentData[0].RegisterNumber) {
+                            checkEnableGenerate();
+                            showMessage('Student data loaded successfully.', 'success');
+                         } else {
+                            showMessage('Invalid student CSV format. Make sure header row is correct, e.g., "QPCode" and "RegisterNumber".', 'error');
+                         }
+                    },
+                    error: (err) => {
+                        showMessage(`Error parsing student CSV: ${err.message}`, 'error');
+                    }
+                });
+            }
+        });
+        
+        // 3. Auto-fill form when QP Code is selected
+        qpCodeSelect.addEventListener('change', () => {
+            const selectedQP = qpCodeSelect.value;
+            if (selectedQP) {
+                const data = examData.find(row => row.QPCode === selectedQP);
+                if (data) {
+                    // Use a simple YYYY-MM-DD format check, works for ISO dates
+                    const dateFromCSV = data.Date;
+                    if (dateFromCSV && /^\d{4}-\d{2}-\d{2}$/.test(dateFromCSV)) {
+                         examDate.value = dateFromCSV;
+                    } else if (dateFromCSV) {
+                        // Attempt to parse other common formats like DD/MM/YYYY
+                        try {
+                            const parts = dateFromCSV.split(/[\/-]/); // split by / or -
+                            if (parts.length === 3) {
+                                // Assuming DD/MM/YYYY or DD-MM-YYYY
+                                examDate.value = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                            } else {
+                                examDate.value = ''; // Clear if format is unknown
+                            }
+                        } catch (e) {
+                             examDate.value = ''; // Clear on error
+                        }
+                    } else {
+                        examDate.value = ''; // Clear if no date
+                    }
+
+                    sessionSelect.value = data.Session || 'AN';
+                    courseName.value = data.CourseName || '';
+                    
+                    // Set Examiner Names and find their designations
+                    const addlName = data.Additional || '';
+                    additionalExaminerName.value = addlName;
+                    const addlFaculty = facultyData.find(f => f.NAME === addlName);
+                    additionalExaminerDesignation.value = addlFaculty ? addlFaculty['Designation of Faculty'] : '';
+
+                    const chiefName = data.Chief || '';
+                    chiefExaminerName.value = chiefName;
+                    const chiefFaculty = facultyData.find(f => f.NAME === chiefName);
+                    chiefExaminerDesignation.value = chiefFaculty ? chiefFaculty['Designation of Faculty'] : '';
+
+                    const chairName = data.Chairman || '';
+                    chairmanName.value = chairName;
+                    const chairFaculty = facultyData.find(f => f.NAME === chairName);
+                    chairmanDesignation.value = chairFaculty ? chairFaculty['Designation of Faculty'] : '';
+
+                    startRegNo.value = data.StartRegNo || '';
+                    numPapers.value = data.NumPapers || '';
+                }
+            } else {
+                // Clear form if no QP code is selected
+                examDate.value = '';
+                sessionSelect.value = 'FN';
+                courseName.value = '';
+                additionalExaminerName.value = '';
+                additionalExaminerDesignation.value = '';
+                chiefExaminerName.value = '';
+                chiefExaminerDesignation.value = '';
+                chairmanName.value = '';
+                chairmanDesignation.value = '';
+                startRegNo.value = '';
+                numPapers.value = '';
+            }
+        });
+
+        // 4. Generate Mark Sheet Button
+        generateButton.addEventListener('click', () => {
+            const selectedQP = qpCodeSelect.value;
+            if (!selectedQP) {
+                showMessage('Please select a QP Code.', 'error');
+                return;
+            }
+            
+            // Filter students for the selected QP Code
+            const students = studentData.filter(s => s.QPCode === selectedQP);
+            
+            if (students.length === 0) {
+                showMessage('No students found for the selected QP Code. Check your student_data.csv file.', 'error');
+                return;
+            }
+            
+            // Build the HTML for the mark sheet
+            const sheetHTML = generateSheetHTML(students);
+            outputArea.innerHTML = sheetHTML;
+            downloadButton.style.display = 'inline-block';
+            showMessage('Mark sheet preview generated successfully. You can now download it as a PDF.', 'success');
+        });
+        
+        // 5. PDF Download Button
+        downloadButton.addEventListener('click', () => {
+            const element = document.getElementById('markSheetPage');
+            if (!element) {
+                showMessage('No mark sheet to download. Please generate one first.', 'error');
+                return;
+            }
+            
+            const qpCode = qpCodeSelect.value || 'marksheet';
+            
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5], // top, left, bottom, right in inches
+                filename:     `${qpCode}_MarkSheet.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+            
+            // Show loading state
+            downloadButton.disabled = true;
+            downloadButton.textContent = 'Generating PDF...';
+            
+            html2pdf().from(element).set(opt).save().then(() => {
+                downloadButton.disabled = false;
+                downloadButton.textContent = 'Download as PDF';
+                showMessage('PDF download complete.', 'success');
+            }).catch(err => {
+                downloadButton.disabled = false;
+                downloadButton.textContent = 'Download as PDF';
+                showMessage(`PDF generation failed: ${err.message}`, 'error');
+            });
+        });
+        
+        // 6. Add event listeners for examiner name inputs to update designation
+        additionalExaminerName.addEventListener('input', updateDesignation);
+        chiefExaminerName.addEventListener('input', updateDesignation);
+        chairmanName.addEventListener('input', updateDesignation);
+
+        // --- Helper Functions ---
+
+        // Load Faculty Data from Google Sheet
+        function loadFacultyData() {
+             Papa.parse(facultyCsvUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    facultyData = results.data;
+                    if (facultyData.length > 0 && facultyData[0].NAME && facultyData[0]['Designation of Faculty']) {
+                        populateFacultyDatalist();
+                        showMessage('Faculty list loaded successfully.', 'success');
+                    } else {
+                        showMessage('Could not load faculty data or format is incorrect. Check Google Sheet columns: NAME, Designation of Faculty', 'error');
+                    }
+                },
+                error: (err) => {
+                    showMessage(`Error fetching faculty CSV: ${err.message}`, 'error');
+                }
+            });
+        }
+        
+        // Populate the shared <datalist> for searchable inputs
+        function populateFacultyDatalist() {
+            const datalist = document.createElement('datalist');
+            datalist.id = 'facultyNames';
+            
+            const fragment = document.createDocumentFragment();
+            const uniqueNames = new Set(); // Avoid duplicate names in datalist
+            
+            facultyData.forEach(faculty => {
+                if (faculty.NAME && !uniqueNames.has(faculty.NAME)) {
+                    const option = document.createElement('option');
+                    option.value = faculty.NAME;
+                    fragment.appendChild(option);
+                    uniqueNames.add(faculty.NAME);
+                }
+            });
+            
+            datalist.appendChild(fragment);
+            document.body.appendChild(datalist); // Append datalist to the body
+        }
+        
+        // Update designation field when a name is selected/typed
+        function updateDesignation(event) {
+            const inputName = event.target.value;
+            const targetDesignationId = event.target.id.replace('Name', 'Designation');
+            const desigInput = document.getElementById(targetDesignationId);
+            
+            if (!desigInput) return; // Safety check
+
+            const faculty = facultyData.find(f => f.NAME === inputName);
+            if (faculty) {
+                desigInput.value = faculty['Designation of Faculty'] || '';
+            } else {
+                desigInput.value = ''; // Clear if name doesn't match
+            }
+        }
+
+        // Populate QP Code Dropdown from examData
+        function populateQPDropdown() {
+            qpCodeSelect.innerHTML = '<option value="">-- Select a QP Code --</option>';
+            const qpCodes = new Set(examData.map(row => row.QPCode));
+            qpCodes.forEach(code => {
+                if(code) {
+                    const option = document.createElement('option');
+                    option.value = code;
+                    option.textContent = code;
+                    qpCodeSelect.appendChild(option);
+                }
+            });
+            qpCodeSelect.disabled = false;
+        }
+
+        // Check if generate button can be enabled
+        function checkEnableGenerate() {
+            if (examData.length > 0 && studentData.length > 0) {
+                generateButton.disabled = false;
+            }
+        }
+        
+        // Show status/error messages
+        function showMessage(message, type = 'info') {
+            messageBox.style.display = 'block';
+            messageBox.textContent = message;
+            
+            // Tailwind classes for message types
+            messageBox.className = 'no-print mt-4 p-4 rounded-md text-sm'; // Reset
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border', 'border-green-200', 'text-green-800');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border', 'border-red-200', 'text-red-800');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'border', 'border-blue-200', 'text-blue-800');
+            }
+        }
+
+        // Main HTML Generation Function
+        function generateSheetHTML(students) {
+            const currentQP = qpCodeSelect.value;
+            let formattedDate = '';
+            try {
+                 // Format date as DD/MM/YYYY for display
+                 formattedDate = new Date(examDate.value + 'T00:00:00').toLocaleDateString('en-GB');
+            } catch (e) {
+                formattedDate = examDate.value; // Fallback to raw value
+            }
+           
+            const currentSession = sessionSelect.value;
+            const currentCourse = courseName.value;
+            
+            // Get names and designations, combine them
+            const addlName = additionalExaminerName.value;
+            const addlDesig = additionalExaminerDesignation.value;
+            const addlCombined = addlName + (addlDesig ? `, ${addlDesig}` : '');
+
+            const chiefName = chiefExaminerName.value;
+            const chiefDesig = chiefExaminerDesignation.value;
+            const chiefCombined = chiefName + (chiefDesig ? `, ${chiefDesig}` : '');
+
+            const chairName = chairmanName.value;
+            const chairDesig = chairmanDesignation.value;
+            const chairCombined = chairName + (chairDesig ? `, ${chairDesig}` : '');
+            
+            // Build student table rows
+            let studentRows = '';
+            students.forEach(student => {
+                studentRows += `
+                    <tr>
+                        <td class="regno-col">${student.RegisterNumber || ''}</td>
+                        <td class="marks-col"></td>
+                        <td class="words-col"></td>
+                    </tr>
+                `;
+            });
+            
+            // Add a "Total" row
+            studentRows += `
+                <tr>
+                    <td class="regno-col"><strong>Total</strong></td>
+                    <td class="marks-col"></td>
+                    <td class="words-col"></td>
+                </tr>
+            `;
+
+            // Return the full page HTML
+            // Note: The A4 page styles are applied via the .page class
+            return `
+            <div class="page" id="markSheetPage">
+                <div class="page-header">
+                    <h3 class="text-xl">UNIVERSITY OF CALICUT</h3>
+                    <h4 class="text-lg">MARK SHEET</h4>
+                    <!-- You might want to make this text dynamic, but hardcoding for this example -->
+                    <h4 class="text-lg">1st Semester FYUGP Examination November 2024</h4>
+                    <h4 class="text-lg">${currentCourse}--(${currentQP})</h4>
+                </div>
+                
+                <table class="mark-sheet-table">
+                    <thead>
+                        <tr>
+                            <th class="regno-col">Register Number</th>
+                            <th class="marks-col">Marks in Figures</th>
+                            <th class="words-col">Marks in Words</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${studentRows}
+                    </tbody>
+                </table>
+                
+                <div class="signature-section">
+                    <div class="grid grid-cols-2 gap-8">
+                        <div class="signature-block">
+                            <strong>Addl. Examiner</strong>
+                            <div class="examiner-name mt-12">${addlCombined}</div>
+                        </div>
+                        
+                        <div class_ ="signature-block">
+                            <strong>Chief Examiner</strong>
+                            <div class="examiner-name mt-12">${chiefCombined}</div>
+                        </div>
+                        
+                        <div class="signature-block">
+                            <strong>Chairman</strong>
+                            <div class="examiner-name mt-12">${chairCombined}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div classRead-only exam-details">
+                    <span>Date: ${formattedDate} ${currentSession}</span>
+                    <span>QP Code: ${currentQP}</span>
+                </div>
+            </div>
+            `;
+        }
+    </script>
+
+</body>
+</html>
