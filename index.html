@@ -223,10 +223,11 @@
         
         /* *** CRITICAL FIX: Print-specific styles *** */
         @media print {
+            /* Fix blank pages by removing all body margins and setting box sizing */
             body {
                 background-color: #fff !important; 
-                margin: 0;
-                padding: 0;
+                margin: 0 !important; /* CRITICAL FIX: Remove browser margins */
+                padding: 0 !important;
             }
             .no-print {
                 display: none !important;
@@ -245,12 +246,14 @@
                 min-height: 297mm;
                 max-height: 297mm; /* Ensure it respects A4 height */
                 margin: 0;
-                border: 0 !important; /* Final Fix: Remove page border */
+                border: 0 !important; /* Remove page border */
                 box-shadow: none;
-                padding: 0; /* Final Fix: Remove page padding */
-                box-sizing: content-box; /* Let the content define the size cleanly */
-                page-break-after: always; 
-                page-break-before: always;
+                padding: 0; /* Remove page padding */
+                box-sizing: content-box; 
+                /* Prevent unwanted page break BEFORE the content starts */
+                page-break-before: auto !important;
+                /* Only allow break AFTER the single sheet */
+                page-break-after: always !important; 
             }
             
             .mark-sheet-half {
@@ -261,6 +264,11 @@
             .mark-sheet-half:not(:first-child) {
                 border-left: 1px dashed #000 !important; /* Force black dashed border */
             }
+            
+            /* Ensure signatures do not cause orphans or split pages */
+            .signature-section {
+                page-break-inside: avoid !important;
+            }
         }
     </style>
 </head>
@@ -269,17 +277,17 @@
     <div class="container-wrapper max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
         <header class="no-print mb-6 pb-4 border-b border-gray-200">
             <h1 class="text-3xl font-bold text-gray-800">Mark Sheet Generator</h1>
-            <p class="text-gray-600 mt-1">Generate a printable A4 mark sheet from remote student data.</p>
+            <p class="text-gray-600 mt-1">Generate a printable A4 mark sheet from official examination data.</p>
         </header>
         
         <!-- Data Loader Status (Visible while loading) -->
         <div id="loaderContainer" class="loader-container no-print mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
-            <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Loading data...</div>
+            <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Loading master roster and faculty data...</div>
             <div class="w-full bg-gray-200 rounded-full h-2">
                 <div id="loaderBar" class="loader-bar h-2 bg-blue-500" style="width: 0%"></div>
             </div>
             <button id="retryButton" class="mt-3 py-1 px-3 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-all" style="display: none;">
-                Retry Loading Data
+                Retry Data Load
             </button>
         </div>
 
@@ -287,10 +295,11 @@
         <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
             <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
             <ol class="list-decimal list-inside space-y-2">
-                <li><strong>Load Data:</strong> Wait for the **data loader** above to show **"Ready"** before proceeding.</li>
-                <li><strong>Select Exam (3 letters):</strong> Use the **QP Code** input. Suggestions appear after typing 3 or more letters. This fills **Paper Name**.</li>
-                <li><strong>Load Nominal Roll:</strong> Click **Load Nominal Roll** to get the mark entry table.</li>
-                <li>**Enter Marks:** Input the marks in figures (**Max 100**). **Marks in Words will be auto-generated.**</li>
+                <li>**Load Data:** Wait for the **data loader** above to show **"Ready"** before proceeding.</li>
+                <li>**Select Exam (3 letters):** Use the **QP Code** input. Suggestions appear after typing 3 or more letters. This fills the **Paper Name**.</li>
+                <li>**Assign Examiners:** Search for the examiners; their designations will appear automatically.</li>
+                <li>**Load Nominal Roll:** Click **Load Nominal Roll** after setting the starting Register Number.</li>
+                <li>**Enter Marks:** Input the marks in figures (**Max 100**). Marks in Words will be auto-generated.</li>
                 <li>**Generate & Print:** Click **Generate Printable Mark Sheet** and then **Print Mark Sheet** to save or print the file.</li>
             </ol>
         </div>
@@ -311,7 +320,7 @@
                     </div>
                     <!-- Course Name (Read Only) -->
                     <div class="form-group md:col-span-2">
-                        <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name (from CSV)</label>
+                        <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name</label>
                         <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-gray-100 rounded-md shadow-sm sm:text-sm">
                     </div>
                 </div>
@@ -350,7 +359,7 @@
 
             <!-- Step 2: Examiner Details Form -->
             <div class="form-section no-print mb-6">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable Dropdown)</h2>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Additional Examiner -->
                     <div class="form-group md:col-span-1">
@@ -430,7 +439,8 @@
         // --- LOCAL STORAGE KEY ---
         const LOCAL_STORAGE_KEY = 'marksheetFormData';
 
-        // --- Remote CSV URLs ---
+        // --- Remote Data URLs ---
+        // These URLs fetch the necessary data from the specified online sources.
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQtavnX2ddJ1Zzq7IJL0eGf2iZQ1s62ad5ahu6QkxvCAl83vLD6YDG9QQ-itEMDtlI3K9vJOMU9HYKt/pub?gid=1392809272&single=true&output=csv'; 
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         
@@ -546,17 +556,17 @@
 
         function checkLoadStatus() {
             let progress = 0;
-            let statusText = 'Loading data...';
+            let statusText = 'Loading master roster and faculty data...';
 
             if (studentDataLoaded && facultyDataLoaded) {
                 progress = 100;
                 statusText = 'Data Loading Complete. Form is ready!';
             } else if (studentDataLoaded) {
                 progress = 50;
-                statusText = 'Student data loaded. Loading faculty list...';
+                statusText = 'Master roster loaded. Loading faculty list...';
             } else if (facultyDataLoaded) {
                 progress = 50;
-                statusText = 'Faculty data loaded. Loading student list...';
+                statusText = 'Faculty data loaded. Loading master roster...';
             } else {
                 progress = 0;
             }
@@ -784,7 +794,7 @@
             facultyDataLoaded = false;
             retryButton.style.display = 'none';
             mainForm.disabled = true;
-            updateLoader(0, 'Loading student and faculty data...');
+            updateLoader(0, 'Loading master roster and faculty data...');
             loadStudentData();
             loadFacultyData();
         }
@@ -811,12 +821,12 @@
                             setTimeout(() => autoReloadNominalRoll(savedMarksData), 100); 
                         }
                     } else {
-                        updateLoader(50, 'Student data failed to load: No valid entries found. Check CSV format.', true);
+                        updateLoader(50, 'Master roster data failed to load: No valid entries found.', true);
                     }
                 },
                 error: (err) => {
-                    console.error('Student CSV Error:', err);
-                    updateLoader(50, `Student data failed to load: Network error or CORS issue.`, true);
+                    console.error('Student Data Error:', err);
+                    updateLoader(50, `Master roster data failed to load: Network error.`, true);
                 }
             });
         }
@@ -843,12 +853,12 @@
                         facultyDataLoaded = true;
                         checkLoadStatus();
                     } else {
-                        updateLoader(50, 'Faculty data failed to load: No valid names found. Check CSV format.', true);
+                        updateLoader(50, 'Faculty data failed to load: No valid names found.', true);
                     }
                 },
                 error: (err) => {
-                    console.error('Faculty CSV Error:', err);
-                    updateLoader(50, `Faculty data failed to load: Network error or CORS issue.`, true);
+                    console.error('Faculty Data Error:', err);
+                    updateLoader(50, `Faculty data failed to load: Network error.`, true);
                 }
             });
         }
@@ -1262,4 +1272,3 @@
 
 </body>
 </html>
-
