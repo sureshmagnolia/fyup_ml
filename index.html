@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V10 (JPEG Fix)</title>
+    <title>Mark Sheet Generator V14 (Scroll Fix)</title>
     <!-- 
       This app uses three external libraries:
       1. PapaParse: For easy and robust CSV parsing in the browser.
@@ -34,6 +34,10 @@
                         '0': '0',
                         'screen': '100vh',
                         '1000': '1000px',
+                    },
+                    // --- ADDED: min-height for PDF fix ---
+                    minHeight: {
+                        '5': '1.25rem', // For signature lines
                     }
                 }
             }
@@ -50,7 +54,8 @@
         .page {
             width: var(--a4-width, 210mm);
             min-height: var(--a4-height, 297mm);
-            padding: 10mm;
+            /* --- MODIFIED: Set top padding to 4px, other sides to 10mm --- */
+            padding: 4px 10mm 10mm 10mm;
             margin: 1rem auto;
             border: 1px solid #D3D3D3;
             background: white;
@@ -143,6 +148,9 @@
         .signature-block { margin-top: 1rem; }
         .examiner-name { margin-top: 0.1rem; font-weight: 500; }
         
+        /* --- ADDED: Style for examiner designation --- */
+        .examiner-designation { margin-top: 0.1rem; font-weight: 500; }
+        
         .exam-details {
             display: flex;
             flex-direction: column;
@@ -219,6 +227,24 @@
             cursor: not-allowed;
         }
 
+        /* --- NEW: Scrollable Marks Table Container --- */
+        #marksTableContainer {
+            max-height: 60vh; /* Set max height to 60% of viewport height */
+            overflow-y: auto;  /* Add vertical scrollbar when needed */
+            position: relative; /* Required for sticky header */
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 6px;
+        }
+        #marksEntryArea thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f9fafb; /* gray-50 */
+            z-index: 10;
+            /* Add a border to visually separate header */
+            border-bottom: 2px solid #ddd; 
+        }
+        /* --- END NEW STYLES --- */
+
 
         /* Loader Styles */
         .loader-bar {
@@ -263,15 +289,52 @@
             gap: 0.5rem; /* 8px */
         }
 
-        /* Print-specific styles */
+        /* --- MODIFIED: Print-specific styles --- */
         @media print {
-            body { background-color: #fff !important; margin: 0 !important; padding: 0 !important; }
-            .no-print { display: none !important; }
-            .container-wrapper { box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
-            .page { width: 210mm; min-height: 297mm; max-height: 297mm; margin: 0; border: 0 !important; box-shadow: none; padding: 0; box-sizing: content-box; page-break-before: auto !important; page-break-after: always !important; }
+            /* Basic reset */
+            body { 
+                background-color: #fff !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            /* Remove all styles from the main containers */
+            .container-wrapper, #outputArea {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+            }
+            .page {
+                /* --- FIX: Don't use fixed mm units for print --- */
+                width: 100%; /* Use 100% of the print page width */
+                height: auto; /* Let content define height */
+                min-height: 0;
+                max-height: none;
+
+                /* Reset all preview styles */
+                margin: 0;
+                border: 0 !important;
+                box-shadow: none !important;
+                
+                /* --- MODIFIED: Keep the internal padding, with 4px top --- */
+                padding: 4px 10mm 10mm 10mm; 
+                box-sizing: border-box;
+
+                page-break-before: auto !important;
+                /* --- *** FIX: Changed 'auto' to 'avoid' to prevent blank page *** --- */
+                page-break-after: avoid !important; 
+            }
+            
             .mark-sheet-half { padding: 0 2mm !important; }
-            .mark-sheet-half:not(:first-child) { border-left: 1px dashed #000 !important; }
-            .signature-section { page-break-inside: avoid !important; }
+            .mark-sheet-half:not(:first-child) { 
+                border-left: 1px dashed #000 !important; 
+            }
+            .signature-section { 
+                page-break-inside: avoid !important; 
+            }
         }
         
     </style>
@@ -310,7 +373,7 @@
                 <li>**Assign Examiners:** Search for the examiners; their designations will appear automatically.</li>
                 <li>**Load Nominal Roll:** Click **Load Nominal Roll** after setting the starting Register Number.</li>
                 <li>**Enter Marks:** Input the marks in figures (**Max 100**). Marks in Words will be auto-generated.</li>
-                <li>**Generate & Download:** Click **Generate Printable Mark Sheet** and then **Download as PDF** to save the file.</li>
+                <li>**Generate & Download:** Click **Generate Printable Mark Sheet** and then **Download as PDF** or **Print** to save the file.</li>
             </ol>
         </div>
         
@@ -435,17 +498,22 @@
 
         <!-- This is where the A4 page preview will be rendered -->
         <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
-            <!-- MODIFIED: PDF Download Button with icon and transitions -->
-            <button id="printButton" class="btn-icon py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-wait transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95 no-print mx-auto block" style="display: none;">
-                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                Download as PDF
-            </button>
+            <!-- *** MODIFIED: Wrapped buttons in a div for centering *** -->
+            <div class="no-print mx-auto flex flex-col sm:flex-row gap-4 justify-center">
+                <!-- PDF Download Button -->
+                <button id="printButton" class="btn-icon py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-wait transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    Download as PDF
+                </button>
+                <!-- *** NEW: Print Button *** -->
+                <button id="printPageButton" class="btn-icon py-2 px-5 mb-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.319 0H6.34m11.319 0c.045.09.088.18.127.271A1.12 1.12 0 0117.66 19.5H6.34a1.12 1.12 0 01-.127-1.229c.039-.091.082-.18.127-.271m0 0c-1.01.056-2.003.082-3.003.082S4.326 18.056 3.316 18H3v-3.75h18v3.75h-.316c-1.001 0-1.993-.026-3.003-.082z" /></svg>
+                    Print Mark Sheet
+                </button>
+            </div>
             <!-- Generated content will go here -->
         </div>
     </div>
-
-    <!-- *** REMOVED the #pdf-render-target div. It's no longer needed. *** -->
-
 
     <script>
         // --- Make jsPDF and html2canvas globally available from window ---
@@ -481,6 +549,7 @@
         const marksEntryArea = document.getElementById('marksEntryArea'); 
         const marksTableContainer = document.getElementById('marksTableContainer');
         const printButton = document.getElementById('printButton'); 
+        const printPageButton = document.getElementById('printPageButton'); // <-- NEW
         const resetButton = document.getElementById('resetButton'); 
         const mainForm = document.getElementById('mainForm');
         const loaderContainer = document.getElementById('loaderContainer');
@@ -603,7 +672,12 @@
                 chiefExaminerName.value = data.chiefExaminerName || '';
                 chairmanName.value = data.chairmanName || '';
                 
-                // setDesignation will be called once faculty data is loaded
+                // --- *** FIX: Check if faculty data is loaded, then set designations *** ---
+                if (facultyDataLoaded) {
+                    setDesignation(additionalExaminerName, additionalExaminerDesignation);
+                    setDesignation(chiefExaminerName, chiefExaminerDesignation);
+                    setDesignation(chairmanName, chairmanDesignation);
+                }
                 
                 if (data.qpCodeInput) {
                     handleQPCodeSelection(data.qpCodeInput);
@@ -641,6 +715,7 @@
                 
                 generateButton.disabled = true;
                 printButton.style.display = 'none';
+                printPageButton.style.display = 'none'; // <-- NEW
                 
                 showMessage('All saved data has been reset.', 'info');
 
@@ -697,6 +772,7 @@
             marksEntryArea.classList.remove('hidden'); // Show with transition
             generateButton.disabled = false;
             printButton.style.display = 'none'; 
+            printPageButton.style.display = 'none'; // <-- NEW
             document.getElementById('markSheetPage')?.remove();
             showMessage(`Nominal Roll loaded successfully. ${currentNominalRoll.length} students found. Please enter marks below.`, 'success');
 
@@ -743,8 +819,9 @@
             document.getElementById('markSheetPage')?.remove();
             outputArea.insertAdjacentHTML('beforeend', sheetHTML);
 
-            printButton.style.display = 'block'; 
-            showMessage('Printable Mark Sheet generated successfully. Click "Download as PDF" above the preview.', 'success');
+            printButton.style.display = 'inline-flex'; // <-- MODIFIED
+            printPageButton.style.display = 'inline-flex'; // <-- MODIFIED
+            showMessage('Printable Mark Sheet generated successfully. Click "Download as PDF" or "Print" above the preview.', 'success');
         });
         
         window.validateMark = function(input) {
@@ -758,6 +835,7 @@
         
         resetButton.addEventListener('click', resetData);
         printButton.addEventListener('click', downloadAsPDF);
+        printPageButton.addEventListener('click', () => window.print()); // <-- NEW
 
         // Bind saveFormData to key events 
         ['change', 'input'].forEach(evt => {
@@ -796,7 +874,7 @@
                         checkLoadStatus();
                         
                         // Now that student data is loaded, try to reload the roll
-                        const savedMarksData = loadFormData();
+                        const savedMarksData = loadFormData(); // This will now also try to set designations
                         if (savedMarksData) {
                             setTimeout(() => autoReloadNominalRoll(savedMarksData), 100); 
                         }
@@ -821,7 +899,6 @@
 
                     facultyData = results.data.map(row => ({
                         [FACULTY_NAME_KEY]: row[actualNameKey] || '',
-                        // --- *** FIX: Corrected typo from actualDesignaationKey to actualDesignationKey *** ---
                         [FACULTY_DESIGNATION_KEY]: row[actualDesignationKey] || ''
                     })).filter(row => row[FACULTY_NAME_KEY] !== ''); 
 
@@ -829,8 +906,10 @@
                         facultyDataLoaded = true;
                         checkLoadStatus();
                         
-                        // Now that faculty data is loaded, re-populate designations from storage
-                        loadFormData();
+                        // --- *** MODIFIED: Just call loadFormData() *** ---
+                        // It will now handle setting designations.
+                        loadFormData(); 
+                        
                     } else {
                         updateLoader(50, 'Faculty data failed to load: No valid names found.', true);
                     }
@@ -954,6 +1033,7 @@
             document.getElementById('markSheetPage')?.remove();
             generateButton.disabled = true;
             printButton.style.display = 'none';
+            printPageButton.style.display = 'none'; // <-- NEW
         });
         
         function handleQPCodeSelection(selectedQP) {
@@ -1104,11 +1184,13 @@
             const valuationSessionValue = valuationSession.value.trim().toUpperCase();
             const footerDateSession = `${formattedMarkEntryDate} ${valuationSessionValue}`;
 
-            const addlCombined = `${additionalExaminerName.value}${additionalExaminerDesignation.value ? `, ${additionalExaminerDesignation.value}` : ''}`;
-            const chiefCombined = `${chiefExaminerName.value}${chiefExaminerDesignation.value ? `, ${chiefExaminerDesignation.value}` : ''}`;
-            
-            // --- *** FIX: Corrected typo from chairmanDesignsation to chairmanDesignation *** ---
-            const chairCombined = `${chairmanName.value}${chairmanDesignation.value ? `, ${chairmanDesignation.value}` : ''}`;
+            // --- MODIFIED: Remove '&nbsp;' fallback. We will handle empty with CSS. ---
+            const addlName = additionalExaminerName.value;
+            const addlDesig = additionalExaminerDesignation.value;
+            const chiefName = chiefExaminerName.value;
+            const chiefDesig = chiefExaminerDesignation.value;
+            const chairName = chairmanName.value;
+            const chairDesig = chairmanDesignation.value;
             
             let studentRows = '';
 
@@ -1165,20 +1247,30 @@
                     </tbody>
                 </table>
                 
+                <!-- --- MODIFIED: Signature section updated to two lines --- -->
                 <div class="signature-section">
                     <div class="signature-block">
                         <strong>Addl. Examiner</strong>
-                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${addlCombined}</div>
+                        <!-- 
+                          FIX: 
+                          1. Replaced 'mt-6' (margin-top) with 'pt-6' (padding-top). html2canvas handles padding better.
+                          2. Added 'min-h-5' (min-height: 1.25rem) to force the div to have height even if empty.
+                          3. Use '|| ""' to avoid printing "null" or "undefined".
+                        -->
+                        <div class="examiner-name pt-6 min-h-5">${addlName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${addlDesig || ''}</div>
                     </div>
                     
                     <div class="signature-block">
                         <strong>Chief Examiner</strong>
-                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${chiefCombined}</div>
+                        <div class="examiner-name pt-6 min-h-5">${chiefName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chiefDesig || ''}</div>
                     </div>
                     
                     <div class="signature-block">
                         <strong>Chairman</strong>
-                        <div class="examiner-name mt-6 border-b border-dotted border-gray-500">${chairCombined}</div>
+                        <div class="examiner-name pt-6 min-h-5">${chairName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chairDesig || ''}</div>
                     </div>
                 </div>
                 
