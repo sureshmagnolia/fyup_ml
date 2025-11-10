@@ -1,1330 +1,1304 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plant QR Label Generator V1.9</title>
-    <!-- 1. Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 2. PapaParse and QRCode.js moved to end of <body> -->
-    <!-- 3. Load Inter font -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <!-- ADDED: Load Anek Malayalam font for Common Name -->
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anek+Malayalam:wght@400;600;700&display=swap">
-    <!-- 4. Dynamic Print Styles - this will be populated by JavaScript -->
-    <style id="print-styles"></style>
-    <!-- 5. Base Styles -->
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-
-        /* Base styles for the generated label card */
-        .label-card {
-            border: 2px solid #1f2937;
-            /* gray-800 */
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            background-color: white;
-            display: flex;
-            /* CHANGED */
-            flex-direction: column;
-            /* ADDED */
-            gap: 0.5rem;
-            /* CHANGED */
-            page-break-inside: avoid;
-            /* Avoids breaking a label during printing */
-        }
-
-        .label-content-wrapper {
-            /* This new wrapper holds the text and QR code */
-            display: grid;
-            grid-template-columns: 1fr 100px;
-            /* Text content | QR Code */
-            gap: 0.75rem;
-            align-items: center;
-            width: 100%;
-        }
-
-        .label-text {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            /* Reduced gap for new order */
-            min-width: 0;
-            /* FIX: Prevents text overflow from breaking grid */
-        }
-
-        /* --- NEW ORDER --- */
-        .label-text .binomial-box {
-            font-weight: 700;
-            font-size: 1.125rem;
-            /* 18px */
-            line-height: 1.4;
-            text-align: center;
-            overflow-wrap: break-word;
-            word-break: break-word;
-        }
-
-        .label-text .family-name,
-        .label-text .common-name,
-        .label-text .vernacular-name {
-            font-size: 0.875rem;
-            /* 14px */
-            line-height: 1.3;
-            text-align: center;
-            overflow-wrap: break-word;
-            word-break: break-word;
-        }
-
-        .label-text .common-name {
-            font-family: 'Anek Malayalam', sans-serif;
-            /* Applied Anek Malayalam */
-            font-weight: 600;
-        }
-
-        /* --- END NEW ORDER --- */
-
-        .label-qr-code {
-            width: 100px;
-            height: 100px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .label-qr-code img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-
-        /* Footer Box */
-        .footer-box {
-            border-top: 1px solid #d1d5db;
-            /* gray-300 */
-            padding-top: 0.5rem;
-            /* 8px */
-            margin-top: 0.5rem;
-            /* 8px */
-        }
-
-        /* MODIFIED: Footer note for QRit - Smaller and italicized */
-        .footer-note {
-            text-align: center;
-            font-size: 0.45rem;
-            /* Made slightly smaller */
-            line-height: 1.2;
-            white-space: normal;
-            /* Allow wrapping */
-            opacity: 0.85;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            font-style: italic;
-            /* Added italics */
-        }
-    </style>
-</head>
-
-<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
-    <!-- === START: NEW LAYOUT === -->
-    <!-- Removed grid, added space-y-8 for vertical stacking -->
-    <div class="max-w-7xl mx-auto space-y-8">
-
-        <!-- ===== Top Section: Control Panel ===== -->
-        <!-- ADDED ID: controls-block -->
-        <div id="controls-block" class="bg-white p-6 rounded-xl shadow-lg">
-
-            <!-- START: NEW PROFESSIONAL HEADER BLOCK -->
-            <header class="text-center mb-6 border-b pb-4 border-gray-200">
-                <!-- QRit Title (Top, Larger) -->
-                <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-800 mb-4 tracking-wider">QRit</h1>
-
-                <!-- Ribbon/Banner -->
-                <div
-                    class="bg-blue-50 border-y-4 border-blue-600 p-3 sm:p-4 shadow-xl flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4 rounded-lg max-w-4xl mx-auto">
-
-                    <!-- Left Logo -->
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                        <img src="https://i.postimg.cc/DzmrxPMQ/blue-EMBLEM.png"
-                            onerror="this.onerror=null; this.src='https://placehold.co/80x80/0000FF/FFFFFF?text=Logo1';"
-                            alt="College Emblem" class="w-full h-full object-contain">
-                    </div>
-
-                    <!-- Center Text -->
-                    <div class="flex flex-col mx-2 flex-grow text-center text-gray-800">
-                        <p class="text-xl sm:text-2xl font-bold leading-tight">Department of Botany</p>
-                        <p class="text-sm sm:text-base font-medium text-gray-600 mt-1">Government Victoria College, Palakkad</p>
-                    </div>
-
-                    <!-- Right Logo -->
-                    <div class="w-16 h-16 sm:w-20 sm:h-20 flex-shrink-0">
-                        <img src="https://i.postimg.cc/BvSGvdP9/75Logo2.png"
-                            onerror="this.onerror=null; this.src='https://placehold.co/80x80/FF6600/FFFFFF?text=Logo2';"
-                            alt="75th Anniversary Logo" class="w-full h-full object-contain">
-                    </div>
-                </div>
-            </header>
-            <!-- END: NEW PROFESSIONAL HEADER BLOCK -->
-
-            <!-- Original descriptive text, now centered below the main header -->
-            <p class="text-sm text-gray-600 mb-2 text-center">
-                the plant qr code generation service by the Department of Botany, Government Victoria College, Palakkad.
-            </p>
-            <!-- NEW: Note for Database/Error Reporting -->
-            <p class="text-xs text-gray-500 mb-6 text-center">
-                Note: If you want to add any plant to the database, or have any errors to report write to <strong class="text-blue-600">botany@gvc.ac.in</strong>
-            </p>
-
-            <!-- NEW: Usage Instructions -->
-            <div class="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6 shadow-inner">
-                <h3 class="text-lg font-bold text-blue-800 mb-2">How to Use QRit</h3>
-                <ol class="list-decimal list-inside text-sm text-gray-700 space-y-1">
-                    <li>Click **'+ Add Plants to List'** to search the database and select up to **20 plants**. Optionally, add a custom URL for the QR code.</li>
-                    <li>Enter the **Institution Name** (optional) and select **Colors**.</li>
-                    <li>Click **'Generate Labels'** to display the output.</li>
-                    <li>Use the **'Download'** or **'Print (Browser Dialog)'** options to get your final labels.</li>
-                </ol>
-            </div>
-            <!-- END: Usage Instructions -->
-
-
-            <!-- Loading State -->
-            <div id="loading" class="text-center py-4">
-                <p class="text-lg font-medium text-blue-600 animate-pulse">Loading Plant Database...</p>
-                <p class="text-sm text-gray-500">Please wait a moment.</p>
-            </div>
-
-            <!-- Error State -->
-            <div id="error" class="hidden text-center py-4 bg-red-50 border border-red-200 rounded-lg">
-                <p class="text-lg font-medium text-red-600">Error Loading Data</p>
-                <p id="error-message" class="text-sm text-gray-600"></p>
-            </div>
-
-            <!-- Controls (Hidden until data is loaded) -->
-            <div id="controls" class="hidden">
-                <!-- Inner grid for controls -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                    <!-- Left Column -->
-                    <div class="space-y-6">
-                        <!-- Add Plant Button -->
-                        <div>
-                            <button id="addPlantBtn"
-                                class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 shadow-sm">
-                                + Add Plants to List
-                            </button>
-                        </div>
-
-                        <!-- Selected Plants List -->
-                        <div class="pt-4">
-                            <div class="flex justify-between items-center mb-2">
-                                <h3 class="text-lg font-semibold text-gray-700">Selected Plants</h3>
-                                <span id="plant-count"
-                                    class="text-sm font-medium bg-gray-200 text-gray-700 px-2.5 py-0.5 rounded-full">0</span>
-                            </div>
-                            <div id="selected-plants-container"
-                                class="bg-gray-50 border border-gray-200 rounded-lg p-3 min-h-[100px] max-h-[300px] overflow-y-auto">
-                                <p id="empty-list-msg" class="text-gray-500 text-sm text-center pt-4">
-                                    Your selected plants will appear here.
-                                </p>
-                                <ul id="selected-plants-list" class="space-y-2">
-                                    <!-- Selected plants will be injected here by JS -->
-                                </ul>
-                            </div>
-                            <button id="resetListBtn"
-                                class="w-full text-sm text-red-600 hover:text-red-800 mt-2 text-center transition duration-150">
-                                Reset List
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Middle Column -->
-                    <div class="space-y-6">
-                        <!-- Institution Name -->
-                        <div class="pt-4">
-                            <label for="institutionName" class="block text-sm font-medium text-gray-700 mb-1">
-                                Institution Name (Optional)
-                            </label>
-                            <input type="text" id="institutionName" placeholder="e.g., Dept. of Botany, Victoria College"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
-                        </div>
-
-                        <!-- Color Pickers -->
-                        <div class="pt-4 grid grid-cols-2 gap-4">
-                            <div>
-                                <label for="bgColor" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Background Color
-                                </label>
-                                <input type="color" id="bgColor" value="#FFFFFF"
-                                    class="w-full h-10 border border-gray-300 rounded-lg cursor-pointer">
-                            </div>
-                            <div>
-                                <label for="textColor" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Text & Border Color
-                                </label>
-                                <input type="color" id="textColor" value="#000000"
-                                    class="w-full h-10 border border-gray-300 rounded-lg cursor-pointer">
-                            </div>
-                        </div>
-
-                        <!-- Generate Button -->
-                        <div class="pt-4">
-                            <button id="generateBtn"
-                                class="w-full bg-green-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 shadow-sm">
-                                Generate Labels
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Right Column -->
-                    <div id="print-controls" class="pt-4 hidden space-y-4">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-3">Print Options</h3>
-
-                        <!-- Paper Size -->
-                        <div>
-                            <label for="paperSize" class="block text-sm font-medium text-gray-700 mb-1">
-                                Paper Size
-                            </label>
-                            <select id="paperSize"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 bg-white">
-                                <option value="A4" selected>A4</option>
-                                <option value="A3">A3</option>
-                            </select>
-                        </div>
-
-                        <!-- Orientation -->
-                        <div>
-                            <label for="paperOrientation" class="block text-sm font-medium text-gray-700 mb-1">
-                                Orientation
-                            </label>
-                            <select id="paperOrientation"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 bg-white">
-                                <option value="portrait" selected>Portrait</option>
-                                <option value="landscape">Landscape</option>
-                            </select>
-                        </div>
-
-                        <!-- Columns / Rows -->
-                        <div class="grid grid-cols-2 gap-4">
-                            <!-- HORIZONTAL COLUMNS -->
-                            <div>
-                                <label for="numColumnsH" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Horizontal Columns
-                                </label>
-                                <select id="numColumnsH"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 bg-white">
-                                    <option value="1">1</option>
-                                    <option value="2" selected>2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                </select>
-                            </div>
-
-                            <!-- VERTICAL ROWS -->
-                            <div>
-                                <label for="numRowsV" class="block text-sm font-medium text-gray-700 mb-1">
-                                    Vertical Rows
-                                </label>
-                                <select id="numRowsV"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 bg-white">
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5" selected>5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                </select>
-                            </div>
-                        </div>
-                        <p class="text-xs text-gray-500 text-center -mt-2">
-                            Labels per page (Horizontal x Vertical).
-                        </p>
-
-                        <!-- NEW DOWNLOAD BUTTONS -->
-                        <button id="downloadPngBtn"
-                            class="w-full bg-indigo-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 shadow-sm mt-4">
-                            Download as PNG Image
-                        </button>
-
-                        <button id="downloadPdfBtn"
-                            class="w-full bg-red-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200 shadow-sm">
-                            Download as Multi-Page PDF
-                        </button>
-                        <!-- END NEW DOWNLOAD BUTTONS -->
-
-                        <!-- Original Print Button -->
-                        <button id="printBtn"
-                            class="w-full bg-gray-700 text-white font-semibold py-3 px-4 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition duration-200 shadow-sm mt-4">
-                            Print (Browser Dialog)
-                        </button>
-                        <p class="text-xs text-gray-500 text-center -mt-2">
-                            Uses browser's print function for paginated output.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ===== Bottom Section: Label Output ===== -->
-        <!-- ADDED ID: label-container -->
-        <div id="label-container">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Generated Labels</h2>
-            <div id="label-output-placeholder" class="text-center py-16 bg-white rounded-xl shadow-lg">
-                <p class="text-lg text-gray-500">Your generated labels will appear here.</p>
-            </div>
-            <!-- MODIFIED: Added lg:grid-cols-3 to use the full width -->
-            <div id="label-output" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <!-- Labels will be injected here by JS -->
-            </div>
-        </div>
-        <!-- === END: NEW LAYOUT === -->
-
-    </div>
-
-    <!-- ===== Modal for Adding Plants ===== -->
-    <div id="plantModal"
-        class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-2xl font-semibold text-gray-800">Add Plant</h3>
-                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 transition duration-150">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
-                </button>
-            </div>
-            <div>
-                <label for="plantSearch" class="block text-sm font-medium text-gray-700 mb-1">
-                    Search for a plant (type 3+ letters)
-                </label>
-                <input type="text" id="plantSearch" placeholder="e.g., Mangifera indica"
-                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
-
-                <!-- Container for search results -->
-                <div id="searchResults"
-                    class="mt-2 border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-                    <!-- Search results will be injected here by JS -->
-                </div>
-
-                <!-- NEW: Container for Confirmation and URL Input -->
-                <div id="plantDetailConfirm" class="mt-4 border border-gray-300 rounded-lg p-4 hidden">
-                    <!-- This content is generated dynamically by selectPlant() -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!--
-      LOAD LIBRARIES HERE
+    <title>Mark Sheet Generator V14 (Scroll Fix)</title>
+    <!-- 
+      This app uses three external libraries:
+      1. PapaParse: For easy and robust CSV parsing in the browser.
+      2. html2canvas: For "screenshotting" the HTML element.
+      3. jspdf: For creating the PDF document.
     -->
-    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-    <!-- New Libraries for Image and PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
+    
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // --- CONFIGURATION ---
-        const GOOGLE_SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTuxbNh5Y8UYVwMR752Z5rqNcPAvdzrUvfuAr_ifFcXt2UjQZ5K4xzt0jhHUd3hGFNbUtPpqSmXDxym/pub?gid=497369614&single=true&output=csv';
-
-        // --- GLOBAL VARIABLES ---
-        let plantData = []; // To store ALL plant data from CSV
-        // RENAMED: Stores objects { binomial: string, customUrl: string | null }
-        let selectedPlants = [];
-
-        // --- DOM ELEMENTS ---
-        const loadingEl = document.getElementById('loading');
-        const errorEl = document.getElementById('error');
-        const errorMessageEl = document.getElementById('error-message');
-        const controlsEl = document.getElementById('controls');
-        const addPlantBtn = document.getElementById('addPlantBtn');
-        const plantModal = document.getElementById('plantModal');
-        const closeModalBtn = document.getElementById('closeModalBtn');
-        const plantSearch = document.getElementById('plantSearch');
-        const searchResults = document.getElementById('searchResults');
-        // NEW DOM element for confirmation section
-        const plantDetailConfirm = document.getElementById('plantDetailConfirm');
-
-        const selectedPlantsList = document.getElementById('selected-plants-list');
-        const emptyListMsg = document.getElementById('empty-list-msg');
-        const plantCountEl = document.getElementById('plant-count');
-        const resetListBtn = document.getElementById('resetListBtn');
-        const generateBtn = document.getElementById('generateBtn');
-        const labelOutput = document.getElementById('label-output');
-        const labelOutputPlaceholder = document.getElementById('label-output-placeholder');
-        const bgColorPicker = document.getElementById('bgColor');
-        const textColorPicker = document.getElementById('textColor');
-        const printControls = document.getElementById('print-controls');
-        const printBtn = document.getElementById('printBtn');
-        const printStyles = document.getElementById('print-styles');
-        
-        // NEW HTML IDs for print control
-        const controlsBlock = document.getElementById('controls-block');
-        const labelContainer = document.getElementById('label-container');
-        const mainWrapper = document.querySelector('.max-w-7xl');
-
-        // NEW Download DOM Elements
-        const downloadPngBtn = document.getElementById('downloadPngBtn');
-        const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-
-        // Print DOM Elements
-        const paperSizeSelect = document.getElementById('paperSize');
-        const paperOrientationSelect = document.getElementById('paperOrientation');
-        const numColumnsSelectH = document.getElementById('numColumnsH');
-        const numRowsSelectV = document.getElementById('numRowsV');
-
-        // --- INITIALIZATION ---
-        // Start polling immediately to check for libraries.
-        checkLibrariesAndInit();
-
-        /**
-         * Check if libraries are loaded, then initialize.
-         * This polls every 100ms until libraries are ready.
-         */
-        function checkLibrariesAndInit() {
-            if (typeof Papa !== 'undefined' &&
-                typeof QRCode !== 'undefined' &&
-                typeof html2canvas !== 'undefined' &&
-                typeof window.jspdf !== 'undefined') { // Check for new libs
-
-                console.log('Libraries loaded, initializing app...');
-                initializeApp();
-            } else {
-                // console.log('Libraries not loaded, retrying...');
-                setTimeout(checkLibrariesAndInit, 100);
-            }
-        }
-
-        /**
-         * Main function to fetch data and set up the app.
-         */
-        async function initializeApp() {
-            // 1. Load any previously selected plants from localStorage
-            loadSelectedPlants(); // Updated function name
-
-            console.log("Attempting direct fetch...");
-            try {
-                // 1. Fetch the data directly
-                const response = await fetch(GOOGLE_SHEET_URL);
-
-                if (!response.ok) {
-                    // This will catch network errors AND CORS errors
-                    throw new Error(`Failed to fetch: ${response.status} ${response.statusText}. Ensure the Google Sheet is 'Published to the web'.`);
-                }
-                const csvText = await response.text();
-
-                if (!csvText) {
-                    throw new Error('Fetched data is empty.');
-                }
-
-                // 2. Parse the fetched text with PapaParse
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        if (results.data && results.data.length > 0) {
-                            plantData = results.data;
-                            loadingEl.classList.add('hidden');
-                            controlsEl.classList.remove('hidden');
-                            // Now that plantData is loaded, render the selected plants
-                            renderSelectedPlants();
-                            setupEventListeners();
-                        } else {
-                            throw new Error('No data found in parsed CSV. Check CSV format.');
-                        }
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
                     },
-                    error: (err) => {
-                        console.error('PapaParse error:', err);
-                        showError(`PapaParse Error: ${err.message || 'An unknown error occurred.'}`);
-                    }
-                });
-
-            } catch (err) {
-                console.error('Failed to load or parse data:', err);
-                showError(`Failed to load data. Error: ${err.message}`);
-            }
-        }
-
-        /**
-         * Helper function to show a persistent error message
-         */
-        function showError(message) {
-            loadingEl.classList.add('hidden'); // Show error, hide loading
-            errorMessageEl.textContent = message;
-            errorEl.classList.remove('hidden');
-        }
-
-        /**
-         * Set up all event listeners for the application
-         */
-        function setupEventListeners() {
-            // Modal controls
-            addPlantBtn.addEventListener('click', () => {
-                plantModal.classList.remove('hidden');
-                // Ensure the initial search view is shown
-                searchResults.classList.remove('hidden');
-                plantDetailConfirm.classList.add('hidden');
-            });
-            closeModalBtn.addEventListener('click', () => plantModal.classList.add('hidden'));
-            plantModal.addEventListener('click', (e) => {
-                if (e.target === plantModal) {
-                    plantModal.classList.add('hidden');
-                }
-            });
-
-            // Search functionality
-            plantSearch.addEventListener('input', handleSearch);
-
-            // List management
-            resetListBtn.addEventListener('click', resetSelectedPlants);
-
-            // Label generation
-            generateBtn.addEventListener('click', generateLabels);
-
-            // Print functionality
-            printBtn.addEventListener('click', handlePrint);
-
-            // Download functionality
-            downloadPngBtn.addEventListener('click', downloadLabelsAsPng);
-            downloadPdfBtn.addEventListener('click', downloadLabelsAsPdf);
-        }
-
-
-        /**
-         * Handle plant search input
-         */
-        function handleSearch() {
-            const query = plantSearch.value.toLowerCase().trim();
-            searchResults.innerHTML = ''; // Clear previous results
-            // Hide detail view when starting a new search
-            plantDetailConfirm.classList.add('hidden');
-            searchResults.classList.remove('hidden');
-
-            if (query.length < 3) {
-                searchResults.innerHTML = '<p class="text-gray-500 p-4 text-sm">Please type 3 or more letters to search.</p>';
-                return;
-            }
-
-            const results = plantData.filter(plant => {
-                const binomialMatch = plant.Binomial && plant.Binomial.toLowerCase().includes(query);
-                const commonNameMatch = plant['Common Name'] && plant['Common Name'].toLowerCase().includes(query);
-                const vernacularMatch = plant.Vernacular && plant.Vernacular.toLowerCase().includes(query);
-                return binomialMatch || commonNameMatch || vernacularMatch;
-            }).sort((a, b) => {
-                // Handle potential nulls in sorting
-                const binA = a.Binomial || '';
-                const binB = b.Binomial || '';
-                return binA.localeCompare(binB);
-            });
-
-            if (results.length === 0) {
-                searchResults.innerHTML = '<p class="text-gray-500 p-4 text-sm">No plants found.</p>';
-                return;
-            }
-
-            results.forEach(plant => {
-                const div = document.createElement('div');
-                div.className = 'p-3 hover:bg-blue-50 cursor-pointer border-b border-gray-100';
-                div.innerHTML = `
-                    <p class="font-medium text-gray-800">${plant.Binomial || 'N/A'}</p>
-                    <p class="text-sm text-gray-600">${plant['Common Name'] || 'N/A'}</p>
-                `;
-                // Clicking shows the confirmation/URL input form
-                div.onclick = () => selectPlant(plant);
-                searchResults.appendChild(div);
-            });
-        }
-
-        /**
-         * Show the confirmation form with optional URL input.
-         */
-        function selectPlant(plant) {
-            if (!plant || !plant.Binomial) {
-                console.error('Invalid plant object or missing Binomial:', plant);
-                return;
-            }
-
-            // Hide search results, show detail view
-            searchResults.classList.add('hidden');
-            plantDetailConfirm.classList.remove('hidden');
-
-            const displayName = plant.Binomial;
-            const commonName = plant['Common Name'] || 'N/A';
-
-            plantDetailConfirm.innerHTML = `
-                <h4 class="text-xl font-bold text-gray-800 mb-2">${displayName}</h4>
-                <p class="text-sm text-gray-600 mb-4">Common Name: ${commonName}</p>
-                                <div class="mb-4">
-                    <label for="customUrlInput" class="block text-sm font-medium text-gray-700 mb-1">
-                        Optional Custom URL (e.g., your website link)
-                    </label>
-                    <input type="url" id="customUrlInput" placeholder="Enter custom URL (max 100 characters)"
-                        maxlength="100"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
-                    <p id="urlError" class="text-xs text-red-500 mt-1 hidden">URL is too long or invalid.</p>
-                </div>
-
-                <div class="flex justify-end space-x-3">
-                    <button id="cancelPlantBtn" class="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100">
-                        Cancel
-                    </button>
-                    <button id="addConfirmedPlantBtn" class="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Add to List
-                    </button>
-                </div>
-            `;
-
-            document.getElementById('cancelPlantBtn').onclick = () => {
-                plantDetailConfirm.classList.add('hidden');
-                searchResults.classList.remove('hidden');
-            };
-
-            document.getElementById('addConfirmedPlantBtn').onclick = () => {
-                const urlInput = document.getElementById('customUrlInput');
-                const customUrl = urlInput.value.trim();
-                const urlError = document.getElementById('urlError');
-
-                // Simple length check (already enforced by maxlength, but good to double check)
-                if (customUrl.length > 100) {
-                    urlError.textContent = 'URL must be 100 characters or less.';
-                    urlError.classList.remove('hidden');
-                    return;
-                }
-
-                urlError.classList.add('hidden');
-
-                confirmAddPlant(plant, customUrl.length > 0 ? customUrl : null);
-            };
-        }
-
-
-        /**
-         * Add a plant to the selected list, including the custom URL.
-         */
-        function confirmAddPlant(plant, customUrl) {
-            const newPlant = {
-                binomial: plant.Binomial,
-                customUrl: customUrl
-            };
-
-            // Check if plant is already selected based on binomial
-            if (selectedPlants.some(p => p.binomial === newPlant.binomial)) {
-                console.warn(`${newPlant.binomial} is already in the list.`);
-            } else {
-                selectedPlants.push(newPlant);
-                saveSelectedPlants();
-                renderSelectedPlants();
-            }
-
-            // Close and reset modal view
-            plantModal.classList.add('hidden');
-            plantSearch.value = '';
-            searchResults.innerHTML = '';
-            plantDetailConfirm.classList.add('hidden');
-            searchResults.classList.remove('hidden'); // Ensure search results container is ready for next time
-        }
-
-        /**
-         * Remove a plant from the selected list
-         */
-        function removePlant(binomialName) {
-            selectedPlants = selectedPlants.filter(p => p.binomial !== binomialName);
-            saveSelectedPlants();
-            renderSelectedPlants();
-        }
-
-        /**
-         * Render the list of selected plants in the UI
-         */
-        function renderSelectedPlants() {
-            // Check if main data is loaded before trying to render details
-            if (plantData.length === 0 && selectedPlants.length > 0) {
-                console.log('Waiting for plantData to load before rendering selected list...');
-                return;
-            }
-
-            selectedPlantsList.innerHTML = ''; // Clear list
-
-            if (selectedPlants.length === 0) {
-                emptyListMsg.classList.remove('hidden');
-            } else {
-                emptyListMsg.classList.add('hidden');
-
-                selectedPlants.forEach(item => {
-                    const binomial = item.binomial;
-                    const customUrl = item.customUrl; // New: Get custom URL
-                    const plant = plantData.find(p => (p.Binomial || null) === binomial);
-
-                    const li = document.createElement('li');
-                    li.className = 'flex items-center justify-between bg-white p-2 border border-gray-200 rounded-md shadow-sm';
-
-                    const displayName = plant ? (plant.Binomial || 'N/A') : (binomial || 'N/A (Not Found)');
-
-                    // Display detail based on customUrl presence
-                    const detailText = customUrl ?
-                        `<span class="text-xs text-blue-500 block truncate" style="max-width: 150px;">Custom URL: ${customUrl}</span>` :
-                        '<span class="text-xs text-gray-400 block">DB Link Used</span>';
-
-
-                    li.innerHTML = `
-                        <div>
-                            <span class="text-sm font-medium text-gray-700">${displayName}</span>
-                            ${detailText}
-                        </div>
-                        <button class="remove-plant-btn text-red-500 hover:text-red-700 transition duration-150" data-binomial="${binomial}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    `;
-                    selectedPlantsList.appendChild(li);
-                });
-            }
-
-            plantCountEl.textContent = selectedPlants.length;
-
-            document.querySelectorAll('.remove-plant-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    removePlant(e.currentTarget.dataset.binomial);
-                });
-            });
-        }
-
-        /**
-         * Clear the selected plants list
-         */
-        function resetSelectedPlants() {
-            console.log('Resetting list...');
-            selectedPlants = [];
-            saveSelectedPlants();
-            renderSelectedPlants();
-        }
-
-        /**
-         * Save the list of selected plant objects to localStorage
-         */
-        function saveSelectedPlants() {
-            localStorage.setItem('selectedPlants', JSON.stringify(selectedPlants));
-        }
-
-        /**
-         * Load the list of selected plant objects from localStorage
-         */
-        function loadSelectedPlants() {
-            const storedPlants = localStorage.getItem('selectedPlants');
-            if (storedPlants) {
-                try {
-                    const parsed = JSON.parse(storedPlants);
-                    if (Array.isArray(parsed)) {
-                        // Map the parsed array to ensure structure and handle old data if needed
-                        selectedPlants = parsed.map(item => ({
-                            binomial: item.binomial || (item.Binomial || 'N/A'), // Handle potential old string format or missing keys
-                            customUrl: item.customUrl || null
-                        })).filter(item => item.binomial !== 'N/A');
-                    } else {
-                        selectedPlants = []; // Malformed data
-                    }
-                } catch (e) {
-                    console.error('Failed to parse localStorage, resetting.', e);
-                    selectedPlants = []; // Corrupt JSON
-                }
-            }
-        }
-
-        /**
-         * Format Binomial Name (Italicize first two words)
-         */
-        function formatBinomialName(binomial) {
-            if (!binomial || typeof binomial !== 'string') {
-                return 'N/A'; // Return a safe value
-            }
-            const parts = binomial.trim().split(/\s+/);
-            if (parts.length >= 2) {
-                return `<span class="italic">${parts[0]} ${parts[1]}</span> ${parts.slice(2).join(' ')}`;
-            }
-            return binomial; // Return as-is if less than 2 words
-        }
-
-        /**
-         * Generate the QR labels for all selected plants
-         */
-        function generateLabels() {
-            console.log('--- Generating Labels ---');
-            console.log('Selected plants:', JSON.stringify(selectedPlants));
-
-            labelOutput.innerHTML = ''; // Clear previous labels
-
-            if (selectedPlants.length === 0) {
-                console.log('No plants selected. Aborting.');
-                labelOutputPlaceholder.classList.remove('hidden');
-                printControls.classList.add('hidden');
-                return;
-            }
-
-            // --- UPDATED LIMIT: 20 LABELS ---
-            const MAX_LABELS = 20;
-            if (selectedPlants.length > MAX_LABELS) {
-                console.error(`Too many labels. Limit is ${MAX_LABELS}.`);
-                labelOutputPlaceholder.classList.add('hidden');
-                printControls.classList.add('hidden');
-                const errorCard = document.createElement('div');
-                errorCard.className = 'label-card bg-red-50 border-red-300 text-red-700 md:col-span-2 lg:col-span-3 text-center';
-                errorCard.innerHTML = `<p class="font-bold">Error: Too Many Labels</p><p>You have selected ${selectedPlants.length} plants. The maximum is ${MAX_LABELS} at a time. Please reduce your list and try again.</p>`;
-                labelOutput.appendChild(errorCard);
-                return;
-            }
-            // --- END UPDATED LIMIT ---
-
-            labelOutputPlaceholder.classList.add('hidden');
-            printControls.classList.remove('hidden');
-
-            const bgColor = bgColorPicker.value;
-            const textColor = textColorPicker.value;
-            const institutionName = document.getElementById('institutionName').value.trim();
-
-            document.documentElement.style.setProperty('--label-bg-color', bgColor);
-            document.documentElement.style.setProperty('--label-text-color', textColor);
-
-            selectedPlants.forEach((selectedItem, index) => { // Iterate over selectedPlants objects
-                const binomial = selectedItem.binomial;
-                const customUrl = selectedItem.customUrl; // New: Get custom URL
-
-                try {
-                    console.log(`Processing label #${index}: ${binomial}`);
-
-                    const plant = plantData.find(p => (p.Binomial || null) === binomial);
-
-                    if (!plant) {
-                        console.error('Skipping label: Plant not found in master data:', binomial);
-                        const errorCard = document.createElement('div');
-                        errorCard.className = 'label-card bg-red-50 border-red-300 text-red-700';
-                        errorCard.innerHTML = `<p class="font-bold">Error: Plant Not Found</p><p>The plant "${binomial || 'N/A'}" could not be found in the database. It may have been renamed or deleted.</p>`;
-                        labelOutput.appendChild(errorCard);
-                        return;
-                    }
-                    console.log('Found plant data:', plant);
-
-                    const qrId = `qr-${index}`;
-
-                    // --- 1. Create Label Card ---
-                    const labelCard = document.createElement('div');
-                    labelCard.className = 'label-card';
-                    labelCard.style.backgroundColor = bgColor;
-                    labelCard.style.color = textColor;
-                    labelCard.style.borderColor = textColor;
-
-                    // --- 2. Institution Name (Optional, with Separator) ---
-                    if (institutionName) {
-                        const institutionDiv = document.createElement('div');
-                        // Use center alignment and bold text
-                        institutionDiv.className = 'institution-name-box text-center font-bold text-base';
-
-                        // ADDED: Separator line and spacing
-                        institutionDiv.style.borderBottom = `1px solid ${textColor}`;
-                        institutionDiv.style.paddingBottom = '0.5rem';
-                        institutionDiv.style.marginBottom = '0.5rem';
-
-                        const institutionP = document.createElement('p');
-                        institutionP.className = 'institution-name';
-                        institutionP.style.overflowWrap = 'break-word';
-                        institutionP.style.wordBreak = 'break-word';
-                        institutionP.textContent = institutionName;
-
-                        institutionDiv.appendChild(institutionP);
-                        labelCard.appendChild(institutionDiv);
-                    }
-
-                    // --- 3. Content Wrapper (Text + QR) ---
-                    const contentWrapper = document.createElement('div');
-                    contentWrapper.className = 'label-content-wrapper';
-
-                    // --- 4. Text Content (Left Side) ---
-                    const textDiv = document.createElement('div');
-                    textDiv.className = 'label-text';
-
-                    // --- NEW ORDER & STRUCTURE ---
-                    // Binomial (Prominent)
-                    const binomialDiv = document.createElement('div');
-                    binomialDiv.className = 'binomial-box';
-                    binomialDiv.innerHTML = formatBinomialName(plant.Binomial);
-                    textDiv.appendChild(binomialDiv);
-
-                    // Family (Smaller)
-                    if (plant.Family) {
-                        const familyP = document.createElement('p');
-                        familyP.className = 'family-name';
-                        familyP.textContent = plant.Family;
-                        textDiv.appendChild(familyP);
-                    }
-
-                    // Common Name (Smaller, Anek)
-                    if (plant['Common Name']) {
-                        const commonP = document.createElement('p');
-                        commonP.className = 'common-name';
-                        commonP.textContent = plant['Common Name'];
-                        textDiv.appendChild(commonP);
-                    }
-
-                    // Vernacular Name (Smaller)
-                    if (plant.Vernacular) {
-                        const vernacularP = document.createElement('p');
-                        vernacularP.className = 'vernacular-name';
-                        vernacularP.textContent = plant.Vernacular;
-                        textDiv.appendChild(vernacularP);
-                    }
-                    // --- END NEW ORDER ---
-
-                    contentWrapper.appendChild(textDiv);
-
-                    // --- 5. QR Code (Right Side) ---
-                    const qrDiv = document.createElement('div');
-                    qrDiv.id = qrId; // Set ID for QRCode.js
-                    qrDiv.className = 'label-qr-code';
-                    contentWrapper.appendChild(qrDiv);
-
-                    labelCard.appendChild(contentWrapper);
-
-                    // --- 6. Footer (Static Text) ---
-                    const footerDiv = document.createElement('div');
-                    footerDiv.className = 'footer-box';
-                    footerDiv.style.borderColor = textColor; // Use text color for border
-
-                    const footerP = document.createElement('p');
-                    footerP.className = 'footer-note';
-                    // --- STATIC FOOTER TEXT ---
-                    footerP.textContent = "Generated By QRit, Department of Botany Government Victoria College Palakkad Kerala India";
-
-                    footerDiv.appendChild(footerP);
-                    labelCard.appendChild(footerDiv);
-
-                    // --- 7. Append to DOM ---
-                    labelOutput.appendChild(labelCard);
-
-                    // --- 8. Generate QR Code ---
-                    // This MUST be done *after* the element is in the DOM
-                    try {
-                        // --- THIS IS THE CORRECTED LOGIC ---
-                        // 1. Use customUrl if it exists.
-                        // 2. Else, use the 'ShortURL' from the CSV (based on your last instruction).
-                        // 3. Else, use 'No Data'.
-                        const qrData = customUrl || plant['ShortURL'] || 'No Data';
-
-                        new QRCode(qrDiv, {
-                            text: qrData,
-                            width: 100,
-                            height: 100,
-                            colorDark: textColor,
-                            colorLight: bgColor,
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                        console.log(`QR generated for ${plant.Binomial} with data: ${qrData}`);
-                    } catch (e) {
-                        console.error('QR Code generation failed:', e);
-                        qrDiv.textContent = 'QR Error';
-                    }
-
-                } catch (err) {
-                    console.error(`Failed to generate label for ${binomial}:`, err);
-                    const errorCard = document.createElement('div');
-                    errorCard.className = 'label-card bg-red-50 border-red-300 text-red-700';
-                    errorCard.innerHTML = `<p class="font-bold">Error: Failed to build label</p><p>Could not generate label for "${binomial || 'N/A'}". Check console for details.</p>`;
-                    labelOutput.appendChild(errorCard);
-                }
-            });
-
-            console.log('--- Label generation complete ---');
-        }
-
-        /**
-         * Update the dynamic print styles in the <head>
-         */
-        function updatePrintStyles(size, orientation, columns, rows) {
-            const bgColor = bgColorPicker.value;
-            const textColor = textColorPicker.value;
-
-            // This combines all necessary print rules into one block
-            // and injects it.
-            printStyles.innerHTML = `
-                @media print {
-                    /* === 1. VISIBILITY RULES === */
-                    /* Hide everything except the label container */
-                    body * {
-                        visibility: hidden;
-                    }
-
-                    /* Explicitly make the label container and its descendants visible */
-                    #label-container, #label-output, #label-output * {
-                        visibility: visible;
-                        display: block; /* Ensures container is rendered */
-                    }
-                                        
-                    /* Hide non-printable UI elements within the visible container chain */
-                    #controls-block, 
-                    #label-output-placeholder,
-                    #label-container h2 {
-                        display: none !important;
-                        visibility: hidden !important;
-                    }
-
-                    /* Reset main wrapper/body margins for edge-to-edge printing */
-                    .max-w-7xl {
-                        max-width: 100% !important;
-                        margin: 0 !important;
-                        padding: 0 !important;
-                    }
-
-                    body {
-                        margin: 0 !important;
-                        padding: 0 !important;
-                        background: white !important;
-                    }
-                                        
-                    /* Reset position for clean page flow */
-                    #label-container {
-                        position: relative; 
-                        left: 0;
-                        top: 0;
-                        width: 100%;
-                        padding: 0;
-                        margin: 0;
-                    }
-
-                    /* === 2. PAGE LAYOUT RULES (FIXED MARGIN) === */
-                    @page {
-                        size: ${size} ${orientation};
-                        margin: 0.4in; /* INCREASED MARGIN TO 0.4 INCH FOR SAFETY */
-                    }
-
-                    /* === 3. GRID LAYOUT RULES === */
-                    #label-output {
-                        display: grid;
-                        grid-template-columns: repeat(${columns}, 1fr);
-                        grid-template-rows: repeat(${rows}, 1fr);
-                        gap: 0.15in; /* Reduced gap slightly for tighter packing */
-                        width: 100%;
-                    }
-
-                    /* === 4. LABEL STYLING RULES === */
-                    .label-card {
-                        page-break-inside: avoid;
-                        border: 2px solid ${textColor} !important;
-                        background-color: ${bgColor} !important;
-                        color: ${textColor} !important;
-                        /* Crucial for printing colors */
-                        -webkit-print-color-adjust: exact;
-                        color-adjust: exact;
-                    }
-                    .footer-box {
-                        border-top-color: ${textColor} !important;
-                    }
-                    /* Ensure the custom header line respects theme color */
-                    .institution-name-box {
-                        border-bottom-color: ${textColor} !important;
-                    }
-
-                    /* Ensure text doesn't overflow */
-                    .label-card * {
-                        overflow-wrap: break-word;
-                        word-break: break-word;
-                    }
-                                        
-                    /* FIX: Lock QR Code Position */
-                    .label-content-wrapper {
-                        /* Force grid behavior */
-                        display: grid !important; 
-                        grid-template-columns: 1fr 100px !important;
-                    }
-                    .label-qr-code {
-                        /* Lock size and position */
-                        width: 100px !important;
-                        height: 100px !important;
-                        display: flex !important;
-                        justify-content: center !important;
-                        align-items: center !important;
-                    }
-
-                    /* === END === */
-                }
-            `;
-        }
-
-
-        /**
-         * Handle the print button click (relies on browser permissions)
-         */
-        function handlePrint() {
-            try {
-                const size = paperSizeSelect.value;
-                const orientation = paperOrientationSelect.value;
-                const columns = numColumnsSelectH.value;
-                const rows = numRowsSelectV.value;
-
-                if (labelOutput.children.length === 0) {
-                    // Using console.error instead of alert per guidelines
-                    console.error('Print failed: Please generate labels first.');
-                    return;
-                }
-
-                console.log(`Updating print styles: ${size} ${orientation}, ${columns}x${rows}`);
-
-                updatePrintStyles(size, orientation, columns, rows);
-
-                // FIX: Added a microtask delay (50ms) to ensure CSS is applied
-                // before print dialog opens, fixing the "Loading Preview" or "White Page" issues.
-                console.log("Styles updated. Applying 50ms delay before printing...");
-                setTimeout(() => {
-                    window.print();
-                    console.log("Print dialog should be open.");
-                }, 50);
-
-            } catch (err) {
-                console.error("Error in handlePrint:", err);
-            }
-        }
-
-
-        /**
-         * Download all generated labels as a single PNG image.
-         */
-        function downloadLabelsAsPng() {
-            console.log("Starting PNG download process...");
-            const targetElement = document.getElementById('label-output');
-
-            if (targetElement.children.length === 0) {
-                console.error('Download failed: Please generate labels first.');
-                return;
-            }
-
-            // Temporarily adjust layout for full screenshot capture (if labels span off screen)
-            targetElement.style.maxWidth = 'none';
-            targetElement.style.width = 'fit-content';
-
-            // Use html2canvas to render the entire output area
-            html2canvas(targetElement, {
-                scale: 2, // Use higher resolution for better quality
-                logging: false,
-                useCORS: true,
-                backgroundColor: bgColorPicker.value,
-            }).then(canvas => {
-                // Reset temporary styles
-                targetElement.style.maxWidth = '';
-                targetElement.style.width = '';
-
-                const link = document.createElement('a');
-                link.download = 'plant_labels_screenshot.png';
-                link.href = canvas.toDataURL('image/png');
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                console.log("PNG download triggered.");
-            }).catch(error => {
-                console.error("Error generating PNG:", error);
-                // alert('Error generating PNG image. Check the console for details.');
-            });
-        }
-
-
-        /**
-         * Download all generated labels as a multi-page PDF document.
-         */
-        async function downloadLabelsAsPdf() {
-            console.log("Starting PDF generation process...");
-
-            if (typeof window.jspdf === 'undefined' || typeof html2canvas === 'undefined') {
-                console.error('PDF/Image libraries failed to load. Please try refreshing.');
-                return;
-            }
-
-            const {
-                jsPDF
-            } = window.jspdf;
-            const labels = Array.from(document.querySelectorAll('.label-card'));
-
-            if (labels.length === 0) {
-                console.error('Download failed: Please generate labels before downloading a PDF.');
-                return;
-            }
-
-            const doc = new jsPDF({
-                orientation: paperOrientationSelect.value === 'landscape' ? 'l' : 'p',
-                unit: 'mm',
-                format: paperSizeSelect.value.toLowerCase() // 'a4', 'a3'
-            });
-
-            // Display loading message
-            const loadingMessage = document.createElement('div');
-            loadingMessage.id = 'loading-pdf';
-            loadingMessage.className = 'fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center p-4 z-[9999]';
-            loadingMessage.innerHTML = `<div class="bg-white p-6 rounded-xl shadow-2xl"><p class="text-lg font-semibold text-blue-600">Generating PDF... ${0}/${labels.length}</p><p class="text-sm text-gray-500">This might take a moment.</p></div>`;
-            document.body.appendChild(loadingMessage);
-
-
-            let yOffset = 10; // Initial vertical offset (margin)
-            const margin = 10; // INCREASED margin to 10mm (approx 0.4in)
-            const pageHeight = doc.internal.pageSize.getHeight();
-            const pageWidth = doc.internal.pageSize.getWidth();
-            const numCols = parseInt(numColumnsSelectH.value, 10) || 2;
-            const gap = 4; // 4mm gap between labels
-            const availableWidth = pageWidth - (2 * margin);
-            let imgWidth = (availableWidth - ((numCols - 1) * gap)) / numCols;
-
-            // Capture each label individually
-            for (let i = 0; i < labels.length; i++) {
-                const label = labels[i];
-
-                // Update progress
-                document.querySelector('#loading-pdf p:first-child').textContent = `Generating PDF... ${i + 1}/${labels.length}`;
-
-                // Create canvas from the label element
-                const canvas = await html2canvas(label, {
-                    scale: 2,
-                    logging: false,
-                    useCORS: true,
-                    backgroundColor: bgColorPicker.value,
-                });
-
-                const imgData = canvas.toDataURL('image/png');
-                const imgProps = doc.getImageProperties(imgData);
-
-                // Calculate proportional height
-                let imgHeight = (imgProps.height * imgWidth) / imgProps.width;
-
-                const xPosition = margin + (i % numCols) * (imgWidth + gap);
-
-                // Check if we need a new page (only check if it's the start of a row)
-                if (i % numCols === 0) {
-                    // Estimate the height of the next row
-                    if (yOffset + imgHeight + gap > pageHeight - margin && i !== 0) {
-                        doc.addPage();
-                        yOffset = margin; // Reset yOffset for the new page
-                        console.log(`Added new page for label ${i + 1}`);
+                    // A4 paper size for print preview
+                    spacing: {
+                        'a4-w': '210mm',
+                        'a4-h': '297mm',
+                        'a4-p': '20mm',
+                    },
+                    // For smooth max-height transitions
+                    maxHeight: {
+                        '0': '0',
+                        'screen': '100vh',
+                        '1000': '1000px',
+                    },
+                    // --- ADDED: min-height for PDF fix ---
+                    minHeight: {
+                        '5': '1.25rem', // For signature lines
                     }
                 }
-
-                // Add the image to the PDF
-                doc.addImage(imgData, 'PNG', xPosition, yOffset, imgWidth, imgHeight);
-
-                // Advance yOffset only at the end of a row or for the last item
-                if ((i + 1) % numCols === 0) {
-                    yOffset += imgHeight + gap;
-                }
             }
-
-            // Clean up loading message
-            document.body.removeChild(loadingMessage);
-
-            // Save the PDF
-            doc.save('plant_labels.pdf');
-            console.log("PDF generated and download triggered.");
         }
     </script>
-</body>
+    
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', 'sans-serif';
+        }
 
+        /* Styles for the A4 page preview */
+        .page {
+            width: var(--a4-width, 210mm);
+            min-height: var(--a4-height, 297mm);
+            /* --- MODIFIED: Set top padding to 4px, other sides to 10mm --- */
+            padding: 4px 10mm 10mm 10mm;
+            margin: 1rem auto;
+            border: 1px solid #D3D3D3;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+            color: #000;
+        }
+        
+        .two-column-layout {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            height: 100%;
+        }
+
+        .mark-sheet-half {
+            width: 49%;
+            padding: 0 5mm;
+            box-sizing: border-box;
+            border-left: 1px dashed #aaa;
+        }
+        
+        .mark-sheet-half:first-child {
+            border-left: none; 
+            padding-left: 0;
+        }
+
+        .top-details-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5mm;
+            font-size: 0.9rem;
+        }
+
+        .qp-code-top { font-weight: bold; }
+        .copy-label-top { font-weight: bold; font-size: 1.1rem; }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 0.1rem; 
+        }
+        
+        .page-header h3, .page-header h4 {
+            margin: 0.25rem 0;
+            font-weight: bold;
+        }
+
+        .paper-name-bar {
+            text-align: center;
+            margin: 5mm 0 2mm 0;
+        }
+        .paper-name-bar h5 {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .mark-sheet-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 0.75rem;
+        }
+
+        .mark-sheet-table th,
+        .mark-sheet-table td {
+            border: 1px solid #000;
+            padding: 0.3rem;
+            text-align: left;
+            height: auto; 
+        }
+
+        .mark-sheet-table th {
+            background-color: #f4f4f4;
+            font-weight: bold;
+        }
+
+        .marks-col { width: 25%; }
+        .words-col { width: 45%; }
+        .regno-col { width: 30%; }
+        
+        .mark-sheet-table tr { page-break-inside: avoid; }
+
+        .signature-section {
+            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            page-break-inside: avoid;
+        }
+        
+        .signature-block { margin-top: 1rem; }
+        .examiner-name { margin-top: 0.1rem; font-weight: 500; }
+        
+        /* --- ADDED: Style for examiner designation --- */
+        .examiner-designation { margin-top: 0.1rem; font-weight: 500; }
+        
+        .exam-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        /* Custom Dropdown Styling */
+        .autocomplete-container { position: relative; }
+        
+        .suggestions {
+            position: absolute;
+            z-index: 10;
+            width: 100%;
+            max-height: 200px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 0 0 6px 6px;
+            transition: opacity 0.2s ease-out, max-height 0.2s ease-out;
+            opacity: 1;
+            max-height: 200px;
+        }
+        .suggestions.hidden {
+            opacity: 0;
+            max-height: 0;
+            pointer-events: none;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .suggestion-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* Marks Entry Table Styling */
+        #marksEntryArea table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #marksEntryArea th, #marksEntryArea td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #marksEntryArea input,
+        .form-section input[type="text"],
+        .form-section input[type="date"],
+        .form-section input[type="number"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-section input[type="text"]:focus,
+        .form-section input[type="date"]:focus,
+        .form-section input[type="number"]:focus,
+        #marksEntryArea input:focus {
+            outline: none;
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); /* focus ring */
+        }
+        .form-section input[readonly] {
+            background-color: #f3f4f6; /* gray-100 */
+            cursor: not-allowed;
+        }
+
+        /* --- NEW: Scrollable Marks Table Container --- */
+        #marksTableContainer {
+            max-height: 60vh; /* Set max height to 60% of viewport height */
+            overflow-y: auto;  /* Add vertical scrollbar when needed */
+            position: relative; /* Required for sticky header */
+            border: 1px solid #e5e7eb; /* gray-200 */
+            border-radius: 6px;
+        }
+        #marksEntryArea thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f9fafb; /* gray-50 */
+            z-index: 10;
+            /* Add a border to visually separate header */
+            border-bottom: 2px solid #ddd; 
+        }
+        /* --- END NEW STYLES --- */
+
+
+        /* Loader Styles */
+        .loader-bar {
+            height: 8px;
+            transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+            border-radius: 4px;
+        }
+        @keyframes progress-stripe {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
+        .loader-bar.loading {
+            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+            background-size: 1rem 1rem;
+            animation: progress-stripe 1s linear infinite;
+        }
+        
+        .loader-container { transition: opacity 0.3s; }
+        .loading-text.error { color: #ef4444; }
+        
+        /* Smooth transition for dynamic sections */
+        .dynamic-section {
+            transition: opacity 0.3s ease-in-out, max-height 0.4s ease-in-out;
+            max-height: 1000px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        .dynamic-section.hidden {
+            max-height: 0;
+            opacity: 0;
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            border: none !important;
+        }
+        
+        /* Helper class for icon alignment in buttons */
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem; /* 8px */
+        }
+
+        /* --- MODIFIED: Print-specific styles --- */
+        @media print {
+            /* Basic reset */
+            body { 
+                background-color: #fff !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            .no-print { 
+                display: none !important; 
+            }
+            /* Remove all styles from the main containers */
+            .container-wrapper, #outputArea {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: 0 !important;
+            }
+            .page {
+                /* --- FIX: Don't use fixed mm units for print --- */
+                width: 100%; /* Use 100% of the print page width */
+                height: auto; /* Let content define height */
+                min-height: 0;
+                max-height: none;
+
+                /* Reset all preview styles */
+                margin: 0;
+                border: 0 !important;
+                box-shadow: none !important;
+                
+                /* --- MODIFIED: Keep the internal padding, with 4px top --- */
+                padding: 4px 10mm 10mm 10mm; 
+                box-sizing: border-box;
+
+                page-break-before: auto !important;
+                /* --- *** FIX: Changed 'auto' to 'avoid' to prevent blank page *** --- */
+                page-break-after: avoid !important; 
+            }
+            
+            .mark-sheet-half { padding: 0 2mm !important; }
+            .mark-sheet-half:not(:first-child) { 
+                border-left: 1px dashed #000 !important; 
+            }
+            .signature-section { 
+                page-break-inside: avoid !important; 
+            }
+        }
+        
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-8">
+
+    <div class="container-wrapper max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
+        <!-- MODIFIED: Header with icon and color -->
+        <header class="no-print mb-6 pb-4 border-b border-gray-200 flex items-center gap-4">
+            <svg class="w-10 h-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator</h1>
+                <p class="text-gray-600 mt-1">Generate a printable A4 mark sheet from official examination data.</p>
+            </div>
+        </header>
+        
+        <!-- Data Loader Status -->
+        <div id="loaderContainer" class="loader-container no-print mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
+            <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Loading master roster and faculty data...</div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+                <div id="loaderBar" class="loader-bar h-2 bg-blue-500" style="width: 0%"></div>
+            </div>
+            <button id="retryButton" class="mt-3 py-1 px-3 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-all" style="display: none;">
+                Retry Data Load
+            </button>
+        </div>
+
+        <!-- Instructions Section -->
+        <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
+            <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
+            <ol class="list-decimal list-inside space-y-2">
+                <li>**Load Data:** Wait for the **data loader** above to show **"Ready"** before proceeding.</li>
+                <li>**Select Exam (3 letters):** Use the **QP Code** input. Suggestions appear after typing 3 or more letters. This fills the **Paper Name**.</li>
+                <li>**Assign Examiners:** Search for the examiners; their designations will appear automatically.</li>
+                <li>**Load Nominal Roll:** Click **Load Nominal Roll** after setting the starting Register Number.</li>
+                <li>**Enter Marks:** Input the marks in figures (**Max 100**). Marks in Words will be auto-generated.</li>
+                <li>**Generate & Download:** Click **Generate Printable Mark Sheet** and then **Download as PDF** or **Print** to save the file.</li>
+            </ol>
+        </div>
+        
+        <!-- Main Form Content (Disabled until load success) -->
+        <fieldset id="mainForm" disabled>
+            <!-- Step 1: Exam Details Form -->
+            <div class="form-section no-print mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Select Exam & Set Valuation Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- QP Code (Searchable) -->
+                    <div class="form-group md:col-span-1">
+                        <label for="qpCodeInput" class="block text-sm font-medium text-gray-700">QP Code (Searchable)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="qpCodeInput" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <div id="qpCodeSuggestions" class="suggestions hidden"></div>
+                        </div>
+                    </div>
+                    <!-- Course Name (Read Only) -->
+                    <div class="form-group md:col-span-2">
+                        <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name</label>
+                        <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3">
+                    </div>
+                </div>
+                <hr class="my-6 border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <!-- Date of Mark Entry (Manual Input) -->
+                    <div class="form-group md:col-span-1">
+                        <label for="markEntryDate" class="block text-sm font-medium text-gray-700">Date of Mark Entry</label>
+                        <input type="date" id="markEntryDate" value="<?php echo date('Y-m-d'); ?>" class="mt-1 block w-full py-2 px-3">
+                    </div>
+
+                    <!-- Session of Valuation (Searchable) -->
+                    <div class="form-group md:col-span-1">
+                        <label for="valuationSession" class="block text-sm font-medium text-gray-700">Session of Valuation</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="valuationSession" placeholder="Type AN or FN" class="mt-1 block w-full py-2 px-3">
+                            <div id="valuationSessionSuggestions" class="suggestions hidden"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Start/First Reg No (Searchable) -->
+                    <div class="form-group md:col-span-1">
+                        <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (Searchable)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="startRegNo" placeholder="Select QP Code first, then type 4+ letters" class="mt-1 block w-full py-2 px-3">
+                            <div id="startRegNoSuggestions" class="suggestions hidden"></div>
+                        </div>
+                    </div>
+                    <!-- Number of Papers (Limit 25) -->
+                    <div class="form-group md:col-span-1">
+                        <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (Max 25)</label>
+                        <input type="number" id="numPapers" min="1" max="25" value="10" class="mt-1 block w-full py-2 px-3">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Examiner Details Form -->
+            <div class="form-section no-print mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Additional Examiner -->
+                    <div class="form-group md:col-span-1">
+                        <label for="additionalExaminerName" class="block text-sm font-medium text-gray-700">Additional Examiner (Name)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="additionalExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <div id="additionalExaminerSuggestions" class="suggestions hidden"></div>
+                        </div>
+                        <label for="additionalExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                        <input type="text" id="additionalExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                    </div>
+                    <!-- Chief Examiner -->
+                    <div class="form-group md:col-span-1">
+                        <label for="chiefExaminerName" class="block text-sm font-medium text-gray-700">Chief Examiner (Name)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="chiefExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <div id="chiefExaminerSuggestions" class="suggestions hidden"></div>
+                        </div>
+                        <label for="chiefExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                        <input type="text" id="chiefExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                    </div>
+                    <!-- Chairman -->
+                    <div class="form-group md:col-span-1">
+                        <label for="chairmanName" class="block text-sm font-medium text-gray-700">Chairman (Name)</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="chairmanName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <div id="chairmanSuggestions" class="suggestions hidden"></div>
+                        </div>
+                        <label for="chairmanDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
+                        <input type="text" id="chairmanDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- MODIFIED: Action Buttons with icons and transitions -->
+            <div class="no-print mt-6 flex gap-4">
+                <button id="loadRollButton" class="btn-icon py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>
+                    Load Nominal Roll
+                </button>
+                <button id="resetButton" class="btn-icon py-2 px-5 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
+                    Reset Saved Data
+                </button>
+            </div>
+            
+            <!-- MODIFIED: Error/Status Message Box (now a dynamic section) -->
+            <div id="messageBox" class="dynamic-section hidden no-print mt-4 p-4 rounded-md text-sm"></div>
+
+            <!-- MODIFIED: Step 3: Marks Entry Area (now a dynamic section) -->
+            <div id="marksEntryArea" class="dynamic-section hidden form-section no-print mt-8 p-5 border border-dashed border-gray-300 rounded-lg">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 3: Enter Marks</h2>
+                <div id="marksTableContainer">
+                    <!-- Marks Entry Table will be inserted here -->
+                </div>
+                <!-- MODIFIED: Generate Button with icon and transitions -->
+                <button id="generateButton" disabled class="btn-icon py-2 px-5 mt-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.624L16.5 21.75l-.398-1.126a3.375 3.375 0 00-2.456-2.456L12.75 18l1.126-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.126a3.375 3.375 0 002.456 2.456L20.25 18l-1.126.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
+                    Generate Printable Mark Sheet
+                </button>
+            </div>
+        </fieldset>
+
+        <!-- This is where the A4 page preview will be rendered -->
+        <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
+            <!-- *** MODIFIED: Wrapped buttons in a div for centering *** -->
+            <div class="no-print mx-auto flex flex-col sm:flex-row gap-4 justify-center">
+                <!-- PDF Download Button -->
+                <button id="printButton" class="btn-icon py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-wait transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    Download as PDF
+                </button>
+                <!-- *** NEW: Print Button *** -->
+                <button id="printPageButton" class="btn-icon py-2 px-5 mb-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.319 0H6.34m11.319 0c.045.09.088.18.127.271A1.12 1.12 0 0117.66 19.5H6.34a1.12 1.12 0 01-.127-1.229c.039-.091.082-.18.127-.271m0 0c-1.01.056-2.003.082-3.003.082S4.326 18.056 3.316 18H3v-3.75h18v3.75h-.316c-1.001 0-1.993-.026-3.003-.082z" /></svg>
+                    Print Mark Sheet
+                </button>
+            </div>
+            <!-- Generated content will go here -->
+        </div>
+    </div>
+
+    <script>
+        // --- Make jsPDF and html2canvas globally available from window ---
+        // This ensures they are loaded before our script tries to use them.
+        const { jsPDF } = window.jspdf;
+        const html2canvas = window.html2canvas;
+
+        let studentData = [];
+        let facultyData = [];
+        let qpCodeList = []; 
+        let currentNominalRoll = [];
+        
+        const LOCAL_STORAGE_KEY = 'marksheetFormData';
+
+        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJ0DOMYtC8aj4pKZtmHMlOzuDg0e2t4oFPExsuApWn2RLtN4QVlNXqY6t6yZDCzJ5HJpkO1p6s2V1K/pub?gid=1816372677&single=true&output=csv'; 
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
+        
+        const FACULTY_NAME_KEY = 'NAME';
+        const FACULTY_DESIGNATION_KEY = 'Designation of Faculty';
+        
+        const STUDENT_QPCODE_KEY = 'QPCode';
+        const STUDENT_REGNO_KEY = 'RegNO';
+        const STUDENT_PAPER_KEY = 'Paper';
+        const STUDENT_COURSE_KEY = 'Subject';
+
+        // DOM element references
+        const qpCodeInput = document.getElementById('qpCodeInput');
+        const qpCodeSuggestions = document.getElementById('qpCodeSuggestions');
+        const loadRollButton = document.getElementById('loadRollButton'); 
+        const generateButton = document.getElementById('generateButton');
+        const outputArea = document.getElementById('outputArea');
+        const messageBox = document.getElementById('messageBox');
+        const marksEntryArea = document.getElementById('marksEntryArea'); 
+        const marksTableContainer = document.getElementById('marksTableContainer');
+        const printButton = document.getElementById('printButton'); 
+        const printPageButton = document.getElementById('printPageButton'); // <-- NEW
+        const resetButton = document.getElementById('resetButton'); 
+        const mainForm = document.getElementById('mainForm');
+        const loaderContainer = document.getElementById('loaderContainer');
+        const loadingText = document.getElementById('loadingText');
+        const loaderBar = document.getElementById('loaderBar');
+        const retryButton = document.getElementById('retryButton');
+        const markEntryDate = document.getElementById('markEntryDate');
+        const valuationSession = document.getElementById('valuationSession');
+        const valuationSessionSuggestions = document.getElementById('valuationSessionSuggestions');
+        const courseName = document.getElementById('courseName'); 
+        const additionalExaminerName = document.getElementById('additionalExaminerName');
+        const chiefExaminerName = document.getElementById('chiefExaminerName');
+        const chairmanName = document.getElementById('chairmanName');
+        const additionalExaminerDesignation = document.getElementById('additionalExaminerDesignation');
+        const chiefExaminerDesignation = document.getElementById('chiefExaminerDesignation');
+        const chairmanDesignation = document.getElementById('chairmanDesignation');
+        const additionalExaminerSuggestions = document.getElementById('additionalExaminerSuggestions');
+        const chiefExaminerSuggestions = document.getElementById('chiefExaminerSuggestions');
+        const chairmanSuggestions = document.getElementById('chairmanSuggestions');
+        const startRegNo = document.getElementById('startRegNo');
+        const startRegNoSuggestions = document.getElementById('startRegNoSuggestions');
+        const numPapers = document.getElementById('numPapers');
+
+        const sessionOptions = ['FN', 'AN'];
+        let studentDataLoaded = false;
+        let facultyDataLoaded = false;
+
+        function numberToDigitWords(numStr) {
+            if (!numStr || numStr === '') return '';
+            const num = parseInt(numStr, 10);
+            if (isNaN(num)) return '';
+            const processedStr = String(num).padStart(2, '0');
+            const digitMap = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
+            return processedStr.split('').map(digit => digitMap[digit] || '').join(' ');
+        }
+
+        // --- MODIFIED: LOADER / STATE MANAGEMENT FUNCTIONS ---
+        function updateLoader(progress, text, isError = false) {
+            loaderBar.style.width = `${progress}%`;
+            loadingText.textContent = text;
+            
+            if (isError) {
+                loaderBar.style.backgroundColor = '#ef4444'; // Red
+                loaderBar.classList.remove('loading'); // Stop animation on error
+                loadingText.classList.add('error');
+                retryButton.style.display = 'block';
+                mainForm.disabled = true;
+            } else if (progress === 100) {
+                loaderBar.style.backgroundColor = '#10b981'; // Green
+                loaderBar.classList.remove('loading'); // Stop animation on success
+                loadingText.textContent = 'Data Loading Complete. Form is ready!';
+                loadingText.classList.remove('error');
+                retryButton.style.display = 'none';
+                mainForm.disabled = false;
+            } else {
+                loaderBar.style.backgroundColor = '#3b82f6'; // Blue
+                loaderBar.classList.add('loading'); // Start animation
+                loadingText.classList.remove('error');
+                retryButton.style.display = 'none';
+                mainForm.disabled = true;
+            }
+        }
+
+        function checkLoadStatus() {
+            let progress = 0;
+            let statusText = 'Loading master roster and faculty data...';
+
+            if (studentDataLoaded && facultyDataLoaded) {
+                progress = 100;
+            } else if (studentDataLoaded || facultyDataLoaded) {
+                progress = 50;
+                statusText = studentDataLoaded ? 'Master roster loaded. Loading faculty list...' : 'Faculty data loaded. Loading master roster...';
+            } else {
+                progress = 10; // Start with a small progress
+            }
+            updateLoader(progress, statusText);
+        }
+
+        // --- LOCAL STORAGE FUNCTIONS ---
+        function saveFormData() {
+            const formData = {
+                qpCodeInput: qpCodeInput.value,
+                markEntryDate: markEntryDate.value,
+                valuationSession: valuationSession.value,
+                startRegNo: startRegNo.value,
+                numPapers: numPapers.value,
+                additionalExaminerName: additionalExaminerName.value,
+                chiefExaminerName: chiefExaminerName.value,
+                chairmanName: chairmanName.value,
+                marks: {}
+            };
+
+            if (!marksEntryArea.classList.contains('hidden')) {
+                const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
+                markInputs.forEach(input => {
+                    formData.marks[input.dataset.regno] = input.value.trim();
+                });
+            }
+
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
+            } catch (e) {
+                console.error('Could not save data to local storage:', e);
+            }
+        }
+
+        function loadFormData() {
+             try {
+                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (!savedData) return null;
+
+                const data = JSON.parse(savedData);
+
+                qpCodeInput.value = data.qpCodeInput || '';
+                markEntryDate.value = data.markEntryDate || '';
+                valuationSession.value = data.valuationSession || '';
+                startRegNo.value = data.startRegNo || '';
+                numPapers.value = data.numPapers || '10'; 
+                additionalExaminerName.value = data.additionalExaminerName || '';
+                chiefExaminerName.value = data.chiefExaminerName || '';
+                chairmanName.value = data.chairmanName || '';
+                
+                // --- *** FIX: Check if faculty data is loaded, then set designations *** ---
+                if (facultyDataLoaded) {
+                    setDesignation(additionalExaminerName, additionalExaminerDesignation);
+                    setDesignation(chiefExaminerName, chiefExaminerDesignation);
+                    setDesignation(chairmanName, chairmanDesignation);
+                }
+                
+                if (data.qpCodeInput) {
+                    handleQPCodeSelection(data.qpCodeInput);
+                }
+
+                return data.marks || {};
+            } catch (e) {
+                console.error('Could not load data from local storage:', e);
+            }
+            return null;
+        }
+
+        function resetData() {
+            try {
+                localStorage.removeItem(LOCAL_STORAGE_KEY);
+                
+                // Reset all form fields
+                qpCodeInput.value = '';
+                courseName.value = '';
+                markEntryDate.value = ''; // Consider setting to today's date
+                valuationSession.value = '';
+                startRegNo.value = '';
+                numPapers.value = '10';
+                additionalExaminerName.value = '';
+                chiefExaminerName.value = '';
+                chairmanName.value = '';
+                additionalExaminerDesignation.value = '';
+                chiefExaminerDesignation.value = '';
+                chairmanDesignation.value = '';
+
+                // Hide dynamic sections
+                marksEntryArea.classList.add('hidden');
+                marksTableContainer.innerHTML = '';
+                document.getElementById('markSheetPage')?.remove();
+                
+                generateButton.disabled = true;
+                printButton.style.display = 'none';
+                printPageButton.style.display = 'none'; // <-- NEW
+                
+                showMessage('All saved data has been reset.', 'info');
+
+            } catch (e) {
+                console.error('Could not reset data:', e);
+            }
+        }
+        
+        // --- MODIFIED: showMessage for dynamic transitions ---
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            
+            // Set color classes
+            messageBox.className = 'dynamic-section no-print mt-4 p-4 rounded-md text-sm'; // Reset classes
+            if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'border', 'border-green-200', 'text-green-800');
+            } else if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'border', 'border-red-200', 'text-red-800');
+            } else {
+                messageBox.classList.add('bg-blue-100', 'border', 'border-blue-200', 'text-blue-800');
+            }
+            
+            // Show the message box
+            messageBox.classList.remove('hidden');
+        }
+
+        // --- EVENT LISTENERS ---
+        
+        loadRollButton.addEventListener('click', () => {
+            const selectedQP = qpCodeInput.value.trim();
+            const startRegNoValue = startRegNo.value.trim();
+            const numPapersValue = parseInt(numPapers.value, 10);
+            
+            if (!selectedQP) { return showMessage('Please select a QP Code.', 'error'); }
+            if (!startRegNoValue) { return showMessage('Please enter the Start/First Register Number.', 'error'); }
+            if (!numPapersValue || numPapersValue <= 0) { return showMessage('Please enter a valid number for Number of Papers.', 'error'); }
+
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
+
+            if (startIndex === -1) {
+                 return showMessage(`Start Register Number (${startRegNoValue}) not found for QP Code ${selectedQP}. Please select from suggestions.`, 'error');
+            }
+
+            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
+
+            if (currentNominalRoll.length === 0) {
+                return showMessage('No students matched the criteria (Start Reg No and Number of Papers).', 'error');
+            }
+            
+            const savedMarksData = loadFormData(); // Load marks from storage
+            generateMarksEntryTable(currentNominalRoll, savedMarksData || {}); 
+            
+            marksEntryArea.classList.remove('hidden'); // Show with transition
+            generateButton.disabled = false;
+            printButton.style.display = 'none'; 
+            printPageButton.style.display = 'none'; // <-- NEW
+            document.getElementById('markSheetPage')?.remove();
+            showMessage(`Nominal Roll loaded successfully. ${currentNominalRoll.length} students found. Please enter marks below.`, 'success');
+
+            saveFormData();
+        });
+
+        generateButton.addEventListener('click', () => {
+            if (!markEntryDate.value || !valuationSession.value.trim().toUpperCase()) {
+                return showMessage('Please fill in Date of Mark Entry and Session of Valuation.', 'error');
+            }
+
+            const marksData = {};
+            let isAllMarksFiguresEntered = true; 
+            
+            const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
+            
+            for (const input of markInputs) {
+                const regNo = input.dataset.regno;
+                const figures = input.value.trim(); 
+                
+                if (figures === "") {
+                    isAllMarksFiguresEntered = false;
+                    break;
+                }
+                
+                const numFigures = parseInt(figures, 10);
+                if (numFigures > 100 || numFigures < 0 || isNaN(numFigures)) {
+                     showMessage(`Marks for ${regNo} must be between 0 and 100. Please correct.`, 'error');
+                     isAllMarksFiguresEntered = false;
+                     break;
+                }
+
+                marksData[regNo] = { figures: figures };
+            }
+
+            if (!isAllMarksFiguresEntered) {
+                if (messageBox.classList.contains('hidden') || !messageBox.textContent.includes('must be between 0 and 100')) {
+                    showMessage('Please ensure "Marks in Figures" is entered for ALL students and is between 0 and 100.', 'error');
+                }
+                return;
+            }
+
+            const sheetHTML = generateSheetHTML(currentNominalRoll, marksData);
+            document.getElementById('markSheetPage')?.remove();
+            outputArea.insertAdjacentHTML('beforeend', sheetHTML);
+
+            printButton.style.display = 'inline-flex'; // <-- MODIFIED
+            printPageButton.style.display = 'inline-flex'; // <-- MODIFIED
+            showMessage('Printable Mark Sheet generated successfully. Click "Download as PDF" or "Print" above the preview.', 'success');
+        });
+        
+        window.validateMark = function(input) {
+            let value = parseInt(input.value, 10);
+            if (value > 100) {
+                input.value = ''; 
+                showMessage(`Mark must not exceed 100. Entry cleared.`, 'error');
+            }
+            // Note: saveFormData() is called oninput from the HTML
+        };
+        
+        resetButton.addEventListener('click', resetData);
+        printButton.addEventListener('click', downloadAsPDF);
+        printPageButton.addEventListener('click', () => window.print()); // <-- NEW
+
+        // Bind saveFormData to key events 
+        ['change', 'input'].forEach(evt => {
+            qpCodeInput.addEventListener(evt, saveFormData);
+            markEntryDate.addEventListener(evt, saveFormData);
+            valuationSession.addEventListener(evt, saveFormData);
+            startRegNo.addEventListener(evt, saveFormData);
+            numPapers.addEventListener(evt, saveFormData);
+            additionalExaminerName.addEventListener(evt, saveFormData);
+            chiefExaminerName.addEventListener(evt, saveFormData);
+            chairmanName.addEventListener(evt, saveFormData);
+        });
+
+        // --- DATA LOADING WITH RETRY LOGIC ---
+        function initDataLoad() {
+            studentDataLoaded = false;
+            facultyDataLoaded = false;
+            retryButton.style.display = 'none';
+            mainForm.disabled = true;
+            updateLoader(10, 'Loading master roster and faculty data...');
+            loadStudentData(); // This will load data and then call loadFormData
+            loadFacultyData(); // This will load data and then call loadFormData
+        }
+
+        retryButton.addEventListener('click', initDataLoad);
+
+        function loadStudentData() {
+             checkLoadStatus();
+             Papa.parse(studentCsvUrl, {
+                download: true, header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(),
+                complete: (results) => {
+                    studentData = results.data.filter(row => row[STUDENT_QPCODE_KEY] && row[STUDENT_REGNO_KEY]);
+                    if (studentData.length > 0) {
+                        qpCodeList = [...new Set(studentData.map(row => row[STUDENT_QPCODE_KEY]))].filter(code => code);
+                        studentDataLoaded = true;
+                        checkLoadStatus();
+                        
+                        // Now that student data is loaded, try to reload the roll
+                        const savedMarksData = loadFormData(); // This will now also try to set designations
+                        if (savedMarksData) {
+                            setTimeout(() => autoReloadNominalRoll(savedMarksData), 100); 
+                        }
+                    } else {
+                        updateLoader(50, 'Master roster data failed to load: No valid entries found.', true);
+                    }
+                },
+                error: (err) => {
+                    console.error('Student Data Error:', err);
+                    updateLoader(50, `Master roster data failed to load: Network error.`, true);
+                }
+            });
+        }
+
+        function loadFacultyData() {
+             checkLoadStatus();
+             Papa.parse(facultyCsvUrl, {
+                download: true, header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(),
+                complete: (results) => {
+                    const actualNameKey = results.meta.fields.find(f => f.toUpperCase().includes('NAME')) || FACULTY_NAME_KEY;
+                    const actualDesignationKey = results.meta.fields.find(f => f.toUpperCase().includes('DESIGNATION')) || FACULTY_DESIGNATION_KEY;
+
+                    facultyData = results.data.map(row => ({
+                        [FACULTY_NAME_KEY]: row[actualNameKey] || '',
+                        [FACULTY_DESIGNATION_KEY]: row[actualDesignationKey] || ''
+                    })).filter(row => row[FACULTY_NAME_KEY] !== ''); 
+
+                    if (facultyData.length > 0) {
+                        facultyDataLoaded = true;
+                        checkLoadStatus();
+                        
+                        // --- *** MODIFIED: Just call loadFormData() *** ---
+                        // It will now handle setting designations.
+                        loadFormData(); 
+                        
+                    } else {
+                        updateLoader(50, 'Faculty data failed to load: No valid names found.', true);
+                    }
+                },
+                error: (err) => {
+                    console.error('Faculty Data Error:', err);
+                    updateLoader(50, `Faculty data failed to load: Network error.`, true);
+                }
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', initDataLoad);
+
+        // --- AUTORELOAD AND MARK TABLE GENERATION ---
+        function autoReloadNominalRoll(marksData) {
+            const selectedQP = qpCodeInput.value.trim();
+            const startRegNoValue = startRegNo.value.trim();
+            const numPapersValue = parseInt(numPapers.value, 10);
+            
+            // Wait for student data to be loaded
+            if (!studentDataLoaded || !selectedQP || !startRegNoValue || !numPapersValue) return;
+
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
+
+            if (startIndex === -1) return; // Don't show an error, just fail silently on reload
+
+            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
+
+            if (currentNominalRoll.length > 0) {
+                generateMarksEntryTable(currentNominalRoll, marksData); 
+                marksEntryArea.classList.remove('hidden'); // Show section
+                generateButton.disabled = false;
+                showMessage(`Saved session restored for QP Code ${selectedQP}. Click 'Generate Printable Mark Sheet' to finalize.`, 'info');
+            }
+        }
+
+        function generateMarksEntryTable(students, savedMarks = {}) {
+            let tableHTML = `<table class="marks-input-table">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th>#</th>
+                            <th class="regno-col">Register Number</th>
+                            <th>Marks in Figures (Max 100)</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+            
+            students.forEach((student, index) => {
+                const regNo = student[STUDENT_REGNO_KEY];
+                const savedMark = savedMarks[regNo] || ''; 
+                
+                tableHTML += `<tr data-regno="${regNo}">
+                        <td>${index + 1}</td>
+                        <td class="font-medium">${regNo}</td>
+                        <td><input type="number" min="0" max="100" class="marks-figure-input" data-regno="${regNo}" placeholder="e.g., 50" value="${savedMark}" oninput="validateMark(this); saveFormData()"></td>
+                    </tr>`;
+            });
+
+            tableHTML += `</tbody></table>`;
+            marksTableContainer.innerHTML = tableHTML;
+        }
+
+
+        // --- AUTOSUGGESTION & DATA BINDING LOGIC ---
+        
+        // Generic suggestion handler
+        function showSuggestions(filteredList, nameInput, suggestionsContainer, selectCallback) {
+            suggestionsContainer.innerHTML = '';
+            
+            if (filteredList.length === 0) {
+                suggestionsContainer.classList.add('hidden');
+                return;
+            }
+
+            filteredList.forEach(itemText => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.textContent = itemText;
+                
+                item.addEventListener('mousedown', (e) => {
+                    e.preventDefault(); // Prevent blur
+                    selectCallback(itemText);
+                    suggestionsContainer.classList.add('hidden');
+                });
+                
+                suggestionsContainer.appendChild(item);
+            });
+
+            suggestionsContainer.classList.remove('hidden');
+        }
+        
+        function setupAutocomplete(inputEl, suggestionsEl, minLength, dataProviderFn) {
+            inputEl.addEventListener('keyup', (e) => {
+                const value = inputEl.value.trim();
+                if (value.length < minLength) {
+                    suggestionsEl.classList.add('hidden');
+                    return;
+                }
+                const data = dataProviderFn(value);
+                showSuggestions(data, inputEl, suggestionsEl, (selected) => {
+                    inputEl.value = selected;
+                    // Trigger change event for persistence and other logic
+                    inputEl.dispatchEvent(new Event('change')); 
+                    suggestionsEl.classList.add('hidden');
+                });
+            });
+            inputEl.addEventListener('blur', () => setTimeout(() => suggestionsEl.classList.add('hidden'), 150));
+        }
+
+        // 3. QP Code Search
+        setupAutocomplete(qpCodeInput, qpCodeSuggestions, 3, (value) => {
+            if (qpCodeList.length === 0) return [];
+            const searchTerm = value.toUpperCase();
+            return qpCodeList.filter(code => code.includes(searchTerm)).slice(0, 10);
+        });
+        qpCodeInput.addEventListener('change', () => {
+            handleQPCodeSelection(qpCodeInput.value);
+            // Hide old results when QP changes
+            marksEntryArea.classList.add('hidden');
+            document.getElementById('markSheetPage')?.remove();
+            generateButton.disabled = true;
+            printButton.style.display = 'none';
+            printPageButton.style.display = 'none'; // <-- NEW
+        });
+        
+        function handleQPCodeSelection(selectedQP) {
+            courseName.value = '';
+            startRegNo.value = '';
+            if (selectedQP) {
+                const firstRow = studentData.find(row => row[STUDENT_QPCODE_KEY] === selectedQP);
+                if (firstRow) {
+                    courseName.value = firstRow[STUDENT_PAPER_KEY] || ''; 
+                }
+            }
+        }
+
+        // 4. Register Number Search Logic
+        setupAutocomplete(startRegNo, startRegNoSuggestions, 4, (value) => {
+             const selectedQP = qpCodeInput.value.trim();
+             if (!selectedQP) {
+                 startRegNo.placeholder = "Select QP Code first!";
+                 return [];
+             }
+             startRegNo.placeholder = "Type 4+ letters";
+             const searchTerm = value.toUpperCase();
+             const regNumbers = [...new Set(studentData
+                .filter(s => s[STUDENT_QPCODE_KEY] === selectedQP)
+                .map(s => s[STUDENT_REGNO_KEY])
+             )].sort();
+             
+             return regNumbers.filter(reg => reg.toUpperCase().includes(searchTerm)).slice(0, 10);
+        });
+
+        // 4b. Valuation Session Search Logic
+        setupAutocomplete(valuationSession, valuationSessionSuggestions, 1, (value) => {
+            const searchTerm = value.toUpperCase();
+            return sessionOptions.filter(session => session.includes(searchTerm));
+        });
+
+        // 5. Number of Papers Limit Logic
+        numPapers.addEventListener('input', () => {
+            let value = parseInt(numPapers.value, 10);
+            const max = 25;
+            if (isNaN(value) || value < 1) {
+                numPapers.value = 1;
+            } else if (value > max) {
+                numPapers.value = max;
+                showMessage(`Maximum number of papers limited to ${max}.`, 'info');
+            }
+            saveFormData(); // Save on input
+        });
+
+        // 8. Faculty Autocomplete Logic
+        function facultyDataProvider(value) {
+            const searchTerm = value.toLowerCase();
+            return facultyData
+                .filter(f => (f[FACULTY_NAME_KEY] || '').toLowerCase().includes(searchTerm))
+                .map(f => f[FACULTY_NAME_KEY])
+                .slice(0, 10);
+        }
+        
+        setupAutocomplete(additionalExaminerName, additionalExaminerSuggestions, 3, facultyDataProvider);
+        setupAutocomplete(chiefExaminerName, chiefExaminerSuggestions, 3, facultyDataProvider);
+        setupAutocomplete(chairmanName, chairmanSuggestions, 3, facultyDataProvider);
+
+        function setDesignation(nameInput, desigInput) {
+            // Wait for faculty data to be loaded
+            if (!facultyDataLoaded) return;
+            const faculty = facultyData.find(f => f[FACULTY_NAME_KEY] === nameInput.value.trim());
+            desigInput.value = faculty ? (faculty[FACULTY_DESIGNATION_KEY] || '') : '';
+        }
+
+        additionalExaminerName.addEventListener('change', () => setDesignation(additionalExaminerName, additionalExaminerDesignation));
+        chiefExaminerName.addEventListener('change', () => setDesignation(chiefExaminerName, chiefExaminerDesignation));
+        chairmanName.addEventListener('change', () => setDesignation(chairmanName, chairmanDesignation));
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const parts = dateString.split('-');
+            return (parts.length === 3) ? `${parts[2]}/${parts[1]}/${parts[0].slice(2)}` : dateString;
+        }
+        
+        // --- *** NEW: PDF DOWNLOAD FUNCTION (html2canvas + jspdf) *** ---
+        async function downloadAsPDF() {
+            const element = document.getElementById('markSheetPage');
+            if (!element) {
+                return showMessage('No mark sheet generated to download.', 'error');
+            }
+
+            const qpCode = qpCodeInput.value.trim();
+            const paperName = courseName.value.trim().replace(/\s+/g, '_');
+            const filename = (qpCode && paperName) ? `${qpCode}_${paperName}.pdf` : 'mark-sheet.pdf';
+            
+            // Show loading state
+            showMessage('Generating PDF... Please wait. This may take a moment.', 'info');
+            printButton.disabled = true;
+            printButton.innerHTML = `
+                <svg class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Generating...`;
+
+            try {
+                // 1. Capture the canvas
+                const canvas = await html2canvas(element, {
+                    scale: 2, // Higher resolution
+                    useCORS: true,
+                    logging: false,
+                });
+
+                // 2. *** FIX: Get JPEG image data from canvas ***
+                // This is much more compatible with PDF readers than PNG.
+                const imgData = canvas.toDataURL('image/jpeg', 0.98); // 0.98 quality
+
+                // 3. Setup PDF
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                // 4. Calculate dimensions
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+                
+                // 5. Add image to PDF
+                // *** FIX: Specify 'JPEG' as the format ***
+                pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+                
+                // 6. Save PDF
+                pdf.save(filename);
+
+                showMessage('PDF download complete.', 'success');
+
+            } catch (err) {
+                showMessage('An error occurred while generating the PDF. See console.', 'error');
+                console.error('PDF Generation Error:', err);
+            } finally {
+                // 7. Restore button
+                printButton.disabled = false;
+                printButton.innerHTML = `
+                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
+                    Download as PDF`;
+            }
+        }
+
+        // --- MARK SHEET GENERATION ---
+        function createSingleMarkSheet(students, copyType, marksData) {
+            const currentQP = qpCodeInput.value.trim();
+            const paperName = courseName.value.trim() || 'PAPER NAME MISSING';
+            
+            const formattedMarkEntryDate = formatDate(markEntryDate.value);
+            const valuationSessionValue = valuationSession.value.trim().toUpperCase();
+            const footerDateSession = `${formattedMarkEntryDate} ${valuationSessionValue}`;
+
+            // --- MODIFIED: Remove '&nbsp;' fallback. We will handle empty with CSS. ---
+            const addlName = additionalExaminerName.value;
+            const addlDesig = additionalExaminerDesignation.value;
+            const chiefName = chiefExaminerName.value;
+            const chiefDesig = chiefExaminerDesignation.value;
+            const chairName = chairmanName.value;
+            const chairDesig = chairmanDesignation.value;
+            
+            let studentRows = '';
+
+            students.forEach(student => {
+                const regNo = student[STUDENT_REGNO_KEY];
+                const marks = marksData[regNo] || { figures: '' };
+                let figures = marks.figures;
+
+                if (figures !== '') {
+                    const num = parseInt(figures, 10);
+                    if (!isNaN(num)) {
+                        figures = String(num).padStart(2, '0');
+                    }
+                }
+                
+                const autoGeneratedWords = numberToDigitWords(marks.figures);
+                
+                studentRows += `
+                    <tr>
+                        <td class="regno-col">${regNo || ''}</td>
+                        <td class="marks-col">${figures}</td>
+                        <td class="words-col"><span style="font-size: 0.6rem; word-wrap: break-word;">${autoGeneratedWords}</span></td>
+                    </tr>
+                `;
+            });
+
+            // This function now returns the inner HTML for one column
+            return `
+                <div class="top-details-bar">
+                    <span class="qp-code-top">${currentQP}</span>
+                    <span class="copy-label-top">${copyType}</span>
+                </div>
+                
+                <div class="page-header">
+                    <h4 class="text-sm">UNIVERSITY OF CALICUT</h4>
+                    <h4 class="text-sm">MARK SHEET</h4>
+                </div>
+
+                <div class="paper-name-bar">
+                    <h5 class="text-xs font-semibold">${paperName}--(${currentQP})</h5> 
+                </div>
+                
+                <table class="mark-sheet-table">
+                    <thead>
+                        <tr>
+                            <th class="regno-col">Register Number</th>
+                            <th class="marks-col">Marks in Figures</th>
+                            <!-- --- *** FIX: Corrected typo from classs to class *** --- -->
+                            <th class="words-col">Marks in Words</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${studentRows}
+                    </tbody>
+                </table>
+                
+                <!-- --- MODIFIED: Signature section updated to two lines --- -->
+                <div class="signature-section">
+                    <div class="signature-block">
+                        <strong>Addl. Examiner</strong>
+                        <!-- 
+                          FIX: 
+                          1. Replaced 'mt-6' (margin-top) with 'pt-6' (padding-top). html2canvas handles padding better.
+                          2. Added 'min-h-5' (min-height: 1.25rem) to force the div to have height even if empty.
+                          3. Use '|| ""' to avoid printing "null" or "undefined".
+                        -->
+                        <div class="examiner-name pt-6 min-h-5">${addlName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${addlDesig || ''}</div>
+                    </div>
+                    
+                    <div class="signature-block">
+                        <strong>Chief Examiner</strong>
+                        <div class="examiner-name pt-6 min-h-5">${chiefName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chiefDesig || ''}</div>
+                    </div>
+                    
+                    <div class="signature-block">
+                        <strong>Chairman</strong>
+                        <div class="examiner-name pt-6 min-h-5">${chairName || ''}</div>
+                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chairDesig || ''}</div>
+                    </div>
+                </div>
+                
+                <div class="exam-details">
+                    <div>${footerDateSession}</div>
+                </div>
+            `;
+        }
+
+        function generateSheetHTML(students, marksData) {
+            const originalCopy = createSingleMarkSheet(students, 'ORIGINAL', marksData);
+            const duplicateCopy = createSingleMarkSheet(students, 'DUPLICATE', marksData);
+
+            // This is the A4 preview page
+            return `
+            <div class="page" id="markSheetPage">
+                <div class="two-column-layout">
+                    <div class="mark-sheet-half">
+                        ${originalCopy}
+                    </div>
+                    <div class="mark-sheet-half">
+                        ${duplicateCopy}
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+    </script>
+
+</body>
 </html>
