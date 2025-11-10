@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V9 (New PDF Libs)</title>
+    <title>Mark Sheet Generator V10 (JPEG Fix)</title>
     <!-- 
       This app uses three external libraries:
       1. PapaParse: For easy and robust CSV parsing in the browser.
@@ -1057,11 +1057,11 @@
                     scale: 2, // Higher resolution
                     useCORS: true,
                     logging: false,
-                    // We must capture the element as-is, so no onclone needed
                 });
 
-                // 2. Get image data from canvas
-                const imgData = canvas.toDataURL('image/png');
+                // 2. *** FIX: Get JPEG image data from canvas ***
+                // This is much more compatible with PDF readers than PNG.
+                const imgData = canvas.toDataURL('image/jpeg', 0.98); // 0.98 quality
 
                 // 3. Setup PDF
                 const pdf = new jsPDF({
@@ -1074,21 +1074,9 @@
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
                 
-                const canvasWidth = canvas.width;
-                const canvasHeight = canvas.height;
-                
-                // Calculate the aspect ratio
-                const ratio = Math.min(pageWidth / canvasWidth, pageHeight / canvasHeight);
-                const imgWidth = canvasWidth * ratio;
-                const imgHeight = canvasHeight * ratio;
-
-                // Center the image (optional, 0,0 is fine for full page)
-                // const x = (pageWidth - imgWidth) / 2;
-                // const y = (pageHeight - imgHeight) / 2;
-
                 // 5. Add image to PDF
-                // We use the full page dimensions to ensure it scales correctly
-                pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+                // *** FIX: Specify 'JPEG' as the format ***
+                pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
                 
                 // 6. Save PDF
                 pdf.save(filename);
