@@ -4,17 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mark Sheet Generator V14 (Scroll Fix)</title>
-    <!-- 
-      This app uses three external libraries:
-      1. PapaParse: For easy and robust CSV parsing in the browser.
-      2. html2canvas: For "screenshotting" the HTML element.
-      3. jspdf: For creating the PDF document.
-    -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     
-    <!-- Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -230,7 +223,7 @@
         /* --- NEW: Scrollable Marks Table Container --- */
         #marksTableContainer {
             max-height: 60vh; /* Set max height to 60% of viewport height */
-            overflow-y: auto;  /* Add vertical scrollbar when needed */
+            overflow-y: auto; /* Add vertical scrollbar when needed */
             position: relative; /* Required for sticky header */
             border: 1px solid #e5e7eb; /* gray-200 */
             border-radius: 6px;
@@ -342,7 +335,6 @@
 <body class="bg-gray-100 p-4 md:p-8">
 
     <div class="container-wrapper max-w-6xl mx-auto p-6 md:p-8 bg-white rounded-2xl shadow-lg">
-        <!-- MODIFIED: Header with icon and color -->
         <header class="no-print mb-6 pb-4 border-b border-gray-200 flex items-center gap-4">
             <svg class="w-10 h-10 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -353,7 +345,6 @@
             </div>
         </header>
         
-        <!-- Data Loader Status -->
         <div id="loaderContainer" class="loader-container no-print mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
             <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Loading master roster and faculty data...</div>
             <div class="w-full bg-gray-200 rounded-full h-2">
@@ -364,7 +355,6 @@
             </button>
         </div>
 
-        <!-- Instructions Section -->
         <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
             <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
             <ol class="list-decimal list-inside space-y-2">
@@ -377,13 +367,10 @@
             </ol>
         </div>
         
-        <!-- Main Form Content (Disabled until load success) -->
         <fieldset id="mainForm" disabled>
-            <!-- Step 1: Exam Details Form -->
             <div class="form-section no-print mb-6">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Select Exam & Set Valuation Details</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- QP Code (Searchable) -->
                     <div class="form-group md:col-span-1">
                         <label for="qpCodeInput" class="block text-sm font-medium text-gray-700">QP Code (Searchable)</label>
                         <div class="autocomplete-container">
@@ -391,7 +378,6 @@
                             <div id="qpCodeSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
-                    <!-- Course Name (Read Only) -->
                     <div class="form-group md:col-span-2">
                         <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name</label>
                         <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3">
@@ -399,13 +385,11 @@
                 </div>
                 <hr class="my-6 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <!-- Date of Mark Entry (Manual Input) -->
                     <div class="form-group md:col-span-1">
                         <label for="markEntryDate" class="block text-sm font-medium text-gray-700">Date of Mark Entry</label>
                         <input type="date" id="markEntryDate" value="<?php echo date('Y-m-d'); ?>" class="mt-1 block w-full py-2 px-3">
                     </div>
 
-                    <!-- Session of Valuation (Searchable) -->
                     <div class="form-group md:col-span-1">
                         <label for="valuationSession" class="block text-sm font-medium text-gray-700">Session of Valuation</label>
                         <div class="autocomplete-container">
@@ -414,7 +398,6 @@
                         </div>
                     </div>
                     
-                    <!-- Start/First Reg No (Searchable) -->
                     <div class="form-group md:col-span-1">
                         <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (Searchable)</label>
                         <div class="autocomplete-container">
@@ -422,7 +405,6 @@
                             <div id="startRegNoSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
-                    <!-- Number of Papers (Limit 25) -->
                     <div class="form-group md:col-span-1">
                         <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (Max 25)</label>
                         <input type="number" id="numPapers" min="1" max="25" value="10" class="mt-1 block w-full py-2 px-3">
@@ -430,11 +412,9 @@
                 </div>
             </div>
 
-            <!-- Step 2: Examiner Details Form -->
             <div class="form-section no-print mb-6">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable)</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <!-- Additional Examiner -->
                     <div class="form-group md:col-span-1">
                         <label for="additionalExaminerName" class="block text-sm font-medium text-gray-700">Additional Examiner (Name)</label>
                         <div class="autocomplete-container">
@@ -444,7 +424,6 @@
                         <label for="additionalExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
                         <input type="text" id="additionalExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
                     </div>
-                    <!-- Chief Examiner -->
                     <div class="form-group md:col-span-1">
                         <label for="chiefExaminerName" class="block text-sm font-medium text-gray-700">Chief Examiner (Name)</label>
                         <div class="autocomplete-container">
@@ -454,7 +433,6 @@
                         <label for="chiefExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
                         <input type="text" id="chiefExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
                     </div>
-                    <!-- Chairman -->
                     <div class="form-group md:col-span-1">
                         <label for="chairmanName" class="block text-sm font-medium text-gray-700">Chairman (Name)</label>
                         <div class="autocomplete-container">
@@ -467,7 +445,6 @@
                 </div>
             </div>
             
-            <!-- MODIFIED: Action Buttons with icons and transitions -->
             <div class="no-print mt-6 flex gap-4">
                 <button id="loadRollButton" class="btn-icon py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>
@@ -479,16 +456,12 @@
                 </button>
             </div>
             
-            <!-- MODIFIED: Error/Status Message Box (now a dynamic section) -->
             <div id="messageBox" class="dynamic-section hidden no-print mt-4 p-4 rounded-md text-sm"></div>
 
-            <!-- MODIFIED: Step 3: Marks Entry Area (now a dynamic section) -->
             <div id="marksEntryArea" class="dynamic-section hidden form-section no-print mt-8 p-5 border border-dashed border-gray-300 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 3: Enter Marks</h2>
                 <div id="marksTableContainer">
-                    <!-- Marks Entry Table will be inserted here -->
-                </div>
-                <!-- MODIFIED: Generate Button with icon and transitions -->
+                    </div>
                 <button id="generateButton" disabled class="btn-icon py-2 px-5 mt-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.624L16.5 21.75l-.398-1.126a3.375 3.375 0 00-2.456-2.456L12.75 18l1.126-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.126a3.375 3.375 0 002.456 2.456L20.25 18l-1.126.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
                     Generate Printable Mark Sheet
@@ -496,23 +469,18 @@
             </div>
         </fieldset>
 
-        <!-- This is where the A4 page preview will be rendered -->
         <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
-            <!-- *** MODIFIED: Wrapped buttons in a div for centering *** -->
             <div class="no-print mx-auto flex flex-col sm:flex-row gap-4 justify-center">
-                <!-- PDF Download Button -->
                 <button id="printButton" class="btn-icon py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-wait transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
                     Download as PDF
                 </button>
-                <!-- *** NEW: Print Button *** -->
                 <button id="printPageButton" class="btn-icon py-2 px-5 mb-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
                     <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.319 0H6.34m11.319 0c.045.09.088.18.127.271A1.12 1.12 0 0117.66 19.5H6.34a1.12 1.12 0 01-.127-1.229c.039-.091.082-.18.127-.271m0 0c-1.01.056-2.003.082-3.003.082S4.326 18.056 3.316 18H3v-3.75h18v3.75h-.316c-1.001 0-1.993-.026-3.003-.082z" /></svg>
                     Print Mark Sheet
                 </button>
             </div>
-            <!-- Generated content will go here -->
-        </div>
+            </div>
     </div>
 
     <script>
@@ -753,11 +721,12 @@
             if (!startRegNoValue) { return showMessage('Please enter the Start/First Register Number.', 'error'); }
             if (!numPapersValue || numPapersValue <= 0) { return showMessage('Please enter a valid number for Number of Papers.', 'error'); }
 
-            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+            // --- *** MODIFIED: Removed .sort() to maintain original CSV order *** ---
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP);
             const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
 
             if (startIndex === -1) {
-                 return showMessage(`Start Register Number (${startRegNoValue}) not found for QP Code ${selectedQP}. Please select from suggestions.`, 'error');
+                return showMessage(`Start Register Number (${startRegNoValue}) not found for QP Code ${selectedQP}. Please select from suggestions.`, 'error');
             }
 
             currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
@@ -932,7 +901,8 @@
             // Wait for student data to be loaded
             if (!studentDataLoaded || !selectedQP || !startRegNoValue || !numPapersValue) return;
 
-            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP).sort((a, b) => a[STUDENT_REGNO_KEY].localeCompare(b[STUDENT_REGNO_KEY]));
+            // --- *** MODIFIED: Removed .sort() to maintain original CSV order *** ---
+            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP);
             const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
 
             if (startIndex === -1) return; // Don't show an error, just fail silently on reload
@@ -1057,8 +1027,8 @@
              startRegNo.placeholder = "Type 4+ letters";
              const searchTerm = value.toUpperCase();
              const regNumbers = [...new Set(studentData
-                .filter(s => s[STUDENT_QPCODE_KEY] === selectedQP)
-                .map(s => s[STUDENT_REGNO_KEY])
+                 .filter(s => s[STUDENT_QPCODE_KEY] === selectedQP)
+                 .map(s => s[STUDENT_REGNO_KEY])
              )].sort();
              
              return regNumbers.filter(reg => reg.toUpperCase().includes(searchTerm)).slice(0, 10);
@@ -1238,7 +1208,6 @@
                         <tr>
                             <th class="regno-col">Register Number</th>
                             <th class="marks-col">Marks in Figures</th>
-                            <!-- --- *** FIX: Corrected typo from classs to class *** --- -->
                             <th class="words-col">Marks in Words</th>
                         </tr>
                     </thead>
@@ -1247,16 +1216,9 @@
                     </tbody>
                 </table>
                 
-                <!-- --- MODIFIED: Signature section updated to two lines --- -->
                 <div class="signature-section">
                     <div class="signature-block">
                         <strong>Addl. Examiner</strong>
-                        <!-- 
-                          FIX: 
-                          1. Replaced 'mt-6' (margin-top) with 'pt-6' (padding-top). html2canvas handles padding better.
-                          2. Added 'min-h-5' (min-height: 1.25rem) to force the div to have height even if empty.
-                          3. Use '|| ""' to avoid printing "null" or "undefined".
-                        -->
                         <div class="examiner-name pt-6 min-h-5">${addlName || ''}</div>
                         <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${addlDesig || ''}</div>
                     </div>
