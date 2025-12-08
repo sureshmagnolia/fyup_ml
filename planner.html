@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V16 (Range & List)</title>
+    <title>Valuation Board Manager V17 (Strikethrough & (A))</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -33,8 +33,9 @@
         td { vertical-align: top; }
         
         /* Reg No List Styling */
-        .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
-        .reg-list span.absent { color: #dc2626; font-weight: bold; }
+        .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #334155; }
+        /* Absent Style in HTML: Red + Strikethrough */
+        .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
@@ -51,7 +52,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V16</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V17</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -218,7 +219,8 @@
                                 <th class="px-3 py-4 w-[12%]">Chief</th>
                                 <th class="px-3 py-4 w-[12%]">Additional</th>
                                 <th class="px-3 py-4 w-[15%]">Paper</th>
-                                <th class="px-3 py-4 w-[12%]">Range (From-To)</th> <th class="px-3 py-4 w-[34%]">Allotted Register Nos</th>
+                                <th class="px-3 py-4 w-[12%]">Range (From-To)</th>
+                                <th class="px-3 py-4 w-[34%]">Allotted Register Nos</th>
                                 <th class="px-3 py-4 text-center w-[5%]">Count</th>
                             </tr>
                         </thead>
@@ -234,7 +236,7 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV16';
+        const STORAGE_KEY = 'valuationBoardStateV17';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -471,18 +473,36 @@
             });
 
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : ''; // No trailing space
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : ''; // Space included
                 const nums = group.items.map((it, idx) => {
-                    const val = (idx === 0 && group.prefix !== 'OTHER') ? (prefixStr + it.number) : it.number;
-                    if (idx === 0 && group.prefix === 'OTHER') return it.full;
+                    let val = it.number;
+                    // For the first item, prepend prefix (HTML already does this visually by span, but user wants joined text in some cases)
+                    // The request: "The 1st reg no s coming like this VPAYAEG 019, it should be like VPAYAEG019"
+                    // HTML View: We structure it as <div><span>Prefix</span> Numbers...</div>
+                    // To satisfy "VPAYAEG019", we should just join them in the text node if it's the first one.
                     
-                    if (it.isAbsent) return `<span class="absent">${val}</span>`;
+                    if (idx === 0 && group.prefix !== 'OTHER') {
+                        val = group.prefix + it.number; // Joined
+                    } else if (idx === 0 && group.prefix === 'OTHER') {
+                        val = it.full;
+                    }
+                    
+                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`; // (A) added
                     return val;
                 }).join(', ');
+                
+                // If the first item absorbed the prefix, we don't need the prefix span anymore, 
+                // BUT subsequent lines for same prefix might not exist in this logic (groups are contiguous).
+                // Simplified: Just return the list of numbers where first has prefix.
                 return `<div>${nums}</div>`;
             }).join('');
         }
         
+        // Helper to convert string to unicode strikethrough for PDF
+        function toStrikethrough(text) {
+            return text.split('').map(char => char + '\u0336').join('');
+        }
+
         function generateSmartListText(regsArray) {
              if (!regsArray || regsArray.length === 0) return '';
              const groups = [];
@@ -499,11 +519,16 @@
             });
             
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : '';
                 const nums = group.items.map((it, idx) => {
-                    const val = (idx === 0 && group.prefix !== 'OTHER') ? (prefixStr + it.number) : it.number;
-                    if (idx === 0 && group.prefix === 'OTHER') return it.isAbsent ? `${it.full}(A)` : it.full;
-                    return it.isAbsent ? `${val}(A)` : val; 
+                    let val = it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; // Joined
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    
+                    if (it.isAbsent) {
+                        const txt = `${val}(A)`;
+                        return toStrikethrough(txt); // Apply Strikethrough
+                    }
+                    return val; 
                 }).join(', ');
                 return nums;
             }).join('\n');
