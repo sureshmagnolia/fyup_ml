@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V19 (PDF Fix)</title>
+    <title>Valuation Board Manager V20 (Search Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -16,11 +16,11 @@
         
         .autocomplete-container { position: relative; }
         .suggestions {
-            position: absolute; z-index: 50; width: 100%; max-height: 200px;
-            overflow-y: auto; background: white; border: 1px solid #e5e7eb;
-            border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: absolute; z-index: 100; width: 100%; max-height: 250px;
+            overflow-y: auto; background: white; border: 1px solid #cbd5e1;
+            border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
-        .suggestion-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f3f4f6; font-size: 0.875rem; }
+        .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
         .hidden { display: none; }
@@ -34,7 +34,6 @@
         
         /* Reg No List Styling */
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #000; }
-        /* Absent Style in HTML: Red + Strikethrough */
         .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
         
         .rule-input { 
@@ -46,9 +45,9 @@
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-[98%] mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    <div class="max-w-[98%] mx-auto bg-white rounded-2xl shadow-xl border border-slate-200">
         
-        <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
@@ -58,7 +57,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V19</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V20</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -90,7 +89,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="autocomplete-container">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
-                            <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
+                            <div class="relative">
+                                <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 pr-8 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
+                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2.5 text-slate-400 hover:text-red-500">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
                             <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
                         <div>
@@ -249,7 +253,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV19';
+        const STORAGE_KEY = 'valuationBoardStateV20';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -261,7 +265,6 @@
             loadStudentData();
         });
 
-        // --- Helper: Get Current Rules from Inputs ---
         function getCurrentRules() {
             return {
                 ARTS: { 
@@ -372,9 +375,20 @@
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
             const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
+            
+            // Standard search handlers
             input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, (val) => selectDiscipline(val, true)));
             input.addEventListener('input', () => showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, (val) => selectDiscipline(val, true)));
+            
             document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
+        }
+        
+        function clearDisciplineSearch() {
+            document.getElementById('disciplineSearch').value = '';
+            document.getElementById('disciplineSearch').focus();
+            currentDiscipline = null;
+            document.getElementById('planningSection').classList.add('hidden');
+            saveState();
         }
 
         function selectDiscipline(name, resetDates = true) {
@@ -452,11 +466,9 @@
         function updateEstimates() {
             if(!currentDiscipline) return;
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
-            
             const rules = getCurrentRules();
             const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = rules[selectedRuleKey];
-            
             const startSession = document.getElementById('startSessionSelect').value;
             
             let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
@@ -501,7 +513,6 @@
 
         function generateSmartList(regsArray) {
             if (!regsArray || regsArray.length === 0) return '';
-            
             const groups = [];
             const regex = /^([A-Z]+)(\d+)$/;
             
@@ -509,7 +520,6 @@
                 const match = item.regNo.match(regex);
                 const prefix = match ? match[1] : 'OTHER';
                 const number = match ? match[2] : item.regNo;
-                
                 if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
                     groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
                 } else {
@@ -518,17 +528,10 @@
             });
 
             return groups.map(group => {
-                // Ensure prefixStr isn't used for first item if it's already part of the joined string
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : ''; 
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    // Join logic: Only join for the FIRST item of the group
-                    if (idx === 0 && group.prefix !== 'OTHER') {
-                        val = group.prefix + it.number; // e.g. VPAYAEG019
-                    } else if (idx === 0 && group.prefix === 'OTHER') {
-                        val = it.full;
-                    }
-                    
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
                     if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
                     return val;
                 }).join(', ');
@@ -536,6 +539,10 @@
             }).join('');
         }
         
+        function toStrikethrough(text) {
+            return text.split('').map(char => char + '\u0336').join('');
+        }
+
         function generateSmartListText(regsArray) {
              if (!regsArray || regsArray.length === 0) return '';
              const groups = [];
@@ -556,8 +563,7 @@
                     let val = it.number;
                     if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; 
                     else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
-                    
-                    if (it.isAbsent) return `${val}(A)`; // Clean text for PDF
+                    if (it.isAbsent) return `${val}(A)`; 
                     return val; 
                 }).join(', ');
                 return nums;
@@ -566,11 +572,9 @@
 
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
-            
             const rules = getCurrentRules();
             const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = rules[selectedRuleKey];
-            
             const startSession = document.getElementById('startSessionSelect').value;
             
             generatedPlan = [];
@@ -595,7 +599,6 @@
                         while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
                             const currentPaper = currentStudent.Paper;
-                            
                             let bundle = {
                                 date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
                                 paper: currentPaper, count: 0, allRegs: [], startReg: null, endReg: null
@@ -604,16 +607,11 @@
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
                                 if (s.Paper !== currentPaper) break;
-                                
                                 if (!bundle.startReg) bundle.startReg = s.RegNo;
                                 bundle.endReg = s.RegNo;
-                                
                                 const isAbsent = !(s.Attendance || '').toUpperCase().includes('PRESENT');
                                 bundle.allRegs.push({ regNo: s.RegNo, isAbsent: isAbsent });
-                                
-                                if (!isAbsent) {
-                                    bundle.count++; remainingQuota--;
-                                }
+                                if (!isAbsent) { bundle.count++; remainingQuota--; }
                                 queueIndex++;
                             }
                             if (bundle.count > 0 || bundle.allRegs.length > 0) generatedPlan.push(bundle);
@@ -642,6 +640,16 @@
             });
             document.getElementById('outputSection').classList.remove('hidden');
             document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
+        }
+
+        function showSuggestions(list, input, container, callback) {
+            container.innerHTML = ''; if (list.length === 0) { container.classList.add('hidden'); return; }
+            list.forEach(item => {
+                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
+                div.onclick = () => { callback(item); container.classList.add('hidden'); };
+                container.appendChild(div);
+            });
+            container.classList.remove('hidden');
         }
 
         function downloadPDF() {
