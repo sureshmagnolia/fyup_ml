@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V14 (Scroll Fix)</title>
+    <title>Mark Sheet Generator V16 (Direct QP Code)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -13,41 +13,19 @@
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    // A4 paper size for print preview
-                    spacing: {
-                        'a4-w': '210mm',
-                        'a4-h': '297mm',
-                        'a4-p': '20mm',
-                    },
-                    // For smooth max-height transitions
-                    maxHeight: {
-                        '0': '0',
-                        'screen': '100vh',
-                        '1000': '1000px',
-                    },
-                    // --- ADDED: min-height for PDF fix ---
-                    minHeight: {
-                        '5': '1.25rem', // For signature lines
-                    }
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    spacing: { 'a4-w': '210mm', 'a4-h': '297mm' },
+                    minHeight: { '5': '1.25rem' }
                 }
             }
         }
     </script>
     
     <style>
-        /* Base styles */
-        body {
-            font-family: 'Inter', 'sans-serif';
-        }
-
-        /* Styles for the A4 page preview */
+        body { font-family: 'Inter', 'sans-serif'; }
         .page {
             width: var(--a4-width, 210mm);
             min-height: var(--a4-height, 297mm);
-            /* --- MODIFIED: Set top padding to 4px, other sides to 10mm --- */
             padding: 4px 10mm 10mm 10mm;
             margin: 1rem auto;
             border: 1px solid #D3D3D3;
@@ -56,280 +34,53 @@
             box-sizing: border-box;
             color: #000;
         }
-        
-        .two-column-layout {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            height: 100%;
-        }
-
-        .mark-sheet-half {
-            width: 49%;
-            padding: 0 5mm;
-            box-sizing: border-box;
-            border-left: 1px dashed #aaa;
-        }
-        
-        .mark-sheet-half:first-child {
-            border-left: none; 
-            padding-left: 0;
-        }
-
-        .top-details-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 5mm;
-            font-size: 0.9rem;
-        }
-
+        .two-column-layout { display: flex; justify-content: space-between; width: 100%; height: 100%; }
+        .mark-sheet-half { width: 49%; padding: 0 5mm; box-sizing: border-box; border-left: 1px dashed #aaa; }
+        .mark-sheet-half:first-child { border-left: none; padding-left: 0; }
+        .top-details-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5mm; font-size: 0.9rem; }
         .qp-code-top { font-weight: bold; }
         .copy-label-top { font-weight: bold; font-size: 1.1rem; }
-        
-        .page-header {
-            text-align: center;
-            margin-bottom: 0.1rem; 
-        }
-        
-        .page-header h3, .page-header h4 {
-            margin: 0.25rem 0;
-            font-weight: bold;
-        }
-
-        .paper-name-bar {
-            text-align: center;
-            margin: 5mm 0 2mm 0;
-        }
-        .paper-name-bar h5 {
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .mark-sheet-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 0.75rem;
-        }
-
-        .mark-sheet-table th,
-        .mark-sheet-table td {
-            border: 1px solid #000;
-            padding: 0.3rem;
-            text-align: left;
-            height: auto; 
-        }
-
-        .mark-sheet-table th {
-            background-color: #f4f4f4;
-            font-weight: bold;
-        }
-
-        .marks-col { width: 25%; }
-        .words-col { width: 45%; }
-        .regno-col { width: 30%; }
-        
-        .mark-sheet-table tr { page-break-inside: avoid; }
-
-        .signature-section {
-            margin-top: 1.5rem;
-            font-size: 0.75rem;
-            page-break-inside: avoid;
-        }
-        
+        .page-header { text-align: center; margin-bottom: 0.1rem; }
+        .page-header h3, .page-header h4 { margin: 0.25rem 0; font-weight: bold; }
+        .paper-name-bar { text-align: center; margin: 5mm 0 2mm 0; }
+        .paper-name-bar h5 { font-size: 0.8rem; font-weight: 500; }
+        .mark-sheet-table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.75rem; }
+        .mark-sheet-table th, .mark-sheet-table td { border: 1px solid #000; padding: 0.3rem; text-align: left; }
+        .mark-sheet-table th { background-color: #f4f4f4; font-weight: bold; }
+        .marks-col { width: 25%; } .words-col { width: 45%; } .regno-col { width: 30%; }
+        .signature-section { margin-top: 1.5rem; font-size: 0.75rem; page-break-inside: avoid; }
         .signature-block { margin-top: 1rem; }
         .examiner-name { margin-top: 0.1rem; font-weight: 500; }
-        
-        /* --- ADDED: Style for examiner designation --- */
         .examiner-designation { margin-top: 0.1rem; font-weight: 500; }
+        .exam-details { display: flex; flex-direction: column; align-items: flex-end; margin-top: 0.5rem; font-size: 0.8rem; font-weight: 500; }
         
-        .exam-details {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            margin-top: 0.5rem;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-        
-        /* Custom Dropdown Styling */
+        /* Dropdowns */
         .autocomplete-container { position: relative; }
-        
         .suggestions {
-            position: absolute;
-            z-index: 10;
-            width: 100%;
-            max-height: 200px;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            border-radius: 0 0 6px 6px;
-            transition: opacity 0.2s ease-out, max-height 0.2s ease-out;
-            opacity: 1;
-            max-height: 200px;
+            position: absolute; z-index: 50; width: 100%; max-height: 200px; overflow-y: auto;
+            background: white; border: 1px solid #ccc; border-top: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 0 0 6px 6px;
         }
-        .suggestions.hidden {
-            opacity: 0;
-            max-height: 0;
-            pointer-events: none;
-        }
-        .suggestion-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: background-color 0.15s ease-in-out;
-        }
-        .suggestion-item:hover {
-            background-color: #f0f0f0;
-        }
-        
-        /* Marks Entry Table Styling */
-        #marksEntryArea table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #marksEntryArea th, #marksEntryArea td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        #marksEntryArea input,
-        .form-section input[type="text"],
-        .form-section input[type="date"],
-        .form-section input[type="number"] {
-            width: 100%;
-            padding: 4px;
-            border: 1px solid #ccc;
-            border-radius: 3px;
-            box-sizing: border-box;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
-        }
-        .form-section input[type="text"]:focus,
-        .form-section input[type="date"]:focus,
-        .form-section input[type="number"]:focus,
-        #marksEntryArea input:focus {
-            outline: none;
-            border-color: #3b82f6; /* blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); /* focus ring */
-        }
-        .form-section input[readonly] {
-            background-color: #f3f4f6; /* gray-100 */
-            cursor: not-allowed;
-        }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
+        .suggestion-item:hover { background-color: #f0f0f0; }
+        .hidden { display: none; }
 
-        /* --- NEW: Scrollable Marks Table Container --- */
-        #marksTableContainer {
-            max-height: 60vh; /* Set max height to 60% of viewport height */
-            overflow-y: auto; /* Add vertical scrollbar when needed */
-            position: relative; /* Required for sticky header */
-            border: 1px solid #e5e7eb; /* gray-200 */
-            border-radius: 6px;
-        }
-        #marksEntryArea thead th {
-            position: sticky;
-            top: 0;
-            background-color: #f9fafb; /* gray-50 */
-            z-index: 10;
-            /* Add a border to visually separate header */
-            border-bottom: 2px solid #ddd; 
-        }
-        /* --- END NEW STYLES --- */
-
-
-        /* Loader Styles */
-        .loader-bar {
-            height: 8px;
-            transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
-            border-radius: 4px;
-        }
-        @keyframes progress-stripe {
-            0% { background-position: 1rem 0; }
-            100% { background-position: 0 0; }
-        }
-        .loader-bar.loading {
-            background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
-            background-size: 1rem 1rem;
-            animation: progress-stripe 1s linear infinite;
-        }
+        /* Entry Table */
+        #marksEntryArea table { width: 100%; border-collapse: collapse; }
+        #marksEntryArea th, #marksEntryArea td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #marksEntryArea input, .form-section input { width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; }
+        #marksEntryArea input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
+        #marksTableContainer { max-height: 60vh; overflow-y: auto; position: relative; border: 1px solid #e5e7eb; border-radius: 6px; }
+        #marksEntryArea thead th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; border-bottom: 2px solid #ddd; }
         
-        .loader-container { transition: opacity 0.3s; }
-        .loading-text.error { color: #ef4444; }
-        
-        /* Smooth transition for dynamic sections */
-        .dynamic-section {
-            transition: opacity 0.3s ease-in-out, max-height 0.4s ease-in-out;
-            max-height: 1000px;
-            opacity: 1;
-            overflow: hidden;
-        }
-        .dynamic-section.hidden {
-            max-height: 0;
-            opacity: 0;
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-            border: none !important;
-        }
-        
-        /* Helper class for icon alignment in buttons */
-        .btn-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem; /* 8px */
-        }
-
-        /* --- MODIFIED: Print-specific styles --- */
+        /* Print */
         @media print {
-            /* Basic reset */
-            body { 
-                background-color: #fff !important; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-            }
-            .no-print { 
-                display: none !important; 
-            }
-            /* Remove all styles from the main containers */
-            .container-wrapper, #outputArea {
-                box-shadow: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                border: 0 !important;
-            }
-            .page {
-                /* --- FIX: Don't use fixed mm units for print --- */
-                width: 100%; /* Use 100% of the print page width */
-                height: auto; /* Let content define height */
-                min-height: 0;
-                max-height: none;
-
-                /* Reset all preview styles */
-                margin: 0;
-                border: 0 !important;
-                box-shadow: none !important;
-                
-                /* --- MODIFIED: Keep the internal padding, with 4px top --- */
-                padding: 4px 10mm 10mm 10mm; 
-                box-sizing: border-box;
-
-                page-break-before: auto !important;
-                /* --- *** FIX: Changed 'auto' to 'avoid' to prevent blank page *** --- */
-                page-break-after: avoid !important; 
-            }
-            
-            .mark-sheet-half { padding: 0 2mm !important; }
-            .mark-sheet-half:not(:first-child) { 
-                border-left: 1px dashed #000 !important; 
-            }
-            .signature-section { 
-                page-break-inside: avoid !important; 
-            }
+            body { background-color: #fff !important; margin: 0; padding: 0; }
+            .no-print { display: none !important; }
+            .container-wrapper, #outputArea { box-shadow: none; margin: 0; padding: 0; border: 0; }
+            .page { width: 100%; height: auto; margin: 0; border: 0; box-shadow: none; padding: 4px 10mm 10mm 10mm; page-break-after: always; }
+            .mark-sheet-half:not(:first-child) { border-left: 1px dashed #000 !important; }
         }
-        
     </style>
 </head>
 <body class="bg-gray-100 p-4 md:p-8">
@@ -340,927 +91,470 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator</h1>
-                <p class="text-gray-600 mt-1">Generate a printable A4 mark sheet from official examination data.</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V16)</h1>
+                <p class="text-gray-600 mt-1">Integrated Absent Management & Direct QP Code Support</p>
             </div>
         </header>
         
         <div id="loaderContainer" class="loader-container no-print mb-6 p-4 rounded-lg bg-gray-50 border border-gray-200">
-            <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Loading master roster and faculty data...</div>
+            <div id="loadingText" class="loading-text text-sm font-semibold mb-2 text-gray-700">Connecting to database...</div>
             <div class="w-full bg-gray-200 rounded-full h-2">
-                <div id="loaderBar" class="loader-bar h-2 bg-blue-500" style="width: 0%"></div>
+                <div id="loaderBar" class="h-2 bg-blue-500 rounded-full transition-all duration-300" style="width: 10%"></div>
             </div>
-            <button id="retryButton" class="mt-3 py-1 px-3 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-all" style="display: none;">
-                Retry Data Load
-            </button>
         </div>
 
-        <div class="instructions no-print bg-blue-50 border border-blue-200 text-blue-800 p-5 rounded-lg mb-6">
-            <h3 class="text-lg font-semibold mb-2">How to Use This Tool</h3>
-            <ol class="list-decimal list-inside space-y-2">
-                <li>**Load Data:** Wait for the **data loader** above to show **"Ready"** before proceeding.</li>
-                <li>**Select Exam (3 letters):** Use the **QP Code** input. Suggestions appear after typing 3 or more letters. This fills the **Paper Name**.</li>
-                <li>**Assign Examiners:** Search for the examiners; their designations will appear automatically.</li>
-                <li>**Load Nominal Roll:** Click **Load Nominal Roll** after setting the starting Register Number.</li>
-                <li>**Enter Marks:** Input the marks in figures (**Max 100**). Marks in Words will be auto-generated.</li>
-                <li>**Generate & Download:** Click **Generate Printable Mark Sheet** and then **Download as PDF** or **Print** to save the file.</li>
-            </ol>
-        </div>
-        
         <fieldset id="mainForm" disabled>
             <div class="form-section no-print mb-6">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Select Exam & Set Valuation Details</h2>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 1: Select Exam & Range</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div class="form-group md:col-span-1">
-                        <label for="qpCodeInput" class="block text-sm font-medium text-gray-700">QP Code (Searchable)</label>
+                        <label class="block text-sm font-medium text-gray-700">QP Code (Searchable)</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="qpCodeInput" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="qpCodeInput" placeholder="Type 3+ letters..." class="mt-1 block w-full py-2 px-3">
                             <div id="qpCodeSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
                     <div class="form-group md:col-span-2">
-                        <label for="courseName" class="block text-sm font-medium text-gray-700">Paper Name</label>
-                        <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3">
+                        <label class="block text-sm font-medium text-gray-700">Paper Name</label>
+                        <input type="text" id="courseName" readonly class="mt-1 block w-full py-2 px-3 bg-gray-50">
                     </div>
                 </div>
                 <hr class="my-6 border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                     <div class="form-group md:col-span-1">
-                        <label for="markEntryDate" class="block text-sm font-medium text-gray-700">Date of Mark Entry</label>
-                        <input type="date" id="markEntryDate" value="<?php echo date('Y-m-d'); ?>" class="mt-1 block w-full py-2 px-3">
+                        <label class="block text-sm font-medium text-gray-700">Date of Entry</label>
+                        <input type="date" id="markEntryDate" class="mt-1 block w-full py-2 px-3">
                     </div>
-
                     <div class="form-group md:col-span-1">
-                        <label for="valuationSession" class="block text-sm font-medium text-gray-700">Session of Valuation</label>
+                        <label class="block text-sm font-medium text-gray-700">Session</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="valuationSession" placeholder="Type AN or FN" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="valuationSession" placeholder="FN / AN" class="mt-1 block w-full py-2 px-3">
                             <div id="valuationSessionSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
-                    
                     <div class="form-group md:col-span-1">
-                        <label for="startRegNo" class="block text-sm font-medium text-gray-700">Start/First Reg No (Searchable)</label>
+                        <label class="block text-sm font-medium text-gray-700">Start Register No</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="startRegNo" placeholder="Select QP Code first, then type 4+ letters" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="startRegNo" placeholder="Select QP First" class="mt-1 block w-full py-2 px-3">
                             <div id="startRegNoSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
                     <div class="form-group md:col-span-1">
-                        <label for="numPapers" class="block text-sm font-medium text-gray-700">Number of Papers (Max 25)</label>
-                        <input type="number" id="numPapers" min="1" max="25" value="10" class="mt-1 block w-full py-2 px-3">
+                        <label class="block text-sm font-medium text-gray-700">End Register No</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="endRegNo" placeholder="To Reg No" class="mt-1 block w-full py-2 px-3">
+                            <div id="endRegNoSuggestions" class="suggestions hidden"></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="form-section no-print mb-6">
-                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners (Searchable)</h2>
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 2: Assign Examiners</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="form-group md:col-span-1">
-                        <label for="additionalExaminerName" class="block text-sm font-medium text-gray-700">Additional Examiner (Name)</label>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Additional Examiner</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="additionalExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="additionalExaminerName" placeholder="Search..." class="mt-1 block w-full py-2 px-3">
                             <div id="additionalExaminerSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <label for="additionalExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
-                        <input type="text" id="additionalExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                        <input type="text" id="additionalExaminerDesignation" readonly class="mt-2 block w-full py-2 px-3 bg-gray-50 text-xs">
                     </div>
-                    <div class="form-group md:col-span-1">
-                        <label for="chiefExaminerName" class="block text-sm font-medium text-gray-700">Chief Examiner (Name)</label>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Chief Examiner</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="chiefExaminerName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="chiefExaminerName" placeholder="Search..." class="mt-1 block w-full py-2 px-3">
                             <div id="chiefExaminerSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <label for="chiefExaminerDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
-                        <input type="text" id="chiefExaminerDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                        <input type="text" id="chiefExaminerDesignation" readonly class="mt-2 block w-full py-2 px-3 bg-gray-50 text-xs">
                     </div>
-                    <div class="form-group md:col-span-1">
-                        <label for="chairmanName" class="block text-sm font-medium text-gray-700">Chairman (Name)</label>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Chairman</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="chairmanName" placeholder="Type 3+ letters to search" class="mt-1 block w-full py-2 px-3">
+                            <input type="text" id="chairmanName" placeholder="Search..." class="mt-1 block w-full py-2 px-3">
                             <div id="chairmanSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <label for="chairmanDesignation" class="block text-sm font-medium text-gray-700 mt-2">Designation</label>
-                        <input type="text" id="chairmanDesignation" readonly class="mt-1 block w-full py-2 px-3">
+                        <input type="text" id="chairmanDesignation" readonly class="mt-2 block w-full py-2 px-3 bg-gray-50 text-xs">
                     </div>
                 </div>
             </div>
             
             <div class="no-print mt-6 flex gap-4">
-                <button id="loadRollButton" class="btn-icon py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" /></svg>
+                <button id="loadRollButton" class="py-2 px-5 bg-indigo-600 text-white font-semibold rounded-lg shadow hover:bg-indigo-700 transition-colors">
                     Load Nominal Roll
                 </button>
-                <button id="resetButton" class="btn-icon py-2 px-5 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                    Reset Saved Data
+                <button id="resetButton" class="py-2 px-5 bg-red-600 text-white font-semibold rounded-lg shadow hover:bg-red-700 transition-colors">
+                    Reset
                 </button>
             </div>
             
-            <div id="messageBox" class="dynamic-section hidden no-print mt-4 p-4 rounded-md text-sm"></div>
+            <div id="messageBox" class="hidden no-print mt-4 p-4 rounded-md text-sm"></div>
 
-            <div id="marksEntryArea" class="dynamic-section hidden form-section no-print mt-8 p-5 border border-dashed border-gray-300 rounded-lg">
+            <div id="marksEntryArea" class="hidden form-section no-print mt-8 p-5 border border-dashed border-gray-300 rounded-lg">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Step 3: Enter Marks</h2>
-                <div id="marksTableContainer">
-                    </div>
-                <button id="generateButton" disabled class="btn-icon py-2 px-5 mt-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.624L16.5 21.75l-.398-1.126a3.375 3.375 0 00-2.456-2.456L12.75 18l1.126-.398a3.375 3.375 0 002.456-2.456L16.5 14.25l.398 1.126a3.375 3.375 0 002.456 2.456L20.25 18l-1.126.398a3.375 3.375 0 00-2.456 2.456z" /></svg>
+                <div id="marksTableContainer"></div>
+                <button id="generateButton" class="mt-4 py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors">
                     Generate Printable Mark Sheet
                 </button>
             </div>
         </fieldset>
 
         <div id="outputArea" class="mt-8 border-t border-gray-200 pt-8">
-            <div class="no-print mx-auto flex flex-col sm:flex-row gap-4 justify-center">
-                <button id="printButton" class="btn-icon py-2 px-5 mb-4 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-wait transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                    Download as PDF
+            <div class="no-print mx-auto flex gap-4 justify-center">
+                <button id="printButton" class="hidden py-2 px-5 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition-colors">
+                    Download PDF
                 </button>
-                <button id="printPageButton" class="btn-icon py-2 px-5 mb-4 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-400 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95" style="display: none;">
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.319 0H6.34m11.319 0c.045.09.088.18.127.271A1.12 1.12 0 0117.66 19.5H6.34a1.12 1.12 0 01-.127-1.229c.039-.091.082-.18.127-.271m0 0c-1.01.056-2.003.082-3.003.082S4.326 18.056 3.316 18H3v-3.75h18v3.75h-.316c-1.001 0-1.993-.026-3.003-.082z" /></svg>
-                    Print Mark Sheet
+                <button id="printPageButton" class="hidden py-2 px-5 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition-colors">
+                    Print
                 </button>
             </div>
-            </div>
+        </div>
     </div>
 
     <script>
-        // --- Make jsPDF and html2canvas globally available from window ---
-        // This ensures they are loaded before our script tries to use them.
+        // --- Libraries ---
         const { jsPDF } = window.jspdf;
         const html2canvas = window.html2canvas;
 
-        let studentData = [];
-        let facultyData = [];
-        let qpCodeList = []; 
-        let currentNominalRoll = [];
-        
-        const LOCAL_STORAGE_KEY = 'marksheetFormData';
-
-        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTJ0DOMYtC8aj4pKZtmHMlOzuDg0e2t4oFPExsuApWn2RLtN4QVlNXqY6t6yZDCzJ5HJpkO1p6s2V1K/pub?gid=1816372677&single=true&output=csv'; 
+        // --- Config & State ---
+        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        
-        const FACULTY_NAME_KEY = 'NAME';
-        const FACULTY_DESIGNATION_KEY = 'Designation of Faculty';
-        
-        const STUDENT_QPCODE_KEY = 'QPCode';
-        const STUDENT_REGNO_KEY = 'RegNO';
-        const STUDENT_PAPER_KEY = 'Paper';
-        const STUDENT_COURSE_KEY = 'Subject';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V16';
 
-        // DOM element references
-        const qpCodeInput = document.getElementById('qpCodeInput');
-        const qpCodeSuggestions = document.getElementById('qpCodeSuggestions');
-        const loadRollButton = document.getElementById('loadRollButton'); 
-        const generateButton = document.getElementById('generateButton');
-        const outputArea = document.getElementById('outputArea');
-        const messageBox = document.getElementById('messageBox');
-        const marksEntryArea = document.getElementById('marksEntryArea'); 
-        const marksTableContainer = document.getElementById('marksTableContainer');
-        const printButton = document.getElementById('printButton'); 
-        const printPageButton = document.getElementById('printPageButton'); // <-- NEW
-        const resetButton = document.getElementById('resetButton'); 
-        const mainForm = document.getElementById('mainForm');
-        const loaderContainer = document.getElementById('loaderContainer');
-        const loadingText = document.getElementById('loadingText');
-        const loaderBar = document.getElementById('loaderBar');
-        const retryButton = document.getElementById('retryButton');
-        const markEntryDate = document.getElementById('markEntryDate');
-        const valuationSession = document.getElementById('valuationSession');
-        const valuationSessionSuggestions = document.getElementById('valuationSessionSuggestions');
-        const courseName = document.getElementById('courseName'); 
-        const additionalExaminerName = document.getElementById('additionalExaminerName');
-        const chiefExaminerName = document.getElementById('chiefExaminerName');
-        const chairmanName = document.getElementById('chairmanName');
-        const additionalExaminerDesignation = document.getElementById('additionalExaminerDesignation');
-        const chiefExaminerDesignation = document.getElementById('chiefExaminerDesignation');
-        const chairmanDesignation = document.getElementById('chairmanDesignation');
-        const additionalExaminerSuggestions = document.getElementById('additionalExaminerSuggestions');
-        const chiefExaminerSuggestions = document.getElementById('chiefExaminerSuggestions');
-        const chairmanSuggestions = document.getElementById('chairmanSuggestions');
-        const startRegNo = document.getElementById('startRegNo');
-        const startRegNoSuggestions = document.getElementById('startRegNoSuggestions');
-        const numPapers = document.getElementById('numPapers');
+        let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
+        let dataLoadedCount = 0;
 
-        const sessionOptions = ['FN', 'AN'];
-        let studentDataLoaded = false;
-        let facultyDataLoaded = false;
-
-        function numberToDigitWords(numStr) {
-            if (!numStr || numStr === '') return '';
-            const num = parseInt(numStr, 10);
-            if (isNaN(num)) return '';
-            const processedStr = String(num).padStart(2, '0');
-            const digitMap = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
-            return processedStr.split('').map(digit => digitMap[digit] || '').join(' ');
-        }
-
-        // --- MODIFIED: LOADER / STATE MANAGEMENT FUNCTIONS ---
-        function updateLoader(progress, text, isError = false) {
-            loaderBar.style.width = `${progress}%`;
-            loadingText.textContent = text;
-            
-            if (isError) {
-                loaderBar.style.backgroundColor = '#ef4444'; // Red
-                loaderBar.classList.remove('loading'); // Stop animation on error
-                loadingText.classList.add('error');
-                retryButton.style.display = 'block';
-                mainForm.disabled = true;
-            } else if (progress === 100) {
-                loaderBar.style.backgroundColor = '#10b981'; // Green
-                loaderBar.classList.remove('loading'); // Stop animation on success
-                loadingText.textContent = 'Data Loading Complete. Form is ready!';
-                loadingText.classList.remove('error');
-                retryButton.style.display = 'none';
-                mainForm.disabled = false;
-            } else {
-                loaderBar.style.backgroundColor = '#3b82f6'; // Blue
-                loaderBar.classList.add('loading'); // Start animation
-                loadingText.classList.remove('error');
-                retryButton.style.display = 'none';
-                mainForm.disabled = true;
-            }
-        }
-
-        function checkLoadStatus() {
-            let progress = 0;
-            let statusText = 'Loading master roster and faculty data...';
-
-            if (studentDataLoaded && facultyDataLoaded) {
-                progress = 100;
-            } else if (studentDataLoaded || facultyDataLoaded) {
-                progress = 50;
-                statusText = studentDataLoaded ? 'Master roster loaded. Loading faculty list...' : 'Faculty data loaded. Loading master roster...';
-            } else {
-                progress = 10; // Start with a small progress
-            }
-            updateLoader(progress, statusText);
-        }
-
-        // --- LOCAL STORAGE FUNCTIONS ---
-        function saveFormData() {
-            const formData = {
-                qpCodeInput: qpCodeInput.value,
-                markEntryDate: markEntryDate.value,
-                valuationSession: valuationSession.value,
-                startRegNo: startRegNo.value,
-                numPapers: numPapers.value,
-                additionalExaminerName: additionalExaminerName.value,
-                chiefExaminerName: chiefExaminerName.value,
-                chairmanName: chairmanName.value,
-                marks: {}
-            };
-
-            if (!marksEntryArea.classList.contains('hidden')) {
-                const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
-                markInputs.forEach(input => {
-                    formData.marks[input.dataset.regno] = input.value.trim();
-                });
-            }
-
-            try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(formData));
-            } catch (e) {
-                console.error('Could not save data to local storage:', e);
-            }
-        }
-
-        function loadFormData() {
-             try {
-                const savedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (!savedData) return null;
-
-                const data = JSON.parse(savedData);
-
-                qpCodeInput.value = data.qpCodeInput || '';
-                markEntryDate.value = data.markEntryDate || '';
-                valuationSession.value = data.valuationSession || '';
-                startRegNo.value = data.startRegNo || '';
-                numPapers.value = data.numPapers || '10'; 
-                additionalExaminerName.value = data.additionalExaminerName || '';
-                chiefExaminerName.value = data.chiefExaminerName || '';
-                chairmanName.value = data.chairmanName || '';
-                
-                // --- *** FIX: Check if faculty data is loaded, then set designations *** ---
-                if (facultyDataLoaded) {
-                    setDesignation(additionalExaminerName, additionalExaminerDesignation);
-                    setDesignation(chiefExaminerName, chiefExaminerDesignation);
-                    setDesignation(chairmanName, chairmanDesignation);
-                }
-                
-                if (data.qpCodeInput) {
-                    handleQPCodeSelection(data.qpCodeInput);
-                }
-
-                return data.marks || {};
-            } catch (e) {
-                console.error('Could not load data from local storage:', e);
-            }
-            return null;
-        }
-
-        function resetData() {
-            try {
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-                
-                // Reset all form fields
-                qpCodeInput.value = '';
-                courseName.value = '';
-                markEntryDate.value = ''; // Consider setting to today's date
-                valuationSession.value = '';
-                startRegNo.value = '';
-                numPapers.value = '10';
-                additionalExaminerName.value = '';
-                chiefExaminerName.value = '';
-                chairmanName.value = '';
-                additionalExaminerDesignation.value = '';
-                chiefExaminerDesignation.value = '';
-                chairmanDesignation.value = '';
-
-                // Hide dynamic sections
-                marksEntryArea.classList.add('hidden');
-                marksTableContainer.innerHTML = '';
-                document.getElementById('markSheetPage')?.remove();
-                
-                generateButton.disabled = true;
-                printButton.style.display = 'none';
-                printPageButton.style.display = 'none'; // <-- NEW
-                
-                showMessage('All saved data has been reset.', 'info');
-
-            } catch (e) {
-                console.error('Could not reset data:', e);
-            }
-        }
-        
-        // --- MODIFIED: showMessage for dynamic transitions ---
-        function showMessage(message, type = 'info') {
-            messageBox.textContent = message;
-            
-            // Set color classes
-            messageBox.className = 'dynamic-section no-print mt-4 p-4 rounded-md text-sm'; // Reset classes
-            if (type === 'success') {
-                messageBox.classList.add('bg-green-100', 'border', 'border-green-200', 'text-green-800');
-            } else if (type === 'error') {
-                messageBox.classList.add('bg-red-100', 'border', 'border-red-200', 'text-red-800');
-            } else {
-                messageBox.classList.add('bg-blue-100', 'border', 'border-blue-200', 'text-blue-800');
-            }
-            
-            // Show the message box
-            messageBox.classList.remove('hidden');
-        }
-
-        // --- EVENT LISTENERS ---
-        
-        loadRollButton.addEventListener('click', () => {
-            const selectedQP = qpCodeInput.value.trim();
-            const startRegNoValue = startRegNo.value.trim();
-            const numPapersValue = parseInt(numPapers.value, 10);
-            
-            if (!selectedQP) { return showMessage('Please select a QP Code.', 'error'); }
-            if (!startRegNoValue) { return showMessage('Please enter the Start/First Register Number.', 'error'); }
-            if (!numPapersValue || numPapersValue <= 0) { return showMessage('Please enter a valid number for Number of Papers.', 'error'); }
-
-            // --- *** MODIFIED: Removed .sort() to maintain original CSV order *** ---
-            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP);
-            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
-
-            if (startIndex === -1) {
-                return showMessage(`Start Register Number (${startRegNoValue}) not found for QP Code ${selectedQP}. Please select from suggestions.`, 'error');
-            }
-
-            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
-
-            if (currentNominalRoll.length === 0) {
-                return showMessage('No students matched the criteria (Start Reg No and Number of Papers).', 'error');
-            }
-            
-            const savedMarksData = loadFormData(); // Load marks from storage
-            generateMarksEntryTable(currentNominalRoll, savedMarksData || {}); 
-            
-            marksEntryArea.classList.remove('hidden'); // Show with transition
-            generateButton.disabled = false;
-            printButton.style.display = 'none'; 
-            printPageButton.style.display = 'none'; // <-- NEW
-            document.getElementById('markSheetPage')?.remove();
-            showMessage(`Nominal Roll loaded successfully. ${currentNominalRoll.length} students found. Please enter marks below.`, 'success');
-
-            saveFormData();
-        });
-
-        generateButton.addEventListener('click', () => {
-            if (!markEntryDate.value || !valuationSession.value.trim().toUpperCase()) {
-                return showMessage('Please fill in Date of Mark Entry and Session of Valuation.', 'error');
-            }
-
-            const marksData = {};
-            let isAllMarksFiguresEntered = true; 
-            
-            const markInputs = document.querySelectorAll('#marksEntryArea .marks-figure-input');
-            
-            for (const input of markInputs) {
-                const regNo = input.dataset.regno;
-                const figures = input.value.trim(); 
-                
-                if (figures === "") {
-                    isAllMarksFiguresEntered = false;
-                    break;
-                }
-                
-                const numFigures = parseInt(figures, 10);
-                if (numFigures > 100 || numFigures < 0 || isNaN(numFigures)) {
-                     showMessage(`Marks for ${regNo} must be between 0 and 100. Please correct.`, 'error');
-                     isAllMarksFiguresEntered = false;
-                     break;
-                }
-
-                marksData[regNo] = { figures: figures };
-            }
-
-            if (!isAllMarksFiguresEntered) {
-                if (messageBox.classList.contains('hidden') || !messageBox.textContent.includes('must be between 0 and 100')) {
-                    showMessage('Please ensure "Marks in Figures" is entered for ALL students and is between 0 and 100.', 'error');
-                }
-                return;
-            }
-
-            const sheetHTML = generateSheetHTML(currentNominalRoll, marksData);
-            document.getElementById('markSheetPage')?.remove();
-            outputArea.insertAdjacentHTML('beforeend', sheetHTML);
-
-            printButton.style.display = 'inline-flex'; // <-- MODIFIED
-            printPageButton.style.display = 'inline-flex'; // <-- MODIFIED
-            showMessage('Printable Mark Sheet generated successfully. Click "Download as PDF" or "Print" above the preview.', 'success');
-        });
-        
-        window.validateMark = function(input) {
-            let value = parseInt(input.value, 10);
-            if (value > 100) {
-                input.value = ''; 
-                showMessage(`Mark must not exceed 100. Entry cleared.`, 'error');
-            }
-            // Note: saveFormData() is called oninput from the HTML
+        // --- DOM Elements ---
+        const els = {
+            qpCode: document.getElementById('qpCodeInput'),
+            course: document.getElementById('courseName'),
+            startReg: document.getElementById('startRegNo'),
+            endReg: document.getElementById('endRegNo'),
+            date: document.getElementById('markEntryDate'),
+            session: document.getElementById('valuationSession'),
+            addl: document.getElementById('additionalExaminerName'),
+            chief: document.getElementById('chiefExaminerName'),
+            chair: document.getElementById('chairmanName'),
+            msg: document.getElementById('messageBox'),
+            form: document.getElementById('mainForm'),
+            loader: document.getElementById('loaderBar'),
+            entryArea: document.getElementById('marksEntryArea'),
+            output: document.getElementById('outputArea'),
+            tableContainer: document.getElementById('marksTableContainer')
         };
-        
-        resetButton.addEventListener('click', resetData);
-        printButton.addEventListener('click', downloadAsPDF);
-        printPageButton.addEventListener('click', () => window.print()); // <-- NEW
 
-        // Bind saveFormData to key events 
-        ['change', 'input'].forEach(evt => {
-            qpCodeInput.addEventListener(evt, saveFormData);
-            markEntryDate.addEventListener(evt, saveFormData);
-            valuationSession.addEventListener(evt, saveFormData);
-            startRegNo.addEventListener(evt, saveFormData);
-            numPapers.addEventListener(evt, saveFormData);
-            additionalExaminerName.addEventListener(evt, saveFormData);
-            chiefExaminerName.addEventListener(evt, saveFormData);
-            chairmanName.addEventListener(evt, saveFormData);
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(studentCsvUrl, 'student');
+            loadData(facultyCsvUrl, 'faculty');
+            setupAutocompletes();
+            loadFormData();
         });
 
-        // --- DATA LOADING WITH RETRY LOGIC ---
-        function initDataLoad() {
-            studentDataLoaded = false;
-            facultyDataLoaded = false;
-            retryButton.style.display = 'none';
-            mainForm.disabled = true;
-            updateLoader(10, 'Loading master roster and faculty data...');
-            loadStudentData(); // This will load data and then call loadFormData
-            loadFacultyData(); // This will load data and then call loadFormData
-        }
-
-        retryButton.addEventListener('click', initDataLoad);
-
-        function loadStudentData() {
-             checkLoadStatus();
-             Papa.parse(studentCsvUrl, {
-                download: true, header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(),
-                complete: (results) => {
-                    studentData = results.data.filter(row => row[STUDENT_QPCODE_KEY] && row[STUDENT_REGNO_KEY]);
-                    if (studentData.length > 0) {
-                        qpCodeList = [...new Set(studentData.map(row => row[STUDENT_QPCODE_KEY]))].filter(code => code);
-                        studentDataLoaded = true;
-                        checkLoadStatus();
-                        
-                        // Now that student data is loaded, try to reload the roll
-                        const savedMarksData = loadFormData(); // This will now also try to set designations
-                        if (savedMarksData) {
-                            setTimeout(() => autoReloadNominalRoll(savedMarksData), 100); 
-                        }
-                    } else {
-                        updateLoader(50, 'Master roster data failed to load: No valid entries found.', true);
-                    }
-                },
-                error: (err) => {
-                    console.error('Student Data Error:', err);
-                    updateLoader(50, `Master roster data failed to load: Network error.`, true);
+        // --- Data Loading ---
+        function loadData(url, type) {
+            Papa.parse(url, {
+                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
+                complete: (res) => {
+                    if (type === 'student') processStudents(res.data);
+                    else processFaculty(res.data);
+                    checkLoad();
                 }
             });
         }
 
-        function loadFacultyData() {
-             checkLoadStatus();
-             Papa.parse(facultyCsvUrl, {
-                download: true, header: true, skipEmptyLines: true, transformHeader: (h) => h.trim(),
-                complete: (results) => {
-                    const actualNameKey = results.meta.fields.find(f => f.toUpperCase().includes('NAME')) || FACULTY_NAME_KEY;
-                    const actualDesignationKey = results.meta.fields.find(f => f.toUpperCase().includes('DESIGNATION')) || FACULTY_DESIGNATION_KEY;
-
-                    facultyData = results.data.map(row => ({
-                        [FACULTY_NAME_KEY]: row[actualNameKey] || '',
-                        [FACULTY_DESIGNATION_KEY]: row[actualDesignationKey] || ''
-                    })).filter(row => row[FACULTY_NAME_KEY] !== ''); 
-
-                    if (facultyData.length > 0) {
-                        facultyDataLoaded = true;
-                        checkLoadStatus();
-                        
-                        // --- *** MODIFIED: Just call loadFormData() *** ---
-                        // It will now handle setting designations.
-                        loadFormData(); 
-                        
-                    } else {
-                        updateLoader(50, 'Faculty data failed to load: No valid names found.', true);
-                    }
-                },
-                error: (err) => {
-                    console.error('Faculty Data Error:', err);
-                    updateLoader(50, `Faculty data failed to load: Network error.`, true);
-                }
-            });
-        }
-        
-        document.addEventListener('DOMContentLoaded', initDataLoad);
-
-        // --- AUTORELOAD AND MARK TABLE GENERATION ---
-        function autoReloadNominalRoll(marksData) {
-            const selectedQP = qpCodeInput.value.trim();
-            const startRegNoValue = startRegNo.value.trim();
-            const numPapersValue = parseInt(numPapers.value, 10);
+        function processStudents(data) {
+            studentData = data.map(row => {
+                // UPDATE: Get QP Code directly from Column G ('QPCode')
+                const qp = row['QPCode'] || '';
+                return {
+                    regNo: row['RegNo'],
+                    name: row['Name'],
+                    paper: row['Paper'] || '',
+                    qpCode: qp,
+                    attendance: (row['Attendance'] || '').toUpperCase()
+                };
+            }).filter(s => s.regNo && s.qpCode);
             
-            // Wait for student data to be loaded
-            if (!studentDataLoaded || !selectedQP || !startRegNoValue || !numPapersValue) return;
+            // Build unique list
+            qpCodeList = [...new Set(studentData.map(s => s.qpCode))].sort();
+        }
 
-            // --- *** MODIFIED: Removed .sort() to maintain original CSV order *** ---
-            let students = studentData.filter(s => s[STUDENT_QPCODE_KEY] === selectedQP);
-            const startIndex = students.findIndex(s => s[STUDENT_REGNO_KEY] === startRegNoValue);
+        function processFaculty(data) {
+            const nameKey = data[0] && Object.keys(data[0]).find(k => k.toUpperCase().includes('NAME')) || 'NAME';
+            const desigKey = data[0] && Object.keys(data[0]).find(k => k.toUpperCase().includes('DESIGNATION')) || 'Designation';
+            facultyData = data.map(row => ({ name: row[nameKey], designation: row[desigKey] || '' })).filter(f => f.name);
+        }
 
-            if (startIndex === -1) return; // Don't show an error, just fail silently on reload
-
-            currentNominalRoll = students.slice(startIndex, startIndex + numPapersValue);
-
-            if (currentNominalRoll.length > 0) {
-                generateMarksEntryTable(currentNominalRoll, marksData); 
-                marksEntryArea.classList.remove('hidden'); // Show section
-                generateButton.disabled = false;
-                showMessage(`Saved session restored for QP Code ${selectedQP}. Click 'Generate Printable Mark Sheet' to finalize.`, 'info');
+        function checkLoad() {
+            dataLoadedCount++;
+            els.loader.style.width = `${dataLoadedCount * 50}%`;
+            if (dataLoadedCount === 2) {
+                document.getElementById('loadingText').textContent = "Ready";
+                els.form.disabled = false;
+                els.loader.classList.replace('bg-blue-500', 'bg-green-500');
+                setTimeout(() => document.getElementById('loaderContainer').style.display = 'none', 500);
             }
         }
 
-        function generateMarksEntryTable(students, savedMarks = {}) {
-            let tableHTML = `<table class="marks-input-table">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th>#</th>
-                            <th class="regno-col">Register Number</th>
-                            <th>Marks in Figures (Max 100)</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            students.forEach((student, index) => {
-                const regNo = student[STUDENT_REGNO_KEY];
-                const savedMark = savedMarks[regNo] || ''; 
-                
-                tableHTML += `<tr data-regno="${regNo}">
-                        <td>${index + 1}</td>
-                        <td class="font-medium">${regNo}</td>
-                        <td><input type="number" min="0" max="100" class="marks-figure-input" data-regno="${regNo}" placeholder="e.g., 50" value="${savedMark}" oninput="validateMark(this); saveFormData()"></td>
-                    </tr>`;
-            });
+        // --- Logic: Load Roll ---
+        document.getElementById('loadRollButton').addEventListener('click', () => {
+            const qp = els.qpCode.value.trim();
+            const start = els.startReg.value.trim();
+            const end = els.endReg.value.trim();
 
-            tableHTML += `</tbody></table>`;
-            marksTableContainer.innerHTML = tableHTML;
-        }
+            if (!qp || !start || !end) return showMsg('Please select QP Code, Start Reg, and End Reg.', 'error');
 
+            const filtered = studentData.filter(s => s.qpCode === qp).sort((a,b) => a.regNo.localeCompare(b.regNo));
+            const startIdx = filtered.findIndex(s => s.regNo === start);
+            const endIdx = filtered.findIndex(s => s.regNo === end);
 
-        // --- AUTOSUGGESTION & DATA BINDING LOGIC ---
-        
-        // Generic suggestion handler
-        function showSuggestions(filteredList, nameInput, suggestionsContainer, selectCallback) {
-            suggestionsContainer.innerHTML = '';
-            
-            if (filteredList.length === 0) {
-                suggestionsContainer.classList.add('hidden');
-                return;
+            if (startIdx === -1 || endIdx === -1 || startIdx > endIdx) {
+                return showMsg('Invalid Register Number range selected.', 'error');
             }
 
-            filteredList.forEach(itemText => {
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                item.textContent = itemText;
-                
-                item.addEventListener('mousedown', (e) => {
-                    e.preventDefault(); // Prevent blur
-                    selectCallback(itemText);
-                    suggestionsContainer.classList.add('hidden');
-                });
-                
-                suggestionsContainer.appendChild(item);
-            });
-
-            suggestionsContainer.classList.remove('hidden');
-        }
-        
-        function setupAutocomplete(inputEl, suggestionsEl, minLength, dataProviderFn) {
-            inputEl.addEventListener('keyup', (e) => {
-                const value = inputEl.value.trim();
-                if (value.length < minLength) {
-                    suggestionsEl.classList.add('hidden');
-                    return;
-                }
-                const data = dataProviderFn(value);
-                showSuggestions(data, inputEl, suggestionsEl, (selected) => {
-                    inputEl.value = selected;
-                    // Trigger change event for persistence and other logic
-                    inputEl.dispatchEvent(new Event('change')); 
-                    suggestionsEl.classList.add('hidden');
-                });
-            });
-            inputEl.addEventListener('blur', () => setTimeout(() => suggestionsEl.classList.add('hidden'), 150));
-        }
-
-        // 3. QP Code Search
-        setupAutocomplete(qpCodeInput, qpCodeSuggestions, 3, (value) => {
-            if (qpCodeList.length === 0) return [];
-            const searchTerm = value.toUpperCase();
-            return qpCodeList.filter(code => code.includes(searchTerm)).slice(0, 10);
-        });
-        qpCodeInput.addEventListener('change', () => {
-            handleQPCodeSelection(qpCodeInput.value);
-            // Hide old results when QP changes
-            marksEntryArea.classList.add('hidden');
+            // Slice Inclusive
+            currentNominalRoll = filtered.slice(startIdx, endIdx + 1);
+            
+            generateEntryTable();
+            saveFormData();
+            els.entryArea.classList.remove('hidden');
             document.getElementById('markSheetPage')?.remove();
-            generateButton.disabled = true;
-            printButton.style.display = 'none';
-            printPageButton.style.display = 'none'; // <-- NEW
-        });
-        
-        function handleQPCodeSelection(selectedQP) {
-            courseName.value = '';
-            startRegNo.value = '';
-            if (selectedQP) {
-                const firstRow = studentData.find(row => row[STUDENT_QPCODE_KEY] === selectedQP);
-                if (firstRow) {
-                    courseName.value = firstRow[STUDENT_PAPER_KEY] || ''; 
-                }
-            }
-        }
-
-        // 4. Register Number Search Logic
-        setupAutocomplete(startRegNo, startRegNoSuggestions, 4, (value) => {
-             const selectedQP = qpCodeInput.value.trim();
-             if (!selectedQP) {
-                 startRegNo.placeholder = "Select QP Code first!";
-                 return [];
-             }
-             startRegNo.placeholder = "Type 4+ letters";
-             const searchTerm = value.toUpperCase();
-             const regNumbers = [...new Set(studentData
-                 .filter(s => s[STUDENT_QPCODE_KEY] === selectedQP)
-                 .map(s => s[STUDENT_REGNO_KEY])
-             )].sort();
-             
-             return regNumbers.filter(reg => reg.toUpperCase().includes(searchTerm)).slice(0, 10);
+            showMsg(`Loaded ${currentNominalRoll.length} students (including absents).`, 'success');
         });
 
-        // 4b. Valuation Session Search Logic
-        setupAutocomplete(valuationSession, valuationSessionSuggestions, 1, (value) => {
-            const searchTerm = value.toUpperCase();
-            return sessionOptions.filter(session => session.includes(searchTerm));
-        });
-
-        // 5. Number of Papers Limit Logic
-        numPapers.addEventListener('input', () => {
-            let value = parseInt(numPapers.value, 10);
-            const max = 25;
-            if (isNaN(value) || value < 1) {
-                numPapers.value = 1;
-            } else if (value > max) {
-                numPapers.value = max;
-                showMessage(`Maximum number of papers limited to ${max}.`, 'info');
-            }
-            saveFormData(); // Save on input
-        });
-
-        // 8. Faculty Autocomplete Logic
-        function facultyDataProvider(value) {
-            const searchTerm = value.toLowerCase();
-            return facultyData
-                .filter(f => (f[FACULTY_NAME_KEY] || '').toLowerCase().includes(searchTerm))
-                .map(f => f[FACULTY_NAME_KEY])
-                .slice(0, 10);
-        }
-        
-        setupAutocomplete(additionalExaminerName, additionalExaminerSuggestions, 3, facultyDataProvider);
-        setupAutocomplete(chiefExaminerName, chiefExaminerSuggestions, 3, facultyDataProvider);
-        setupAutocomplete(chairmanName, chairmanSuggestions, 3, facultyDataProvider);
-
-        function setDesignation(nameInput, desigInput) {
-            // Wait for faculty data to be loaded
-            if (!facultyDataLoaded) return;
-            const faculty = facultyData.find(f => f[FACULTY_NAME_KEY] === nameInput.value.trim());
-            desigInput.value = faculty ? (faculty[FACULTY_DESIGNATION_KEY] || '') : '';
-        }
-
-        additionalExaminerName.addEventListener('change', () => setDesignation(additionalExaminerName, additionalExaminerDesignation));
-        chiefExaminerName.addEventListener('change', () => setDesignation(chiefExaminerName, chiefExaminerDesignation));
-        chairmanName.addEventListener('change', () => setDesignation(chairmanName, chairmanDesignation));
-
-        function formatDate(dateString) {
-            if (!dateString) return '';
-            const parts = dateString.split('-');
-            return (parts.length === 3) ? `${parts[2]}/${parts[1]}/${parts[0].slice(2)}` : dateString;
-        }
-        
-        // --- *** NEW: PDF DOWNLOAD FUNCTION (html2canvas + jspdf) *** ---
-        async function downloadAsPDF() {
-            const element = document.getElementById('markSheetPage');
-            if (!element) {
-                return showMessage('No mark sheet generated to download.', 'error');
-            }
-
-            const qpCode = qpCodeInput.value.trim();
-            const paperName = courseName.value.trim().replace(/\s+/g, '_');
-            const filename = (qpCode && paperName) ? `${qpCode}_${paperName}.pdf` : 'mark-sheet.pdf';
+        function generateEntryTable() {
+            const savedMarks = loadFormData() || {};
+            let html = `<table class="w-full">
+                <thead class="bg-gray-50"><tr><th class="w-10">#</th><th>Reg No</th><th>Status</th><th>Marks (Max 100)</th></tr></thead><tbody>`;
             
-            // Show loading state
-            showMessage('Generating PDF... Please wait. This may take a moment.', 'info');
-            printButton.disabled = true;
-            printButton.innerHTML = `
-                <svg class="w-5 h-5 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                Generating...`;
+            currentNominalRoll.forEach((s, i) => {
+                const isAbsent = s.attendance.includes('ABSENT');
+                const saved = savedMarks[s.regNo] || '';
+                const val = isAbsent ? 'Absent' : saved;
+                const readOnly = isAbsent ? 'readonly' : '';
+                const statusClass = isAbsent ? 'text-red-600 font-bold' : 'text-green-600';
+                const inputClass = isAbsent ? 'bg-gray-100 text-red-600 font-bold cursor-not-allowed' : 'bg-white';
 
-            try {
-                // 1. Capture the canvas
-                const canvas = await html2canvas(element, {
-                    scale: 2, // Higher resolution
-                    useCORS: true,
-                    logging: false,
-                });
-
-                // 2. *** FIX: Get JPEG image data from canvas ***
-                // This is much more compatible with PDF readers than PNG.
-                const imgData = canvas.toDataURL('image/jpeg', 0.98); // 0.98 quality
-
-                // 3. Setup PDF
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4'
-                });
-
-                // 4. Calculate dimensions
-                const pageWidth = pdf.internal.pageSize.getWidth();
-                const pageHeight = pdf.internal.pageSize.getHeight();
-                
-                // 5. Add image to PDF
-                // *** FIX: Specify 'JPEG' as the format ***
-                pdf.addImage(imgData, 'JPEG', 0, 0, pageWidth, pageHeight);
-                
-                // 6. Save PDF
-                pdf.save(filename);
-
-                showMessage('PDF download complete.', 'success');
-
-            } catch (err) {
-                showMessage('An error occurred while generating the PDF. See console.', 'error');
-                console.error('PDF Generation Error:', err);
-            } finally {
-                // 7. Restore button
-                printButton.disabled = false;
-                printButton.innerHTML = `
-                    <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" /></svg>
-                    Download as PDF`;
-            }
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td class="font-mono font-bold">${s.regNo}</td>
+                    <td class="${statusClass} text-xs">${s.attendance}</td>
+                    <td>
+                        <input type="text" 
+                            class="marks-input ${inputClass} border p-1 rounded w-full" 
+                            data-reg="${s.regNo}" 
+                            value="${val}" 
+                            ${readOnly} 
+                            oninput="validateMark(this); saveFormData()"
+                        >
+                    </td>
+                </tr>`;
+            });
+            html += `</tbody></table>`;
+            els.tableContainer.innerHTML = html;
         }
 
-        // --- MARK SHEET GENERATION ---
-        function createSingleMarkSheet(students, copyType, marksData) {
-            const currentQP = qpCodeInput.value.trim();
-            const paperName = courseName.value.trim() || 'PAPER NAME MISSING';
+        window.validateMark = (input) => {
+            if (input.value.toUpperCase() === 'ABSENT') return;
+            const val = parseInt(input.value);
+            if (val > 100) { input.value = ''; showMsg("Max mark is 100", 'error'); }
+        };
+
+        // --- Logic: Output Generation ---
+        document.getElementById('generateButton').addEventListener('click', () => {
+            const marksMap = {};
+            let valid = true;
             
-            const formattedMarkEntryDate = formatDate(markEntryDate.value);
-            const valuationSessionValue = valuationSession.value.trim().toUpperCase();
-            const footerDateSession = `${formattedMarkEntryDate} ${valuationSessionValue}`;
-
-            // --- MODIFIED: Remove '&nbsp;' fallback. We will handle empty with CSS. ---
-            const addlName = additionalExaminerName.value;
-            const addlDesig = additionalExaminerDesignation.value;
-            const chiefName = chiefExaminerName.value;
-            const chiefDesig = chiefExaminerDesignation.value;
-            const chairName = chairmanName.value;
-            const chairDesig = chairmanDesignation.value;
-            
-            let studentRows = '';
-
-            students.forEach(student => {
-                const regNo = student[STUDENT_REGNO_KEY];
-                const marks = marksData[regNo] || { figures: '' };
-                let figures = marks.figures;
-
-                if (figures !== '') {
-                    const num = parseInt(figures, 10);
-                    if (!isNaN(num)) {
-                        figures = String(num).padStart(2, '0');
-                    }
-                }
-                
-                const autoGeneratedWords = numberToDigitWords(marks.figures);
-                
-                studentRows += `
-                    <tr>
-                        <td class="regno-col">${regNo || ''}</td>
-                        <td class="marks-col">${figures}</td>
-                        <td class="words-col"><span style="font-size: 0.6rem; word-wrap: break-word;">${autoGeneratedWords}</span></td>
-                    </tr>
-                `;
+            document.querySelectorAll('.marks-input').forEach(inp => {
+                const val = inp.value.trim();
+                if (!val) valid = false;
+                marksMap[inp.dataset.reg] = val;
             });
 
-            // This function now returns the inner HTML for one column
+            if (!valid) return showMsg("Please enter marks for all students.", 'error');
+
+            const html = `
+                <div class="page" id="markSheetPage">
+                    <div class="two-column-layout">
+                        <div class="mark-sheet-half">${createSheet(marksMap, 'ORIGINAL')}</div>
+                        <div class="mark-sheet-half">${createSheet(marksMap, 'DUPLICATE')}</div>
+                    </div>
+                </div>`;
+            
+            document.getElementById('markSheetPage')?.remove();
+            els.output.insertAdjacentHTML('beforeend', html);
+            document.getElementById('printButton').classList.remove('hidden');
+            document.getElementById('printPageButton').classList.remove('hidden');
+            showMsg("Sheet generated.", 'success');
+        });
+
+        function createSheet(marksMap, type) {
+            const rows = currentNominalRoll.map(s => {
+                const mark = marksMap[s.regNo];
+                let words = '';
+                
+                if (mark.toUpperCase() === 'ABSENT') {
+                    words = 'Absent';
+                } else {
+                    words = numberToWords(mark);
+                }
+
+                return `<tr>
+                    <td class="regno-col">${s.regNo}</td>
+                    <td class="marks-col text-center">${mark}</td>
+                    <td class="words-col text-xs">${words}</td>
+                </tr>`;
+            }).join('');
+
             return `
                 <div class="top-details-bar">
-                    <span class="qp-code-top">${currentQP}</span>
-                    <span class="copy-label-top">${copyType}</span>
+                    <span class="qp-code-top">${els.qpCode.value}</span>
+                    <span class="copy-label-top">${type}</span>
                 </div>
-                
                 <div class="page-header">
                     <h4 class="text-sm">UNIVERSITY OF CALICUT</h4>
                     <h4 class="text-sm">MARK SHEET</h4>
                 </div>
-
-                <div class="paper-name-bar">
-                    <h5 class="text-xs font-semibold">${paperName}--(${currentQP})</h5> 
-                </div>
-                
+                <div class="paper-name-bar"><h5 class="text-xs font-semibold">${els.course.value}</h5></div>
                 <table class="mark-sheet-table">
-                    <thead>
-                        <tr>
-                            <th class="regno-col">Register Number</th>
-                            <th class="marks-col">Marks in Figures</th>
-                            <th class="words-col">Marks in Words</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${studentRows}
-                    </tbody>
+                    <thead><tr><th>Reg No</th><th>Marks</th><th>In Words</th></tr></thead>
+                    <tbody>${rows}</tbody>
                 </table>
-                
                 <div class="signature-section">
-                    <div class="signature-block">
-                        <strong>Addl. Examiner</strong>
-                        <div class="examiner-name pt-6 min-h-5">${addlName || ''}</div>
-                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${addlDesig || ''}</div>
-                    </div>
-                    
-                    <div class="signature-block">
-                        <strong>Chief Examiner</strong>
-                        <div class="examiner-name pt-6 min-h-5">${chiefName || ''}</div>
-                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chiefDesig || ''}</div>
-                    </div>
-                    
-                    <div class="signature-block">
-                        <strong>Chairman</strong>
-                        <div class="examiner-name pt-6 min-h-5">${chairName || ''}</div>
-                        <div class="examiner-designation border-b border-dotted border-gray-500 min-h-5">${chairDesig || ''}</div>
-                    </div>
+                    <div class="signature-block"><strong>Addl. Examiner</strong><div class="examiner-name min-h-5 pt-4">${els.addl.value}</div><div class="min-h-5 border-b border-dotted border-gray-400"></div></div>
+                    <div class="signature-block"><strong>Chief Examiner</strong><div class="examiner-name min-h-5 pt-4">${els.chief.value}</div><div class="min-h-5 border-b border-dotted border-gray-400"></div></div>
+                    <div class="signature-block"><strong>Chairman</strong><div class="examiner-name min-h-5 pt-4">${els.chair.value}</div><div class="min-h-5 border-b border-dotted border-gray-400"></div></div>
                 </div>
+                <div class="exam-details mt-4"><div>${formatDate(els.date.value)} ${els.session.value}</div></div>
+            `;
+        }
+
+        // --- Helpers ---
+        function numberToWords(numStr) {
+            if (!numStr) return '';
+            const digitMap = { '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine' };
+            return numStr.split('').map(d => digitMap[d] || '').join(' ');
+        }
+
+        function formatDate(d) {
+            if (!d) return '';
+            const [y, m, day] = d.split('-');
+            return `${day}/${m}/${y.slice(2)}`;
+        }
+
+        function showMsg(msg, type) {
+            els.msg.textContent = msg;
+            els.msg.className = `no-print mt-4 p-4 rounded-md text-sm ${type === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`;
+            els.msg.classList.remove('hidden');
+        }
+
+        // --- Autocomplete Setup ---
+        function setupAutocompletes() {
+            setupAC(els.qpCode, document.getElementById('qpCodeSuggestions'), () => qpCodeList, (val) => {
+                const paper = studentData.find(s => s.qpCode === val)?.paper;
+                els.course.value = paper || '';
+                els.startReg.value = ''; els.endReg.value = '';
+            });
+
+            // Start Reg Filter
+            setupAC(els.startReg, document.getElementById('startRegNoSuggestions'), () => {
+                const qp = els.qpCode.value;
+                return studentData.filter(s => s.qpCode === qp).map(s => s.regNo).sort();
+            });
+
+            // End Reg Filter (Show only regs >= start)
+            setupAC(els.endReg, document.getElementById('endRegNoSuggestions'), () => {
+                const qp = els.qpCode.value;
+                const start = els.startReg.value;
+                return studentData.filter(s => s.qpCode === qp && s.regNo >= start).map(s => s.regNo).sort();
+            });
+
+            // Faculty
+            const facSource = () => facultyData.map(f => f.name);
+            setupAC(els.addl, document.getElementById('additionalExaminerSuggestions'), facSource, (v) => setDesig(v, 'additionalExaminerDesignation'));
+            setupAC(els.chief, document.getElementById('chiefExaminerSuggestions'), facSource, (v) => setDesig(v, 'chiefExaminerDesignation'));
+            setupAC(els.chair, document.getElementById('chairmanSuggestions'), facSource, (v) => setDesig(v, 'chairmanDesignation'));
+            
+            // Session
+            setupAC(els.session, document.getElementById('valuationSessionSuggestions'), () => ['FN', 'AN']);
+        }
+
+        function setupAC(input, listEl, sourceFn, onSelect) {
+            input.addEventListener('input', () => {
+                const val = input.value.toUpperCase();
+                if (val.length < 1) return listEl.classList.add('hidden');
+                const matches = sourceFn().filter(x => x.toUpperCase().includes(val)).slice(0, 10);
+                listEl.innerHTML = matches.map(m => `<div class="suggestion-item">${m}</div>`).join('');
+                listEl.classList.remove('hidden');
                 
-                <div class="exam-details">
-                    <div>${footerDateSession}</div>
-                </div>
-            `;
+                listEl.querySelectorAll('.suggestion-item').forEach(div => {
+                    div.onclick = () => {
+                        input.value = div.textContent;
+                        listEl.classList.add('hidden');
+                        if (onSelect) onSelect(div.textContent);
+                        saveFormData();
+                    };
+                });
+            });
+            document.addEventListener('click', e => { if (!input.contains(e.target)) listEl.classList.add('hidden'); });
         }
 
-        function generateSheetHTML(students, marksData) {
-            const originalCopy = createSingleMarkSheet(students, 'ORIGINAL', marksData);
-            const duplicateCopy = createSingleMarkSheet(students, 'DUPLICATE', marksData);
-
-            // This is the A4 preview page
-            return `
-            <div class="page" id="markSheetPage">
-                <div class="two-column-layout">
-                    <div class="mark-sheet-half">
-                        ${originalCopy}
-                    </div>
-                    <div class="mark-sheet-half">
-                        ${duplicateCopy}
-                    </div>
-                </div>
-            </div>
-            `;
+        function setDesig(name, id) {
+            const f = facultyData.find(x => x.name === name);
+            if (f) document.getElementById(id).value = f.designation;
         }
+
+        // --- Storage ---
+        function saveFormData() {
+            const data = {
+                qp: els.qpCode.value, start: els.startReg.value, end: els.endReg.value,
+                date: els.date.value, sess: els.session.value,
+                addl: els.addl.value, chief: els.chief.value, chair: els.chair.value,
+                marks: {}
+            };
+            document.querySelectorAll('.marks-input').forEach(i => data.marks[i.dataset.reg] = i.value);
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function loadFormData() {
+            try {
+                const data = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY));
+                if (!data) return;
+                els.qpCode.value = data.qp || ''; 
+                els.date.value = data.date || ''; els.session.value = data.sess || '';
+                els.addl.value = data.addl || ''; els.chief.value = data.chief || ''; els.chair.value = data.chair || '';
+                
+                // Trigger course update if qp exists
+                if (data.qp && dataLoadedCount === 2) {
+                    const paper = studentData.find(s => s.qpCode === data.qp)?.paper;
+                    els.course.value = paper || '';
+                }
+                
+                els.startReg.value = data.start || ''; els.endReg.value = data.end || '';
+                if(data.addl) setDesig(data.addl, 'additionalExaminerDesignation');
+                if(data.chief) setDesig(data.chief, 'chiefExaminerDesignation');
+                if(data.chair) setDesig(data.chair, 'chairmanDesignation');
+                
+                return data.marks;
+            } catch(e) {}
+        }
+
+        // --- Print/PDF ---
+        document.getElementById('printButton').addEventListener('click', async () => {
+            const element = document.getElementById('markSheetPage');
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
+            pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+            pdf.save('mark-sheet.pdf');
+        });
+        
+        document.getElementById('printPageButton').addEventListener('click', () => window.print());
+        document.getElementById('resetButton').addEventListener('click', () => {
+            if(confirm("Clear all data?")) { localStorage.removeItem(LOCAL_STORAGE_KEY); location.reload(); }
+        });
+
     </script>
-
 </body>
 </html>
