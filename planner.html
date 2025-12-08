@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V14 (Flexible Start)</title>
+    <title>Valuation Board Manager V15 (Smart List)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,7 +14,6 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Utility */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px;
@@ -32,23 +31,27 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         td { vertical-align: top; }
+        
+        /* Reg No List Styling */
+        .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
+        .reg-list span.absent { color: #dc2626; font-weight: bold; text-decoration: line-through; text-decoration-color: #fca5a5; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    <div class="max-w-[95%] mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Absentee Tracking</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Smart Lists</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V14</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V15</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -159,13 +162,14 @@
                                 </div>
                             </div>
                             <div id="stagingArea" class="bg-slate-50 rounded-lg p-3 mb-4 hidden border border-slate-200">
-                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging (Unsaved)</div>
+                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging</div>
                                 <div id="stagingList" class="flex flex-wrap gap-2"></div>
                             </div>
                             <button onclick="saveTeam()" id="saveTeamBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 Save Team to Board
                             </button>
                         </div>
+                        
                         <div>
                             <h4 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Active Teams on Board</h4>
                             <div id="activeTeamsList" class="space-y-3">
@@ -210,12 +214,11 @@
                     <table class="min-w-full text-sm text-left" id="distributionTable">
                         <thead class="bg-slate-800 text-white text-xs uppercase">
                             <tr>
-                                <th class="px-3 py-4 w-24">Date/Session</th>
-                                <th class="px-3 py-4 w-32">Chief</th>
-                                <th class="px-3 py-4 w-32">Additional</th>
-                                <th class="px-3 py-4 w-48">Paper</th>
-                                <th class="px-3 py-4 w-48 bg-indigo-50 text-indigo-900">Allotted Register Nos</th>
-                                <th class="px-3 py-4 text-center w-16">Count</th>
+                                <th class="px-3 py-4 w-[10%]">Date/Session</th>
+                                <th class="px-3 py-4 w-[15%]">Chief</th>
+                                <th class="px-3 py-4 w-[15%]">Additional</th>
+                                <th class="px-3 py-4 w-[15%]">Paper</th>
+                                <th class="px-3 py-4 w-[40%] bg-indigo-50 text-indigo-900 border-l border-r border-indigo-100">Allotted Register Nos</th> <th class="px-3 py-4 text-center w-[5%]">Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -230,7 +233,7 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV14';
+        const STORAGE_KEY = 'valuationBoardStateV15';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -409,28 +412,13 @@
             const startSession = document.getElementById('startSessionSelect').value;
             
             let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
-            const sessionQuota = (rule.FN + rule.AN); // Per day per examiner
+            const sessionQuota = (rule.FN + rule.AN);
             const totalDailyCapacity = totalExaminers * sessionQuota;
 
             if (totalDailyCapacity > 0) {
-                // Calculate total sessions needed (approximate logic for estimation)
-                // A better way is: Total Scripts / (Examiners * SessionAverage) -> Slots
-                // Let's stick to days for UI simplicity, but refined:
-                
-                // Pure scripts / capacity logic:
                 let rawDays = totalPresent / totalDailyCapacity;
                 let days = Math.ceil(rawDays);
-                
-                // If starting AN, we lose 0.5 day effectively on Day 1
-                if (startSession === 'AN') {
-                    // Check if the fractional part pushes it to next day
-                    // e.g. need 1.2 days. Start FN = 2 days. Start AN = 2 days (0.5 + 1 + 0.5)
-                    // e.g. need 0.4 days. Start FN = 1 day. Start AN = 1 day (0.5 fits).
-                    // e.g. need 0.8 days. Start FN = 1 day. Start AN = 2 days.
-                    
-                    // Simple heuristic: Add 0.5 to raw demand then ceil
-                    days = Math.ceil(rawDays + 0.5); 
-                }
+                if (startSession === 'AN') days = Math.ceil(rawDays + 0.5); 
 
                 document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
                 document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${totalDailyCapacity} scripts/day</strong>`;
@@ -440,7 +428,6 @@
                 document.getElementById('dateMappingContainer').innerHTML = '';
             }
         }
-        
         function generateDateInputs(numDays) {
             const container = document.getElementById('dateMappingContainer'); 
             const currentValues = {}; container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
@@ -451,29 +438,67 @@
             }
         }
 
-        // --- NEW: Smart Register Number Logic ---
-        function getSmartRange(start, end) {
-            if (!start || !end) return '';
-            if (start === end) return start;
+        // --- SMART LIST LOGIC ---
+        function generateSmartList(regsArray) {
+            if (!regsArray || regsArray.length === 0) return '';
+            
+            // Format: [{regNo: "ABC", isAbsent: bool}]
+            // Group by Prefix
+            const groups = [];
             const regex = /^([A-Z]+)(\d+)$/;
-            const startMatch = start.match(regex);
-            const endMatch = end.match(regex);
-            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
-                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
-            }
-            return `${start} - ${end}`;
+            
+            regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                
+                // Add to last group if prefix matches, else new group
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
+            });
+
+            // Build HTML
+            return groups.map(group => {
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : '';
+                const nums = group.items.map((it, idx) => {
+                    // First item gets the prefix implicitly if not 'OTHER'
+                    // Actually, let's just output prefix once then list
+                    const val = (idx === 0 && group.prefix === 'OTHER') ? it.full : it.number;
+                    // Styling
+                    if (it.isAbsent) return `<span class="absent">${val}</span>`;
+                    return val;
+                }).join(', ');
+                return `<div><span class="font-bold text-slate-700">${prefixStr}</span>${nums}</div>`;
+            }).join(''); // New line per group implicitly by div
         }
         
-        function formatAbsent(absentList, startReg) {
-            if (!absentList || absentList.length === 0) return '';
-            const regex = /^([A-Z]+)(\d+)$/;
-            const match = startReg.match(regex);
-            const prefix = match ? match[1] : null;
-            const shortList = absentList.map(reg => {
-                if (prefix && reg.startsWith(prefix)) return reg.replace(prefix, ''); 
-                return reg;
+        function generateSmartListText(regsArray) {
+             // For PDF (Text Only)
+             if (!regsArray || regsArray.length === 0) return '';
+             const groups = [];
+             const regex = /^([A-Z]+)(\d+)$/;
+             regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
             });
-            return `Absent: ${shortList.join(', ')}`;
+            
+            return groups.map(group => {
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : '';
+                const nums = group.items.map((it, idx) => {
+                    const val = (idx === 0 && group.prefix === 'OTHER') ? it.full : it.number;
+                    return it.isAbsent ? `${val}(A)` : val; // Mark absent in PDF text
+                }).join(', ');
+                return `${prefixStr}${nums}`;
+            }).join('\n');
         }
 
         function generatePlan() {
@@ -493,8 +518,7 @@
                 const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB') : `Day ${d}`;
                 
                 ['FN', 'AN'].forEach(sess => {
-                    // *** FLEXIBLE START LOGIC ***
-                    if (d === 1 && startSession === 'AN' && sess === 'FN') return; // Skip FN on Day 1 if Start=AN
+                    if (d === 1 && startSession === 'AN' && sess === 'FN') return; 
 
                     const sessionQuota = rule[sess];
                     allExaminers.forEach(examiner => {
@@ -504,26 +528,26 @@
                         while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
                             const currentPaper = currentStudent.Paper;
+                            
+                            // Initialize Bundle with All Regs Array
                             let bundle = {
                                 date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
-                                paper: currentPaper, startReg: null, endReg: null, count: 0, absents: []
+                                paper: currentPaper, count: 0, allRegs: []
                             };
 
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
                                 if (s.Paper !== currentPaper) break;
                                 
-                                if (bundle.startReg === null) bundle.startReg = s.RegNo;
-                                bundle.endReg = s.RegNo;
+                                const isAbsent = !(s.Attendance || '').toUpperCase().includes('PRESENT');
+                                bundle.allRegs.push({ regNo: s.RegNo, isAbsent: isAbsent });
                                 
-                                if ((s.Attendance || '').toUpperCase().includes('PRESENT')) {
+                                if (!isAbsent) {
                                     bundle.count++; remainingQuota--;
-                                } else {
-                                    bundle.absents.push(s.RegNo);
                                 }
                                 queueIndex++;
                             }
-                            if (bundle.count > 0 || bundle.startReg) generatedPlan.push(bundle);
+                            if (bundle.count > 0 || bundle.allRegs.length > 0) generatedPlan.push(bundle);
                         }
                     });
                 });
@@ -534,17 +558,14 @@
         function renderTable() {
             const tbody = document.querySelector('#distributionTable tbody'); tbody.innerHTML = '';
             generatedPlan.forEach(r => {
-                const rangeStr = getSmartRange(r.startReg, r.endReg);
-                const absentStr = formatAbsent(r.absents, r.startReg);
-                const absentHtml = absentStr ? `<div class="text-[10px] text-red-500 font-bold mt-1">${absentStr}</div>` : '';
-
+                const listHtml = generateSmartList(r.allRegs);
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
                         <td class="px-3 py-4 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${r.date}</div><span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600">${r.session}</span></td>
                         <td class="px-3 py-4 text-xs font-medium text-indigo-700">${r.chief}</td>
                         <td class="px-3 py-4 text-xs text-slate-600">${r.examiner}</td>
                         <td class="px-3 py-4 text-[10px] text-slate-500 whitespace-normal break-words leading-tight" title="${r.paper}">${r.paper}</td>
-                        <td class="px-3 py-4 font-mono text-xs text-slate-700 font-bold bg-slate-50"><div>${rangeStr}</div>${absentHtml}</td>
+                        <td class="px-3 py-4 bg-indigo-50/50 text-xs"><div class="reg-list">${listHtml}</div></td>
                         <td class="px-3 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-2 py-1 rounded-full text-[10px]">${r.count}</span></td>
                     </tr>`;
             });
@@ -567,18 +588,14 @@
             const doc = new jsPDF();
             const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
             
-            const tableData = generatedPlan.map(r => {
-                const rangeStr = getSmartRange(r.startReg, r.endReg);
-                const absentStr = formatAbsent(r.absents, r.startReg);
-                return [
-                    r.date + '\n' + r.session,
-                    r.chief,
-                    r.examiner,
-                    r.paper,
-                    rangeStr + (absentStr ? '\n' + absentStr : ''),
-                    r.count
-                ];
-            });
+            const tableData = generatedPlan.map(r => [
+                r.date + '\n' + r.session,
+                r.chief,
+                r.examiner,
+                r.paper,
+                generateSmartListText(r.allRegs),
+                r.count
+            ]);
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Plan", 14, 16);
@@ -592,11 +609,14 @@
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
-                styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
+                styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', valign: 'top' },
                 columnStyles: { 
-                    0: { cellWidth: 20 },
-                    3: { cellWidth: 50 },
-                    4: { cellWidth: 40, textColor: [50, 50, 50], fontStyle: 'bold' }
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 25 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 40 },
+                    4: { cellWidth: 70 }, // Wide column for RegNos
+                    5: { cellWidth: 10, halign: 'center' }
                 }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
