@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V11 (Full Persistence)</title>
+    <title>Valuation Board Manager V13 (Smart RegNos)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,6 +14,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
+        /* Utility */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px;
@@ -29,6 +30,9 @@
         .loader-progress { height: 100%; background-color: #4f46e5; width: 0%; transition: width 0.5s ease; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Table Optimization */
+        td { vertical-align: top; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
@@ -45,7 +49,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V11</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V13</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -67,10 +71,10 @@
                     </h3>
                     
                     <div class="mb-5">
-                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board (Name)</label>
-                        <div class="relative">
-                            <i class="fas fa-user-tie absolute left-3 top-3 text-slate-400"></i>
-                            <input type="text" id="chairmanNameInput" placeholder="Enter Chairman's Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg pl-10 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                            <div id="chairmanSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
 
@@ -198,12 +202,11 @@
                     <table class="min-w-full text-sm text-left" id="distributionTable">
                         <thead class="bg-slate-800 text-white text-xs uppercase">
                             <tr>
-                                <th class="px-5 py-4 w-32">Date / Session</th>
-                                <th class="px-5 py-4 w-40">Reporting Chief</th>
-                                <th class="px-5 py-4 w-40">Additional Examiner</th>
-                                <th class="px-5 py-4 w-64">Paper Name</th>
-                                <th class="px-5 py-4 w-40">RegNo Range (From - To)</th>
-                                <th class="px-5 py-4 text-center w-20">Present Count</th>
+                                <th class="px-3 py-4 w-24">Date/Session</th>
+                                <th class="px-3 py-4 w-32">Chief</th>
+                                <th class="px-3 py-4 w-32">Additional</th>
+                                <th class="px-3 py-4 w-48">Paper</th>
+                                <th class="px-3 py-4 w-48 bg-indigo-50 text-indigo-900">Allotted Register Nos</th> <th class="px-3 py-4 text-center w-16">Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -218,18 +221,14 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV11';
+        const STORAGE_KEY = 'valuationBoardStateV13';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
         let teams = [], currentStagingAdditionals = [], generatedPlan = [];
 
-        // Initialization
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Restore UI-only state immediately (Teams, Staging, Chairman)
             restoreSessionBasic();
-            
-            // 2. Start Data Load
             loadFacultyData();
             loadStudentData();
         });
@@ -258,8 +257,6 @@
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
                     document.getElementById('disciplineSearch').disabled = false;
                     document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
-                    
-                    // 3. Restore Data-dependent state (Discipline selection)
                     restoreSessionDataDependent();
                 }, error: () => updateStatus('student', false, "Error")
             });
@@ -270,24 +267,19 @@
             bar.style.width = success ? "100%" : "0%"; bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- State Management (Enhanced) ---
+        // --- State ---
         function saveState() {
             const state = {
                 chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
                 teams: teams,
-                
-                // NEW: Staging Area Persistence
                 stagingChief: document.getElementById('chiefInput').value,
                 stagingAdditionals: currentStagingAdditionals,
-                
                 dates: {}
             };
-            const inputs = document.querySelectorAll('#dateMappingContainer input[type="date"]');
-            inputs.forEach(inp => { if(inp.value) state.dates[inp.id] = inp.value; });
+            document.querySelectorAll('#dateMappingContainer input[type="date"]').forEach(inp => { if(inp.value) state.dates[inp.id] = inp.value; });
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            
             const indicator = document.getElementById('saveStatus');
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
         }
@@ -297,28 +289,12 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (!saved) return;
                 const state = JSON.parse(saved);
-
-                // Restore Input Fields
                 if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
-                if (state.quotaRule) {
-                    const radio = document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`);
-                    if (radio) radio.checked = true;
-                }
-                
-                // Restore Active Teams
-                if (state.teams) { 
-                    teams = state.teams; 
-                    renderActiveTeams(); 
-                }
-
-                // Restore Staging Area
+                if (state.quotaRule) document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`).checked = true;
+                if (state.teams) { teams = state.teams; renderActiveTeams(); }
                 if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
-                if (state.stagingAdditionals) {
-                    currentStagingAdditionals = state.stagingAdditionals;
-                    renderStaging();
-                }
-
-            } catch (e) { console.error("Restore Basic failed", e); }
+                if (state.stagingAdditionals) { currentStagingAdditionals = state.stagingAdditionals; renderStaging(); }
+            } catch (e) {}
         }
 
         function restoreSessionDataDependent() {
@@ -326,47 +302,26 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (!saved) return;
                 const state = JSON.parse(saved);
-
-                if (state.currentDiscipline && rawStudentData.length > 0) {
-                    selectDiscipline(state.currentDiscipline, false);
-                }
-                
-                // Restore Dates (After Discipline selects)
-                if (state.dates) {
-                    setTimeout(() => {
-                        Object.keys(state.dates).forEach(id => {
-                            const inp = document.getElementById(id);
-                            if (inp) inp.value = state.dates[id];
-                        });
-                    }, 50);
-                }
-            } catch (e) { console.error("Restore Data failed", e); }
+                if (state.currentDiscipline && rawStudentData.length > 0) selectDiscipline(state.currentDiscipline, false);
+                if (state.dates) setTimeout(() => { Object.keys(state.dates).forEach(id => { const inp = document.getElementById(id); if (inp) inp.value = state.dates[id]; }); }, 50);
+            } catch (e) {}
         }
 
-        function clearSession() {
-            if(confirm("Are you sure? This will clear all saved teams and planning data.")) {
-                localStorage.removeItem(STORAGE_KEY); location.reload();
-            }
-        }
+        function clearSession() { if(confirm("Clear all data?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
 
-        // --- Discipline Logic ---
+        // --- Core Logic ---
         function extractDisciplines() {
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
             const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
             input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, (val) => selectDiscipline(val, true)));
-            input.addEventListener('input', () => {
-                showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, (val) => selectDiscipline(val, true));
-            });
+            input.addEventListener('input', () => showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, (val) => selectDiscipline(val, true)));
             document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
         }
 
         function selectDiscipline(name, resetDates = true) {
             document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
-            pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => {
-                if (a.Paper === b.Paper) return (a.RegNo || '').localeCompare(b.RegNo || '');
-                return (a.Paper || '').localeCompare(b.Paper || '');
-            });
+            pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => (a.Paper === b.Paper ? (a.RegNo || '').localeCompare(b.RegNo || '') : (a.Paper || '').localeCompare(b.Paper || '')));
             const papers = new Set(pooledStudents.map(s => s.Paper));
             const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
             document.getElementById('planningSection').classList.remove('hidden');
@@ -374,22 +329,14 @@
             document.getElementById('summaryPaperCount').textContent = papers.size;
             document.getElementById('summaryScriptCount').textContent = present;
             document.getElementById('outputSection').classList.add('hidden');
-            
-            if(resetDates) {
-                const inputs = document.querySelectorAll('#dateMappingContainer input[type="date"]');
-                inputs.forEach(inp => inp.value = ''); saveState();
-            }
+            if(resetDates) { document.querySelectorAll('#dateMappingContainer input[type="date"]').forEach(inp => inp.value = ''); saveState(); }
             updateEstimates();
         }
 
-        // --- Team Management ---
-        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => {
-            document.getElementById('chiefInput').value = val;
-            saveState(); // Trigger save on selection
-        });
-        setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => {
-            document.getElementById('addlInput').value = val; document.getElementById('addlInput').dataset.desig = desig;
-        });
+        // --- Team ---
+        setupAutocomplete('chairmanNameInput', 'chairmanSuggestions', (val) => { document.getElementById('chairmanNameInput').value = val; saveState(); });
+        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => { document.getElementById('chiefInput').value = val; saveState(); });
+        setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => { document.getElementById('addlInput').value = val; document.getElementById('addlInput').dataset.desig = desig; });
 
         function setupAutocomplete(inputId, suggId, onSelect) {
             const input = document.getElementById(inputId), sugg = document.getElementById(suggId);
@@ -406,37 +353,34 @@
                 });
                 sugg.classList.remove('hidden');
             });
+            document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
         }
+
         function addCurrentAdditional() {
             const input = document.getElementById('addlInput'); const name = input.value.trim();
             if(!name) return;
             currentStagingAdditionals.push({ name, designation: input.dataset.desig || '' });
-            input.value = ''; 
-            renderStaging();
-            saveState(); // SAVE STAGING
+            input.value = ''; renderStaging(); saveState();
         }
+
         function renderStaging() {
-            const area = document.getElementById('stagingArea'); const list = document.getElementById('stagingList');
+            const area = document.getElementById('stagingArea'), list = document.getElementById('stagingList');
             area.classList.toggle('hidden', currentStagingAdditionals.length === 0);
             list.innerHTML = '';
             currentStagingAdditionals.forEach((ex, idx) => {
                 list.innerHTML += `<span class="bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2">${ex.name} <button onclick="removeFromStaging(${idx})" class="text-red-400 hover:text-red-600">×</button></span>`;
             });
         }
-        function removeFromStaging(idx) {
-            currentStagingAdditionals.splice(idx, 1);
-            renderStaging();
-            saveState();
-        }
+        function removeFromStaging(idx) { currentStagingAdditionals.splice(idx, 1); renderStaging(); saveState(); }
+        
         function saveTeam() {
             const chiefName = document.getElementById('chiefInput').value.trim();
             if(!chiefName || currentStagingAdditionals.length === 0) return alert("Select Chief and at least one Additional");
             teams.push({ id: Date.now(), chief: { name: chiefName, designation: '' }, additionals: [...currentStagingAdditionals] });
-            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); 
-            saveState(); // SAVE
-            updateEstimates();
+            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); saveState(); updateEstimates();
         }
         function deleteTeam(id) { teams = teams.filter(t => t.id !== id); renderActiveTeams(); saveState(); updateEstimates(); }
+        
         function renderActiveTeams() {
             const container = document.getElementById('activeTeamsList'); container.innerHTML = '';
             if(teams.length === 0) { container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>`; return; }
@@ -446,7 +390,7 @@
             });
         }
 
-        // --- Calculation ---
+        // --- Calc & Generator ---
         function updateEstimates() {
             if(!currentDiscipline) return;
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
@@ -465,8 +409,7 @@
         }
         function generateDateInputs(numDays) {
             const container = document.getElementById('dateMappingContainer'); 
-            const currentValues = {};
-            container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
+            const currentValues = {}; container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
             container.innerHTML = '';
             for(let i=1; i<=numDays; i++) {
                 const id = `date_day_${i}`; const val = currentValues[id] || '';
@@ -474,7 +417,44 @@
             }
         }
 
-        // --- Generator Logic ---
+        // --- NEW: Smart Register Number Logic ---
+        function getSmartRange(start, end) {
+            if (!start || !end) return '';
+            if (start === end) return start;
+            
+            // Regex to separate Letters and Numbers
+            const regex = /^([A-Z]+)(\d+)$/;
+            const startMatch = start.match(regex);
+            const endMatch = end.match(regex);
+
+            // If patterns match (Same Prefix)
+            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
+                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`; // VPAZAEC 001 - 020
+            }
+            
+            // Fallback
+            return `${start} - ${end}`;
+        }
+        
+        function formatAbsent(absentList, startReg) {
+            if (!absentList || absentList.length === 0) return '';
+            
+            // Try to detect prefix from startReg
+            const regex = /^([A-Z]+)(\d+)$/;
+            const match = startReg.match(regex);
+            const prefix = match ? match[1] : null;
+
+            // Map absent list: if starts with prefix, strip it
+            const shortList = absentList.map(reg => {
+                if (prefix && reg.startsWith(prefix)) {
+                    return reg.replace(prefix, ''); // Show only '005'
+                }
+                return reg;
+            });
+            
+            return `Absent: ${shortList.join(', ')}`;
+        }
+
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
             const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
@@ -528,15 +508,18 @@
         function renderTable() {
             const tbody = document.querySelector('#distributionTable tbody'); tbody.innerHTML = '';
             generatedPlan.forEach(r => {
-                const absentText = r.absents.length > 0 ? `<div class="text-[10px] text-red-500 font-bold mt-1">Absent: ${r.absents.join(', ')}</div>` : '';
+                const rangeStr = getSmartRange(r.startReg, r.endReg);
+                const absentStr = formatAbsent(r.absents, r.startReg);
+                const absentHtml = absentStr ? `<div class="text-[10px] text-red-500 font-bold mt-1">${absentStr}</div>` : '';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
-                        <td class="px-5 py-4 whitespace-nowrap"><div class="font-bold text-slate-800">${r.date}</div><span class="text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">${r.session}</span></td>
-                        <td class="px-5 py-4 font-medium text-indigo-700">${r.chief}</td>
-                        <td class="px-5 py-4 text-slate-600">${r.examiner}</td>
-                        <td class="px-5 py-4 text-xs text-slate-500 whitespace-normal break-words" title="${r.paper}">${r.paper}</td>
-                        <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
-                        <td class="px-5 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">${r.count}</span></td>
+                        <td class="px-3 py-4 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${r.date}</div><span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600">${r.session}</span></td>
+                        <td class="px-3 py-4 text-xs font-medium text-indigo-700">${r.chief}</td>
+                        <td class="px-3 py-4 text-xs text-slate-600">${r.examiner}</td>
+                        <td class="px-3 py-4 text-[10px] text-slate-500 whitespace-normal break-words leading-tight" title="${r.paper}">${r.paper}</td>
+                        <td class="px-3 py-4 font-mono text-xs text-slate-700 font-bold bg-slate-50"><div>${rangeStr}</div>${absentHtml}</td>
+                        <td class="px-3 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-2 py-1 rounded-full text-[10px]">${r.count}</span></td>
                     </tr>`;
             });
             document.getElementById('outputSection').classList.remove('hidden');
@@ -558,14 +541,18 @@
             const doc = new jsPDF();
             const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
             
-            const tableData = generatedPlan.map(r => [
-                r.date + ' ' + r.session,
-                r.chief,
-                r.examiner,
-                r.paper,
-                `${r.startReg} - ${r.endReg}\n${r.absents.length ? 'Absent: ' + r.absents.join(', ') : ''}`,
-                r.count
-            ]);
+            const tableData = generatedPlan.map(r => {
+                const rangeStr = getSmartRange(r.startReg, r.endReg);
+                const absentStr = formatAbsent(r.absents, r.startReg);
+                return [
+                    r.date + '\n' + r.session,
+                    r.chief,
+                    r.examiner,
+                    r.paper,
+                    rangeStr + (absentStr ? '\n' + absentStr : ''),
+                    r.count
+                ];
+            });
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Plan", 14, 16);
@@ -575,14 +562,25 @@
 
             doc.setTextColor(0,0,0);
             doc.autoTable({
-                head: [['Date/Session', 'Chief', 'Examiner', 'Paper', 'Range (Absent)', 'Count']],
+                head: [['Date/Session', 'Chief', 'Additional', 'Paper', 'Allotted Register Nos', 'Count']],
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
-                styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
+                styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
                 columnStyles: { 
+                    0: { cellWidth: 20 },
                     3: { cellWidth: 50 },
-                    4: { cellWidth: 35 }
+                    4: { cellWidth: 40, textColor: [50, 50, 50], fontStyle: 'bold' } // Highlight Range col
+                },
+                didParseCell: function(data) {
+                    // Make Absent text Red in PDF
+                    if (data.section === 'body' && data.column.index === 4) {
+                        if (data.cell.raw.includes('Absent:')) {
+                            // jsPDF-AutoTable doesn't support multi-color text in one cell easily out of box
+                            // Keep it simple for now, or use complex hooks. 
+                            // We will rely on the "Absent:" text being clear.
+                        }
+                    }
                 }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
