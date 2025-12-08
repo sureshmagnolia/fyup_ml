@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Camp Manager - Chairman's Module</title>
+    <title>Valuation Board Manager - Chairman's Module</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -33,14 +35,14 @@
 <body class="bg-gray-50 min-h-screen p-6">
 
     <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="bg-indigo-700 p-6 text-white flex justify-between items-center">
+        <div class="bg-indigo-800 p-6 text-white flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">Valuation Camp Planner</h1>
-                <p class="text-indigo-200 text-sm mt-1">Paper Distribution & Session Management System</p>
+                <h1 class="text-2xl font-bold"><i class="fas fa-graduation-cap mr-2"></i>Valuation Board Manager</h1>
+                <p class="text-indigo-200 text-sm mt-1">Discipline-wise Paper Distribution & Session Management</p>
             </div>
             <div class="text-right">
                 <span class="bg-indigo-600 px-3 py-1 rounded text-xs font-mono">CHAIRMAN MODULE</span>
-                <div class="text-xs text-indigo-300 mt-1" id="connectionStatus">Connecting to Database...</div>
+                <div class="text-xs text-indigo-300 mt-1" id="connectionStatus">Connecting...</div>
             </div>
         </div>
 
@@ -48,33 +50,38 @@
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-200 pb-6">
                 
-                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 col-span-2">
-                    <h3 class="font-semibold text-gray-700 mb-3">1. Select Discipline & Quota</h3>
+                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 col-span-2">
+                    <h3 class="font-semibold text-gray-800 mb-4 border-b border-blue-200 pb-2">1. Select Discipline Board</h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-1">Filter by Discipline (Name)</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Filter by Discipline</label>
                             <div class="autocomplete-container">
-                                <input type="text" id="disciplineSearch" placeholder="Type to search (e.g. Tamil...)" class="w-full border border-blue-300 rounded p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" disabled>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-2 text-gray-400">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" id="disciplineSearch" placeholder="Type to search (e.g. Tamil...)" class="w-full border border-blue-300 rounded pl-8 p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" disabled>
+                                </div>
                                 <div id="disciplineSuggestions" class="suggestions hidden"></div>
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-500 mb-2">Valuation Quota Rule</label>
-                            <div class="flex gap-4">
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:bg-blue-50">
-                                    <input type="radio" name="discipline" value="ARTS" class="form-radio text-indigo-600 h-4 w-4" checked onchange="updateQuotas()">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Valuation Quota Rule</label>
+                            <div class="flex gap-3">
+                                <label class="flex-1 flex items-center justify-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                                    <input type="radio" name="quotaRule" value="ARTS" class="form-radio text-indigo-600 h-4 w-4" checked onchange="updateEstimates()">
                                     <div>
-                                        <span class="font-bold text-gray-800 text-sm">Arts</span>
-                                        <div class="text-[10px] text-gray-500 leading-tight">FN: 20 | AN: 15</div>
+                                        <span class="font-bold text-gray-800 text-sm block">Arts</span>
+                                        <span class="text-[10px] text-gray-500">FN:20 / AN:15</span>
                                     </div>
                                 </label>
-                                <label class="flex items-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:bg-blue-50">
-                                    <input type="radio" name="discipline" value="SCIENCE" class="form-radio text-indigo-600 h-4 w-4" onchange="updateQuotas()">
+                                <label class="flex-1 flex items-center justify-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:border-indigo-500 hover:bg-indigo-50 transition-all">
+                                    <input type="radio" name="quotaRule" value="SCIENCE" class="form-radio text-indigo-600 h-4 w-4" onchange="updateEstimates()">
                                     <div>
-                                        <span class="font-bold text-gray-800 text-sm">Science</span>
-                                        <div class="text-[10px] text-gray-500 leading-tight">FN: 18 | AN: 12</div>
+                                        <span class="font-bold text-gray-800 text-sm block">Science</span>
+                                        <span class="text-[10px] text-gray-500">FN:18 / AN:12</span>
                                     </div>
                                 </label>
                             </div>
@@ -82,20 +89,20 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex flex-col justify-center">
-                    <h3 class="font-semibold text-gray-700 mb-2">2. Data Synchronization</h3>
-                    <div class="space-y-3">
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 flex flex-col justify-center">
+                    <h3 class="font-semibold text-gray-700 mb-3 border-b border-gray-200 pb-2">System Status</h3>
+                    <div class="space-y-4">
                         <div>
                             <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>Student DB</span>
-                                <span id="studentLoadStatus" class="font-bold text-orange-500">Loading...</span>
+                                <span><i class="fas fa-database mr-1"></i> Student DB</span>
+                                <span id="studentLoadStatus" class="font-bold text-orange-500">Connecting...</span>
                             </div>
                             <div class="loader-bar"><div id="studentLoader" class="loader-progress indeterminate"></div></div>
                         </div>
                         <div>
                             <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span>Faculty DB</span>
-                                <span id="facultyLoadStatus" class="font-bold text-orange-500">Loading...</span>
+                                <span><i class="fas fa-users mr-1"></i> Faculty DB</span>
+                                <span id="facultyLoadStatus" class="font-bold text-orange-500">Connecting...</span>
                             </div>
                             <div class="loader-bar"><div id="facultyLoader" class="loader-progress indeterminate"></div></div>
                         </div>
@@ -103,90 +110,95 @@
                 </div>
             </div>
 
-            <div id="paperSection" class="hidden">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">3. Available Papers <span id="paperFilterLabel" class="text-sm font-normal text-gray-500 ml-2">(All Disciplines)</span></h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm text-left text-gray-500 border border-gray-200">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                            <tr>
-                                <th class="px-4 py-3">Paper Name</th>
-                                <th class="px-4 py-3">Discipline</th>
-                                <th class="px-4 py-3 text-center">Scripts</th>
-                                <th class="px-4 py-3 text-center text-green-600">Present</th>
-                                <th class="px-4 py-3 text-center text-red-600">Absent</th>
-                                <th class="px-4 py-3 text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="paperTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div id="planningInterface" class="hidden bg-white border border-gray-200 rounded-lg shadow-sm">
-                <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <div id="planningSection" class="hidden animate-fade-in-down">
+                
+                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-6 flex flex-wrap justify-between items-center shadow-sm">
                     <div>
-                        <h3 class="font-bold text-lg text-indigo-700" id="selectedPaperTitle">Paper Name</h3>
-                        <p class="text-xs text-gray-500">Planning Mode: <span id="currentRuleDisplay">ARTS</span></p>
+                        <h2 class="text-xl font-bold text-indigo-800" id="selectedDisciplineTitle">Discipline Name</h2>
+                        <div class="text-sm text-indigo-600 mt-1">
+                            <span class="mr-4"><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span><i class="fas fa-file-alt mr-1"></i> Total Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <div class="text-sm font-bold">Total Present: <span id="totalPresentCount">0</span></div>
-                        <div class="text-xs text-gray-500">Est. Days: <span id="estimatedDays">0</span></div>
+                    <div class="text-right mt-2 md:mt-0">
+                        <div class="text-xs text-gray-500 uppercase font-bold">Estimated Duration</div>
+                        <div class="text-2xl font-bold text-gray-800" id="estimatedDaysDisplay">0 Days</div>
+                        <div class="text-xs text-gray-500" id="capacityDisplay">with current team</div>
                     </div>
                 </div>
 
-                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-gray-700 border-b pb-2">Assign Examiners</h4>
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-5">
+                        <h4 class="font-bold text-gray-800 border-b pb-2 mb-4"><i class="fas fa-chalkboard-teacher mr-2 text-indigo-500"></i>Examiner Team</h4>
                         
-                        <div class="form-group relative">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Chief Examiner</label>
-                            <input type="text" id="chiefInput" placeholder="Search Faculty..." class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <div id="chiefSuggestions" class="suggestions hidden"></div>
-                            <input type="text" id="chiefDesig" readonly class="w-full mt-1 bg-gray-50 border-0 text-xs text-gray-500 italic" placeholder="Designation">
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">CHIEF EXAMINER</label>
+                            <div class="autocomplete-container">
+                                <input type="text" id="chiefInput" placeholder="Search Chief Examiner..." class="w-full border rounded p-2 text-sm bg-gray-50 focus:bg-white transition-colors outline-none focus:ring-2 focus:ring-indigo-500">
+                                <div id="chiefSuggestions" class="suggestions hidden"></div>
+                            </div>
                         </div>
 
-                        <div class="form-group relative">
-                            <label class="block text-xs font-medium text-gray-700 mb-1">Additional Examiner</label>
-                            <input type="text" id="addlInput" placeholder="Search Faculty..." class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <div id="addlSuggestions" class="suggestions hidden"></div>
-                            <input type="text" id="addlDesig" readonly class="w-full mt-1 bg-gray-50 border-0 text-xs text-gray-500 italic" placeholder="Designation">
+                        <div class="mb-2">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">ADDITIONAL EXAMINERS (TEAM)</label>
+                            <div class="flex gap-2 mb-2">
+                                <div class="autocomplete-container flex-1">
+                                    <input type="text" id="addlInput" placeholder="Search & Add Examiner..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <div id="addlSuggestions" class="suggestions hidden"></div>
+                                </div>
+                                <button onclick="addExaminer()" class="bg-indigo-600 text-white px-4 rounded hover:bg-indigo-700 transition-colors">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded border border-gray-200 h-48 overflow-y-auto p-2" id="examinerListContainer">
+                            <div class="text-center text-gray-400 text-xs mt-4 italic">No additional examiners added yet.</div>
+                        </div>
+                        <div class="text-right mt-2 text-xs text-gray-500">
+                            Total Additional: <span id="teamSizeCount" class="font-bold text-indigo-600">0</span>
                         </div>
                     </div>
 
-                    <div class="space-y-4">
-                        <h4 class="font-semibold text-gray-700 border-b pb-2">Map Dates to Days</h4>
-                        <div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 mb-2">
-                            System uses "Day 1, Day 2" logic. Assign actual dates below.
+                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-5">
+                        <h4 class="font-bold text-gray-800 border-b pb-2 mb-4"><i class="far fa-calendar-alt mr-2 text-indigo-500"></i>Session Calendar</h4>
+                        
+                        <div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 mb-4 flex items-start">
+                            <i class="fas fa-info-circle mt-0.5 mr-2"></i>
+                            <div>The system calculated the days based on your Team Size. Please map specific dates below.</div>
                         </div>
+
                         <div id="dateMappingContainer" class="max-h-60 overflow-y-auto space-y-2 pr-2">
-                            </div>
+                            <div class="text-center text-gray-400 text-sm py-8">Select Discipline and Add Examiners to generate schedule.</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
-                    <button onclick="generatePlan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-medium text-sm transition-colors shadow-sm">
-                        Generate Distribution Table
-                    </button>
-                    <button onclick="downloadPDF()" id="pdfBtn" disabled class="bg-gray-400 text-white px-6 py-2 rounded font-medium text-sm transition-colors shadow-sm cursor-not-allowed">
-                        Download PDF
+                <div class="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-100">
+                    <button onclick="generatePlan()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded shadow-md font-medium text-sm transition-all flex items-center">
+                        <i class="fas fa-table mr-2"></i> Generate Distribution Table
                     </button>
                 </div>
             </div>
 
-            <div id="outputSection" class="hidden mt-6">
-                <h3 class="font-semibold text-gray-800 mb-3">Distribution Plan</h3>
-                <div class="overflow-x-auto border rounded-lg shadow-sm">
+            <div id="outputSection" class="hidden mt-8 animate-fade-in-up">
+                <div class="flex justify-between items-end mb-3">
+                    <h3 class="font-bold text-xl text-gray-800">Distribution Plan</h3>
+                    <button onclick="downloadPDF()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-900 transition-colors shadow-sm">
+                        <i class="fas fa-file-pdf mr-2"></i> Download PDF
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto border rounded-lg shadow-lg">
                     <table class="min-w-full text-sm text-left" id="distributionTable">
-                        <thead class="bg-gray-800 text-white text-xs uppercase">
+                        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
                             <tr>
                                 <th class="px-4 py-3">Date / Session</th>
-                                <th class="px-4 py-3">Chief Examiner</th>
-                                <th class="px-4 py-3">Addl. Examiner</th>
-                                <th class="px-4 py-3">RegNo From</th>
-                                <th class="px-4 py-3">RegNo To</th>
-                                <th class="px-4 py-3 text-center">Present</th>
-                                <th class="px-4 py-3 text-center">Absent</th>
+                                <th class="px-4 py-3">Examiner</th>
+                                <th class="px-4 py-3">Paper Code</th>
+                                <th class="px-4 py-3">RegNo Range</th>
+                                <th class="px-4 py-3 text-center">Scripts</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200 text-gray-700">
@@ -204,334 +216,342 @@
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         
         let rawStudentData = [];
-        let groupedPapers = {};
         let facultyData = [];
-        let disciplineList = []; // New unique list
-        let currentSelectedPaper = null;
-        let generatedBundles = [];
-        let selectedDisciplineFilter = ''; // Filter state
+        let disciplineList = [];
         
-        // Quota Rules
+        // Planning State
+        let currentDiscipline = null;
+        let pooledStudents = []; // All students in selected discipline
+        let additionalExaminers = []; // List of selected examiner objects {name, desig}
+        let generatedPlan = [];
+        
+        // Rules
         const RULES = {
             ARTS: { FN: 20, AN: 15 },
             SCIENCE: { FN: 18, AN: 12 }
         };
 
-        // --- Initialization ---
+        // --- Init ---
         document.addEventListener('DOMContentLoaded', () => {
             loadFacultyData();
             loadStudentData();
         });
 
-        // --- 1. Load Faculty Data ---
+        // --- Data Loading ---
         function loadFacultyData() {
             Papa.parse(facultyCsvUrl, {
                 download: true, header: true, skipEmptyLines: true,
-                complete: (results) => {
-                    const nameKey = results.meta.fields.find(f => f.toUpperCase().includes('NAME'));
-                    const desigKey = results.meta.fields.find(f => f.toUpperCase().includes('DESIGNATION'));
-                    
-                    if (nameKey) {
-                        facultyData = results.data.map(row => ({
-                            name: row[nameKey],
-                            designation: row[desigKey] || ''
-                        })).filter(f => f.name);
-                        
-                        updateStatus('faculty', true, `Loaded ${facultyData.length} records`);
-                    }
+                complete: (res) => {
+                    facultyData = res.data.map(r => ({
+                        name: r['NAME'] || r['Name'], 
+                        designation: r['Designation of Faculty'] || ''
+                    })).filter(f => f.name);
+                    updateStatus('faculty', true, `Ready (${facultyData.length} records)`);
                 },
-                error: (err) => updateStatus('faculty', false, "Network Error")
+                error: () => updateStatus('faculty', false, "Failed")
             });
         }
 
-        // --- 2. Load Student Data ---
         function loadStudentData() {
             Papa.parse(studentCsvUrl, {
-                download: true, header: true, skipEmptyLines: true,
-                transformHeader: h => h.trim(),
-                complete: (results) => {
-                    rawStudentData = results.data;
-                    processStudentData();
-                    extractDisciplines(); // New step
-                    updateStatus('student', true, `Loaded ${rawStudentData.length} records`);
-                    document.getElementById('connectionStatus').textContent = "Database Connected";
+                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
+                complete: (res) => {
+                    rawStudentData = res.data;
+                    extractDisciplines();
+                    updateStatus('student', true, `Ready (${rawStudentData.length} records)`);
+                    document.getElementById('connectionStatus').textContent = "Connected";
                     document.getElementById('connectionStatus').className = "text-xs text-green-300 mt-1";
                 },
-                error: (err) => {
-                    updateStatus('student', false, "Network Error");
-                    alert("Failed to load student data. Please check internet connection.");
-                }
+                error: () => updateStatus('student', false, "Failed")
             });
         }
 
         function updateStatus(type, success, msg) {
-            const statusEl = document.getElementById(`${type}LoadStatus`);
-            const loaderEl = document.getElementById(`${type}Loader`);
-            statusEl.textContent = msg;
-            statusEl.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
-            loaderEl.className = "loader-progress"; 
-            loaderEl.style.width = success ? "100%" : "0%";
-            loaderEl.style.backgroundColor = success ? "#10b981" : "#ef4444";
+            const el = document.getElementById(`${type}LoadStatus`);
+            const bar = document.getElementById(`${type}Loader`);
+            el.textContent = msg;
+            el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
+            bar.className = "loader-progress";
+            bar.style.width = success ? "100%" : "0%";
+            bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- 3. Process & Group Data ---
-        function processStudentData() {
-            groupedPapers = {};
-            rawStudentData.forEach(row => {
-                const paperName = row['Paper'];
-                const discipline = row['Discipline'] || 'Unknown';
-                if (!paperName) return;
-
-                if (!groupedPapers[paperName]) {
-                    groupedPapers[paperName] = {
-                        name: paperName,
-                        discipline: discipline,
-                        students: [],
-                        present: 0,
-                        absent: 0
-                    };
-                }
-                groupedPapers[paperName].students.push(row);
-                
-                const status = (row['Attendance'] || '').toUpperCase();
-                if (status.includes('PRESENT')) groupedPapers[paperName].present++;
-                else groupedPapers[paperName].absent++;
-            });
-            renderPaperList(); // Initial render (all)
-        }
-        
-        // --- 4. Extract & Setup Discipline Search ---
+        // --- Discipline Handling ---
         function extractDisciplines() {
-            // Get unique disciplines
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
             
-            // Enable Input
             const input = document.getElementById('disciplineSearch');
             input.disabled = false;
             
-            // Setup Autocomplete
             const suggestions = document.getElementById('disciplineSuggestions');
-            
-            input.addEventListener('focus', () => {
-                 // Show all on focus if empty
-                 if(input.value === '') showDisciplineSuggestions(disciplineList);
-            });
-            
+            input.addEventListener('focus', () => showSuggestions(disciplineList, input, suggestions, selectDiscipline));
             input.addEventListener('input', () => {
                 const val = input.value.toLowerCase();
                 const filtered = disciplineList.filter(d => d.toLowerCase().includes(val));
-                showDisciplineSuggestions(filtered);
+                showSuggestions(filtered, input, suggestions, selectDiscipline);
             });
-            
-            // Hide on click outside
             document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !suggestions.contains(e.target)) {
-                    suggestions.classList.add('hidden');
-                }
+                if (!input.contains(e.target) && !suggestions.contains(e.target)) suggestions.classList.add('hidden');
             });
         }
-        
-        function showDisciplineSuggestions(list) {
-            const container = document.getElementById('disciplineSuggestions');
-            const input = document.getElementById('disciplineSearch');
-            container.innerHTML = '';
+
+        function selectDiscipline(name) {
+            document.getElementById('disciplineSearch').value = name;
+            currentDiscipline = name;
             
-            if (list.length === 0) {
-                container.classList.add('hidden');
+            // 1. Filter Data
+            const disciplineRows = rawStudentData.filter(r => r.Discipline === name);
+            
+            // 2. Sort: By Paper Name, then by Register Number
+            pooledStudents = disciplineRows.sort((a, b) => {
+                if (a.Paper === b.Paper) {
+                    return (a.RegNo || '').localeCompare(b.RegNo || '');
+                }
+                return (a.Paper || '').localeCompare(b.Paper || '');
+            });
+
+            // 3. Calc Stats
+            const papers = new Set(pooledStudents.map(s => s.Paper));
+            const presentCount = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
+
+            // 4. Update UI
+            document.getElementById('planningSection').classList.remove('hidden');
+            document.getElementById('selectedDisciplineTitle').textContent = name;
+            document.getElementById('summaryPaperCount').textContent = papers.size;
+            document.getElementById('summaryScriptCount').textContent = presentCount;
+            
+            updateEstimates();
+        }
+
+        // --- Team Management ---
+        // Setup Search
+        const addlInput = document.getElementById('addlInput');
+        const addlSugg = document.getElementById('addlSuggestions');
+        addlInput.addEventListener('input', () => {
+            const val = addlInput.value.toLowerCase();
+            if(val.length < 3) { addlSugg.classList.add('hidden'); return; }
+            const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 8);
+            
+            addlSugg.innerHTML = '';
+            matches.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = f.name;
+                div.onclick = () => { addlInput.value = f.name; addlInput.dataset.desig = f.designation; addlSugg.classList.add('hidden'); };
+                addlSugg.appendChild(div);
+            });
+            addlSugg.classList.remove('hidden');
+        });
+
+        function addExaminer() {
+            const name = addlInput.value.trim();
+            if(!name) return;
+            const desig = addlInput.dataset.desig || '';
+            
+            additionalExaminers.push({ name, designation: desig });
+            addlInput.value = ''; // Clear
+            renderExaminerList();
+            updateEstimates();
+        }
+
+        function removeExaminer(idx) {
+            additionalExaminers.splice(idx, 1);
+            renderExaminerList();
+            updateEstimates();
+        }
+
+        function renderExaminerList() {
+            const container = document.getElementById('examinerListContainer');
+            document.getElementById('teamSizeCount').textContent = additionalExaminers.length;
+            
+            if(additionalExaminers.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-400 text-xs mt-4 italic">No additional examiners added yet.</div>';
                 return;
             }
+            
+            container.innerHTML = '';
+            additionalExaminers.forEach((ex, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex justify-between items-center bg-white p-2 mb-1 border rounded shadow-sm text-sm';
+                div.innerHTML = `
+                    <div>
+                        <div class="font-medium text-gray-800">${ex.name}</div>
+                        <div class="text-xs text-gray-500">${ex.designation}</div>
+                    </div>
+                    <button onclick="removeExaminer(${idx})" class="text-red-500 hover:text-red-700 px-2">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Chief Search (Simple)
+        const chiefInput = document.getElementById('chiefInput');
+        const chiefSugg = document.getElementById('chiefSuggestions');
+        chiefInput.addEventListener('input', () => {
+             const val = chiefInput.value.toLowerCase();
+             if(val.length < 3) { chiefSugg.classList.add('hidden'); return; }
+             const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 5);
+             showSuggestions(matches.map(m=>m.name), chiefInput, chiefSugg, (n) => chiefInput.value = n);
+        });
+
+        // --- Logic & Calculation ---
+        function updateEstimates() {
+            if(!currentDiscipline) return;
+            
+            const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
+            const teamSize = additionalExaminers.length;
+            const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const rule = RULES[ruleKey];
+            const dailyQuotaPerExaminer = rule.FN + rule.AN;
+            
+            const totalDailyCapacity = teamSize * dailyQuotaPerExaminer;
+            
+            let days = 0;
+            if (teamSize > 0) {
+                days = Math.ceil(totalPresent / totalDailyCapacity);
+                document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
+                document.getElementById('capacityDisplay').textContent = `Capacity: ${totalDailyCapacity} scripts/day (${teamSize} examiners)`;
+                generateDateInputs(days);
+            } else {
+                document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
+                document.getElementById('capacityDisplay').textContent = "Add examiners to calculate";
+                document.getElementById('dateMappingContainer').innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Add examiners to calculate schedule.</div>';
+            }
+        }
+
+        function generateDateInputs(numDays) {
+            const container = document.getElementById('dateMappingContainer');
+            container.innerHTML = '';
+            for(let i=1; i<=numDays; i++) {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-gray-50 p-2 rounded border";
+                div.innerHTML = `
+                    <span class="text-xs font-bold text-gray-500 w-12">Day ${i}</span>
+                    <input type="date" id="date_day_${i}" class="border rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // --- Core Algorithm: Parallel Distribution ---
+        function generatePlan() {
+            if(additionalExaminers.length === 0) return alert("Please add at least one Additional Examiner.");
+            
+            const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const quota = RULES[ruleKey];
+            const sessions = ['FN', 'AN'];
+            
+            generatedPlan = []; // Reset
+            
+            // Queue of Students (Already Sorted)
+            // We need to consume this queue sequentially
+            let queueIndex = 0;
+            const totalStudents = pooledStudents.length;
+            
+            // Get Dates
+            const daysCount = parseInt(document.getElementById('estimatedDaysDisplay').textContent);
+            
+            for (let d = 1; d <= daysCount; d++) {
+                const dateInput = document.getElementById(`date_day_${d}`);
+                const dateStr = (dateInput && dateInput.value) ? formatDate(dateInput.value) : `Day ${d}`;
+                
+                // For each Session
+                sessions.forEach(sess => {
+                    const sessionQuota = (sess === 'FN') ? quota.FN : quota.AN;
+                    
+                    // Assign to each examiner in team
+                    additionalExaminers.forEach(examiner => {
+                        if (queueIndex >= totalStudents) return; // Stop if no students left
+                        
+                        let currentBundle = {
+                            date: dateStr,
+                            session: sess,
+                            examiner: examiner.name,
+                            startReg: null,
+                            endReg: null,
+                            paper: null, // Keep track of paper to detect changes
+                            count: 0
+                        };
+                        
+                        let assignedCount = 0;
+                        
+                        // Fill Quota
+                        while (assignedCount < sessionQuota && queueIndex < totalStudents) {
+                            const student = pooledStudents[queueIndex];
+                            const isPresent = (student.Attendance || '').toUpperCase().includes('PRESENT');
+                            
+                            // Initialize Bundle Start
+                            if (currentBundle.startReg === null) {
+                                currentBundle.startReg = student.RegNo;
+                                currentBundle.paper = student.Paper;
+                            }
+                            
+                            // Check for Paper Change? 
+                            // If we want strictly separate bundles for separate papers, we break here.
+                            // If we want "Sum All" regardless of paper, we continue.
+                            // Better UX: Show "Multiple Papers" if mixed, or break line.
+                            // Let's keep it simple: Just fill the quota. The Range implies the students.
+                            
+                            currentBundle.endReg = student.RegNo;
+                            // Update Paper: if it changes, maybe note it? 
+                            // For simplicity, we just list the Paper of the *start* or "Mixed".
+                            if(student.Paper !== currentBundle.paper) currentBundle.paper = "Mixed / Multiple";
+                            
+                            if (isPresent) assignedCount++;
+                            queueIndex++;
+                        }
+                        
+                        currentBundle.count = assignedCount;
+                        if (currentBundle.count > 0 || (currentBundle.startReg)) {
+                            generatedPlan.push(currentBundle);
+                        }
+                    });
+                });
+            }
+            
+            renderOutputTable();
+        }
+
+        function renderOutputTable() {
+            const tbody = document.querySelector('#distributionTable tbody');
+            tbody.innerHTML = '';
+            
+            generatedPlan.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-indigo-700">${row.date} <span class="text-xs text-gray-500 bg-gray-100 px-1 rounded ml-1">${row.session}</span></td>
+                    <td class="px-4 py-3 font-medium text-gray-800">${row.examiner}</td>
+                    <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${row.paper}">${row.paper}</td>
+                    <td class="px-4 py-3 font-mono text-xs text-gray-600">${row.startReg} - ${row.endReg}</td>
+                    <td class="px-4 py-3 text-center font-bold text-green-600">${row.count}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('outputSection').classList.remove('hidden');
+            document.getElementById('outputSection').scrollIntoView({behavior: 'smooth'});
+        }
+
+        // --- Helpers ---
+        function showSuggestions(list, input, container, callback) {
+            container.innerHTML = '';
+            if (list.length === 0) { container.classList.add('hidden'); return; }
             
             list.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
                 div.textContent = item;
                 div.onclick = () => {
-                    input.value = item;
-                    selectedDisciplineFilter = item;
+                    if(callback) callback(item);
                     container.classList.add('hidden');
-                    renderPaperList(item); // Filter papers!
                 };
                 container.appendChild(div);
             });
             container.classList.remove('hidden');
-        }
-
-        // --- 5. Render Paper List (with Filter) ---
-        function renderPaperList(filterDiscipline = null) {
-            const tbody = document.getElementById('paperTableBody');
-            tbody.innerHTML = '';
-            const section = document.getElementById('paperSection');
-            const label = document.getElementById('paperFilterLabel');
-            
-            section.classList.remove('hidden');
-            
-            if (filterDiscipline) {
-                label.textContent = `(Filtered: ${filterDiscipline})`;
-                label.classList.add('text-indigo-600', 'font-bold');
-            } else {
-                label.textContent = `(All Disciplines)`;
-                label.classList.remove('text-indigo-600', 'font-bold');
-            }
-
-            // Filter
-            const papersToShow = Object.values(groupedPapers).filter(p => {
-                return !filterDiscipline || p.discipline === filterDiscipline;
-            });
-
-            if (papersToShow.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No papers found for this discipline.</td></tr>`;
-                return;
-            }
-
-            papersToShow.forEach(paper => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 border-b transition-colors";
-                tr.innerHTML = `
-                    <td class="px-4 py-3 font-medium text-gray-900">${paper.name}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500">${paper.discipline}</td>
-                    <td class="px-4 py-3 text-center">${paper.students.length}</td>
-                    <td class="px-4 py-3 text-center font-bold text-green-600 bg-green-50 rounded">${paper.present}</td>
-                    <td class="px-4 py-3 text-center font-bold text-red-600 bg-red-50 rounded">${paper.absent}</td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="selectPaper('${paper.name.replace(/'/g, "\\'")}')" class="text-indigo-600 hover:text-indigo-900 font-medium underline">Select</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // --- 6. Planning & Logic (Same as before) ---
-        function updateQuotas() {
-            const rule = document.querySelector('input[name="discipline"]:checked').value;
-            document.getElementById('currentRuleDisplay').textContent = rule;
-            if (currentSelectedPaper) selectPaper(currentSelectedPaper);
-        }
-
-        function selectPaper(paperName) {
-            currentSelectedPaper = paperName;
-            const paperData = groupedPapers[paperName];
-            const ruleType = document.querySelector('input[name="discipline"]:checked').value;
-            const quota = RULES[ruleType];
-
-            // UI Updates
-            document.getElementById('planningInterface').classList.remove('hidden');
-            document.getElementById('selectedPaperTitle').textContent = paperName;
-            document.getElementById('totalPresentCount').textContent = paperData.present;
-            document.getElementById('outputSection').classList.add('hidden');
-
-            paperData.students.sort((a, b) => (a.RegNo || '').localeCompare(b.RegNo || ''));
-            calculateBundles(paperData.students, quota);
-            
-            // Scroll to planner
-            document.getElementById('planningInterface').scrollIntoView({behavior: 'smooth'});
-        }
-
-        function calculateBundles(students, quota) {
-            generatedBundles = [];
-            let currentBundle = {
-                dayIdx: 1,
-                session: 'FN',
-                quota: quota.FN,
-                presentCount: 0,
-                absentCount: 0,
-                startReg: null,
-                endReg: null
-            };
-
-            students.forEach((student, index) => {
-                const isPresent = (student.Attendance || '').toUpperCase().includes('PRESENT');
-
-                if (currentBundle.startReg === null) currentBundle.startReg = student.RegNo;
-                if (isPresent) currentBundle.presentCount++;
-                else currentBundle.absentCount++;
-                currentBundle.endReg = student.RegNo;
-
-                if (currentBundle.presentCount >= currentBundle.quota) {
-                    generatedBundles.push({...currentBundle});
-                    const nextSession = currentBundle.session === 'FN' ? 'AN' : 'FN';
-                    const nextDay = currentBundle.session === 'AN' ? currentBundle.dayIdx + 1 : currentBundle.dayIdx;
-                    
-                    currentBundle = {
-                        dayIdx: nextDay,
-                        session: nextSession,
-                        quota: (nextSession === 'FN' ? quota.FN : quota.AN),
-                        presentCount: 0,
-                        absentCount: 0,
-                        startReg: null,
-                        endReg: null
-                    };
-                }
-            });
-
-            if (currentBundle.presentCount > 0 || currentBundle.absentCount > 0) {
-                generatedBundles.push({...currentBundle});
-            }
-
-            const maxDay = generatedBundles.length > 0 ? generatedBundles[generatedBundles.length - 1].dayIdx : 0;
-            document.getElementById('estimatedDays').textContent = maxDay;
-            generateDateInputs(maxDay);
-        }
-
-        function generateDateInputs(numDays) {
-            const container = document.getElementById('dateMappingContainer');
-            container.innerHTML = '';
-            for (let i = 1; i <= numDays; i++) {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-2 bg-gray-50 p-2 rounded border";
-                div.innerHTML = `<span class="text-sm font-bold text-gray-600 w-16">Day ${i}:</span><input type="date" id="date_day_${i}" class="border rounded px-2 py-1 text-sm flex-1">`;
-                container.appendChild(div);
-            }
-        }
-
-        // --- Staff Search (Resused) ---
-        function setupAutocomplete(inputId, desigId, suggestionsId) {
-            const input = document.getElementById(inputId);
-            const suggestions = document.getElementById(suggestionsId);
-            const desigField = document.getElementById(desigId);
-
-            input.addEventListener('input', () => {
-                const val = input.value.toLowerCase();
-                if (val.length < 3) { suggestions.classList.add('hidden'); return; }
-                const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 8);
-                suggestions.innerHTML = '';
-                if (matches.length > 0) {
-                    suggestions.classList.remove('hidden');
-                    matches.forEach(f => {
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.textContent = f.name;
-                        div.onclick = () => { input.value = f.name; desigField.value = f.designation; suggestions.classList.add('hidden'); };
-                        suggestions.appendChild(div);
-                    });
-                } else { suggestions.classList.add('hidden'); }
-            });
-            document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !suggestions.contains(e.target)) suggestions.classList.add('hidden');
-            });
-        }
-        setupAutocomplete('chiefInput', 'chiefDesig', 'chiefSuggestions');
-        setupAutocomplete('addlInput', 'addlDesig', 'addlSuggestions');
-
-        // --- Output Generation ---
-        function generatePlan() {
-            const tbody = document.querySelector('#distributionTable tbody');
-            tbody.innerHTML = '';
-            const chiefName = document.getElementById('chiefInput').value || 'TBA';
-            const addlName = document.getElementById('addlInput').value || 'TBA';
-
-            generatedBundles.forEach(bundle => {
-                const dateInput = document.getElementById(`date_day_${bundle.dayIdx}`);
-                let dateStr = dateInput && dateInput.value ? formatDate(dateInput.value) : `Day ${bundle.dayIdx}`;
-                const sessionStr = `${dateStr} ${bundle.session}`;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td class="px-4 py-3 font-medium">${sessionStr}</td><td class="px-4 py-3">${chiefName}</td><td class="px-4 py-3">${addlName}</td><td class="px-4 py-3 font-mono text-xs">${bundle.startReg}</td><td class="px-4 py-3 font-mono text-xs">${bundle.endReg}</td><td class="px-4 py-3 text-center font-bold text-green-600">${bundle.presentCount}</td><td class="px-4 py-3 text-center text-red-500">${bundle.absentCount}</td>`;
-                tbody.appendChild(tr);
-            });
-            document.getElementById('outputSection').classList.remove('hidden');
-            document.getElementById('pdfBtn').disabled = false;
-            document.getElementById('pdfBtn').classList.remove('bg-gray-400', 'cursor-not-allowed');
-            document.getElementById('pdfBtn').classList.add('bg-green-600', 'hover:bg-green-700');
         }
 
         function formatDate(dateStr) {
@@ -542,11 +562,27 @@
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            const paperName = document.getElementById('selectedPaperTitle').textContent;
-            doc.setFontSize(16); doc.text("Valuation Camp Distribution Plan", 14, 20);
-            doc.setFontSize(11); doc.text(`Paper: ${paperName}`, 14, 30);
-            doc.autoTable({ html: '#distributionTable', startY: 40, theme: 'grid', headStyles: { fillColor: [55, 65, 81] } });
-            doc.save(`${paperName}_Plan.pdf`);
+            
+            doc.setFillColor(67, 56, 202); // Indigo
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.text("Valuation Board Schedule", 14, 13);
+            
+            doc.setTextColor(0,0,0);
+            doc.setFontSize(11);
+            doc.text(`Board: ${currentDiscipline}`, 14, 30);
+            doc.text(`Chief Examiner: ${document.getElementById('chiefInput').value || 'Not Assigned'}`, 14, 36);
+            
+            doc.autoTable({
+                html: '#distributionTable',
+                startY: 45,
+                theme: 'grid',
+                headStyles: { fillColor: [55, 65, 81] },
+                styles: { fontSize: 9 }
+            });
+
+            doc.save(`${currentDiscipline}_Schedule.pdf`);
         }
     </script>
 </body>
