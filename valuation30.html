@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V30 (Master Roster)</title>
+    <title>Valuation Board Manager V31 (Restricted Access)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -30,14 +30,10 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Dashboard Scroll */
         .dashboard-list { max-height: 400px; overflow-y: auto; }
-        
         td { vertical-align: top; }
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
         .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
-
-        /* Modal Styles */
         .modal-backdrop { background-color: rgba(0, 0, 0, 0.5); }
     </style>
 </head>
@@ -50,12 +46,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-edit text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Manual Allocation Mode with Master Roster View</p>
+                <p class="text-indigo-200 text-sm mt-1">Manual Allocation Mode (Discipline-Wise Camps)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V30</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V31</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -65,15 +61,29 @@
         </div>
 
         <div class="p-6 space-y-8">
-            <div class="flex justify-between items-center">
-                <div class="w-1/3">
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
-                    <input type="text" id="chairmanNameInput" class="border border-slate-300 rounded px-2 py-1 text-sm w-full" placeholder="Enter Name..." oninput="saveState()">
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
+                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                    <span class="bg-slate-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                    Board Setup (Required)
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
+                        <input type="text" id="chairmanNameInput" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Enter Chairman Name..." oninput="checkVisibility()">
+                    </div>
+                    <div class="autocomplete-container">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
+                        <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                        <div id="disciplineSuggestions" class="suggestions hidden"></div>
+                    </div>
                 </div>
-                <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline">Reset Entire Session</button>
+                <div class="mt-4 flex justify-end">
+                    <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline">Reset Session</button>
+                </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div id="planningSection" class="hidden fade-in grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <div class="lg:col-span-1 bg-slate-50 rounded-xl border border-slate-200 p-5 h-fit shadow-inner">
                     <h3 class="font-bold text-slate-700 mb-4 flex items-center justify-between">
@@ -82,16 +92,15 @@
                     </h3>
                     
                     <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
-                        <div class="text-center text-slate-400 text-xs py-10">Loading Data...</div>
-                    </div>
+                        </div>
                 </div>
 
                 <div class="lg:col-span-2 space-y-8">
                     
                     <div class="bg-white border-2 border-indigo-100 rounded-xl p-6 shadow-sm relative z-20">
                         <h4 class="font-bold text-indigo-800 mb-6 border-b pb-2 flex items-center gap-2">
-                            <span class="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                            Add New Session
+                            <span class="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                            Assign Bundle
                         </h4>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -177,48 +186,25 @@
     <div id="rosterModal" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
             <div class="bg-indigo-900 p-4 text-white flex justify-between items-center">
-                <div>
-                    <h3 class="text-lg font-bold" id="rosterModalTitle">QP Code: XXXX</h3>
-                    <p class="text-xs text-indigo-200" id="rosterModalSub">Full Candidate List</p>
-                </div>
+                <div><h3 class="text-lg font-bold" id="rosterModalTitle">QP Code: XXXX</h3></div>
                 <div class="flex gap-3">
-                    <button onclick="printRoster()" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-xs font-bold flex items-center gap-2">
-                        <i class="fas fa-print"></i> Print List
-                    </button>
-                    <button onclick="closeRosterModal()" class="text-indigo-300 hover:text-white">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+                    <button onclick="printRoster()" class="bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded text-xs font-bold flex items-center gap-2"><i class="fas fa-print"></i> Print</button>
+                    <button onclick="closeRosterModal()" class="text-indigo-300 hover:text-white"><i class="fas fa-times text-xl"></i></button>
                 </div>
             </div>
-            
-            <div class="p-0 overflow-y-auto flex-1 bg-slate-50">
-                <div class="p-6">
-                    <table class="w-full text-sm text-left border-collapse" id="rosterTable">
-                        <thead>
-                            <tr class="bg-slate-200 text-slate-700 text-xs uppercase">
-                                <th class="border border-slate-300 px-4 py-2 w-16 text-center">Sl. No</th>
-                                <th class="border border-slate-300 px-4 py-2 w-48">Register Number</th>
-                                <th class="border border-slate-300 px-4 py-2">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white text-slate-800">
-                            </tbody>
-                    </table>
-                </div>
-            </div>
+            <div class="p-0 overflow-y-auto flex-1 bg-slate-50"><div class="p-6"><table class="w-full text-sm text-left border-collapse" id="rosterTable"><thead><tr class="bg-slate-200 text-slate-700 text-xs uppercase"><th class="border border-slate-300 px-4 py-2 w-16 text-center">Sl. No</th><th class="border border-slate-300 px-4 py-2 w-48">Register Number</th><th class="border border-slate-300 px-4 py-2">Status</th></tr></thead><tbody class="bg-white text-slate-800"></tbody></table></div></div>
         </div>
     </div>
 
     <script>
-        // --- CONSTANTS ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV30';
+        const STORAGE_KEY = 'valuationBoardV31';
 
-        // --- STATE ---
         let rawStudentData = [], facultyData = [];
-        let allocations = [];
-        let assignedRegs = new Set(); 
+        let allocations = []; 
+        let assignedRegs = new Set();
+        let currentDiscipline = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadFacultyData();
@@ -240,7 +226,6 @@
         function setupAutocomplete(inputId, listId, dataFn, onSelect) {
             const input = document.getElementById(inputId);
             const list = document.getElementById(listId);
-            
             const handler = () => {
                 const val = input.value.toLowerCase();
                 const data = dataFn();
@@ -250,10 +235,31 @@
                     if(onSelect) onSelect(sel);
                 });
             };
-
             input.addEventListener('focus', handler);
             input.addEventListener('input', handler);
             input.addEventListener('blur', () => setTimeout(() => list.classList.add('hidden'), 200));
+        }
+
+        // --- VISIBILITY CHECK ---
+        function checkVisibility() {
+            const chairman = document.getElementById('chairmanNameInput').value.trim();
+            const section = document.getElementById('planningSection');
+            
+            // Only show if Chairman AND Discipline are present
+            if (chairman && currentDiscipline) {
+                section.classList.remove('hidden');
+                updateDashboard();
+                saveState();
+            } else {
+                section.classList.add('hidden');
+            }
+        }
+
+        // --- DISCIPLINE SELECTION ---
+        function selectDiscipline(name) {
+            document.getElementById('disciplineSearch').value = name;
+            currentDiscipline = name;
+            checkVisibility(); // Trigger check
         }
 
         // --- DATA LOADING ---
@@ -278,11 +284,13 @@
                     const regKey = findKey('REGNO') || 'RegNo';
                     const attKey = findKey('ATTENDANCE') || 'Attendance';
                     const paperKey = findKey('PAPER') || 'Paper';
+                    const discKey = findKey('DISCIPLINE') || 'Discipline';
 
                     rawStudentData = res.data.map(row => ({
                         regNo: row[regKey],
                         qp: row[qpKey] || 'UNKNOWN',
                         paperName: row[paperKey] || '',
+                        discipline: row[discKey] || 'Unknown',
                         attendance: (row[attKey] || '').toUpperCase()
                     })).filter(s => s.regNo && s.qp);
 
@@ -296,10 +304,15 @@
             document.getElementById('connectionStatus').textContent = "Connected";
             document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
             
+            // Setup Discipline Search
+            const disciplines = [...new Set(rawStudentData.map(s => s.discipline))].sort();
+            document.getElementById('disciplineSearch').disabled = false;
+            document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
+            setupAutocomplete('disciplineSearch', 'disciplineSuggestions', () => disciplines, selectDiscipline);
+
             restoreState();
             setupForm();
-            updateDashboard();
-            renderTable();
+            // Don't call updateDashboard() here, let checkVisibility handle it
         }
 
         // --- FORM SETUP ---
@@ -307,8 +320,15 @@
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
-            const qpList = [...new Set(rawStudentData.map(s => `${s.qp} (${s.paperName.substring(0, 30)}...)`))].sort();
-            setupAutocomplete('allocQP', 'suggQP', () => qpList, (val) => {
+            // QP Autocomplete - Dependent on Discipline
+            const getQPs = () => {
+                if(!currentDiscipline) return [];
+                return [...new Set(rawStudentData
+                    .filter(s => s.discipline === currentDiscipline)
+                    .map(s => `${s.qp} (${s.paperName.substring(0, 30)}...)`))].sort();
+            };
+            
+            setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => {
                 updateStartRegSuggestion(val.split(' ')[0]); 
             });
 
@@ -402,9 +422,12 @@
             const db = document.getElementById('statusDashboard');
             const totalCountEl = document.getElementById('totalPapersCount');
             db.innerHTML = '';
+            
+            if(!currentDiscipline) return;
 
             const stats = {};
-            rawStudentData.forEach(s => {
+            // Filter by discipline
+            rawStudentData.filter(s => s.discipline === currentDiscipline).forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0 };
                 stats[s.qp].total++;
                 if(assignedRegs.has(s.regNo)) stats[s.qp].assigned++;
@@ -418,7 +441,6 @@
                 const percent = Math.round((s.assigned / s.total) * 100);
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
                 
-                // --- Updated Item with View Icon ---
                 const item = document.createElement('div');
                 item.className = "bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors";
                 item.innerHTML = `
@@ -446,23 +468,15 @@
             const modal = document.getElementById('rosterModal');
             const title = document.getElementById('rosterModalTitle');
             const tbody = document.querySelector('#rosterTable tbody');
-            
-            // 1. Get Data
             const students = rawStudentData.filter(s => s.qp === qp).sort((a,b) => a.regNo.localeCompare(b.regNo));
             
-            // 2. Set Header
             title.textContent = `QP Code: ${qp}`;
-            
-            // 3. Build Rows
             tbody.innerHTML = '';
             let serial = 0;
             
             students.forEach(s => {
                 const isAbsent = !s.attendance.includes('PRESENT');
-                
-                // Logic: Increment serial only if Present
                 if(!isAbsent) serial++;
-                
                 const slNo = isAbsent ? '' : serial;
                 const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>';
                 const regClass = isAbsent ? 'text-red-500 line-through' : 'font-mono font-bold';
@@ -473,48 +487,25 @@
                         <td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td>
                         <td class="border-r border-slate-300 px-4 py-2 ${regClass}">${s.regNo}</td>
                         <td class="px-4 py-2 text-xs">${status}</td>
-                    </tr>
-                `;
+                    </tr>`;
             });
-
-            // 4. Show
             modal.classList.remove('hidden');
         }
 
-        function closeRosterModal() {
-            document.getElementById('rosterModal').classList.add('hidden');
-        }
+        function closeRosterModal() { document.getElementById('rosterModal').classList.add('hidden'); }
         
         function printRoster() {
-            // Simple print of modal content area
-            // Ideally use jsPDF or a print style sheet, but for a quick list:
             const content = document.getElementById('rosterTable').outerHTML;
             const title = document.getElementById('rosterModalTitle').textContent;
-            
             const win = window.open('', '', 'width=800,height=600');
-            win.document.write(`
-                <html><head><title>${title}</title>
-                <style>
-                    body { font-family: sans-serif; padding: 20px; }
-                    table { width: 100%; border-collapse: collapse; }
-                    th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-                    .text-red-600 { color: red; font-weight: bold; }
-                    .line-through { text-decoration: line-through; }
-                </style>
-                </head><body>
-                <h2>${title} - Master List</h2>
-                ${content}
-                </body></html>
-            `);
-            win.document.close();
-            win.print();
+            win.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:left;}.text-red-600{color:red;font-weight:bold;}.line-through{text-decoration:line-through;}</style></head><body><h2>${title} - Master List</h2>${content}</body></html>`);
+            win.document.close(); win.print();
         }
 
         // --- RENDER TABLE ---
         function renderTable() {
             const tbody = document.getElementById('allocationBody');
             tbody.innerHTML = '';
-            
             const sorted = [...allocations].sort((a,b) => {
                 if(a.date !== b.date) return a.date.localeCompare(b.date);
                 return a.session.localeCompare(b.session);
@@ -525,41 +516,27 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div>
-                        <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span>
-                    </td>
-                    <td class="px-4 py-3 text-xs">
-                        <div class="font-bold text-slate-700">${alloc.chief}</div>
-                        <div class="text-slate-500">${alloc.additional}</div>
-                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
+                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
                     <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
-                    <td class="px-4 py-3 bg-slate-50 text-xs">
-                        <div class="reg-list">${listHtml}</div>
-                    </td>
+                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
                     <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                    </td>
+                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // --- HELPERS (List Formatting) ---
+        // --- HELPERS ---
         function generateSmartList(regsArray) {
             const groups = [];
             const regex = /^([A-Z]+)(\d+)$/;
             regsArray.forEach(item => {
                 const match = item.regNo.match(regex);
                 const prefix = match ? match[1] : 'OTHER';
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
-                    groups[groups.length - 1].items.push(item);
-                } else {
-                    groups.push({ prefix, items: [item] });
-                }
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
+                else groups.push({ prefix, items: [item] });
             });
-
             return groups.map(group => {
                 const nums = group.items.map((it, idx) => {
                     const match = it.regNo.match(regex);
@@ -578,11 +555,8 @@
              regsArray.forEach(item => {
                 const match = item.regNo.match(regex);
                 const prefix = match ? match[1] : 'OTHER';
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
-                    groups[groups.length - 1].items.push(item);
-                } else {
-                    groups.push({ prefix, items: [item] });
-                }
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
+                else groups.push({ prefix, items: [item] });
             });
             return groups.map(group => {
                 return group.items.map((it, idx) => {
@@ -605,11 +579,15 @@
         function saveState() {
             const state = {
                 chairman: document.getElementById('chairmanNameInput').value,
+                discipline: currentDiscipline,
                 allocs: allocations
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             const indicator = document.getElementById('saveStatus');
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
+            
+            // Check visibility after save
+            checkVisibility();
         }
 
         function restoreState() {
@@ -618,17 +596,22 @@
             try {
                 const state = JSON.parse(saved);
                 if(state.chairman) document.getElementById('chairmanNameInput').value = state.chairman;
+                if(state.discipline) {
+                    document.getElementById('disciplineSearch').value = state.discipline;
+                    currentDiscipline = state.discipline;
+                }
                 if(state.allocs) {
                     allocations = state.allocs;
-                    // Rebuild assigned set
                     assignedRegs.clear();
                     allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(b.regNo)));
                 }
+                
+                checkVisibility(); // Restore visibility state
             } catch(e) {}
         }
 
         function clearSession() {
-            if(confirm("Delete all allocations?")) {
+            if(confirm("Delete all allocations and reset settings?")) {
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
             }
@@ -652,6 +635,7 @@
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Allocation", 14, 16);
             doc.setFontSize(10); 
+            doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
             doc.text(`Chairman: ${chairman}`, 14, 40);
 
             doc.setTextColor(0,0,0);
