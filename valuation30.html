@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V32 (Searchable Chairman)</title>
+    <title>Valuation Board Manager V33 (Dashboard Updated)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -51,7 +51,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V32</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V33</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -201,7 +201,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV32';
+        const STORAGE_KEY = 'valuationBoardV33'; // New key for V33
 
         let rawStudentData = [], facultyData = [];
         let allocations = []; 
@@ -318,9 +318,7 @@
 
         // --- FORM SETUP ---
         function setupForm() {
-            // Updated: Setup Autocomplete for Chairman
             setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
-            
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
@@ -420,7 +418,7 @@
             updateDashboard();
         }
 
-        // --- DASHBOARD ---
+        // --- DASHBOARD (UPDATED FOR NAME) ---
         function updateDashboard() {
             const db = document.getElementById('statusDashboard');
             const totalCountEl = document.getElementById('totalPapersCount');
@@ -429,8 +427,9 @@
             if(!currentDiscipline) return;
 
             const stats = {};
+            // Filter by discipline
             rawStudentData.filter(s => s.discipline === currentDiscipline).forEach(s => {
-                if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0 };
+                if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName }; // Add Name
                 stats[s.qp].total++;
                 if(assignedRegs.has(s.regNo)) stats[s.qp].assigned++;
             });
@@ -446,8 +445,11 @@
                 const item = document.createElement('div');
                 item.className = "bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors";
                 item.innerHTML = `
-                    <div class="flex justify-between font-bold ${color} items-center">
-                        <span>${qp}</span>
+                    <div class="flex justify-between font-bold ${color} items-start">
+                        <div class="flex flex-col">
+                            <span>${qp}</span>
+                            <span class="text-[10px] font-normal text-slate-500 truncate w-32" title="${s.name}">${s.name}</span>
+                        </div>
                         <div class="flex items-center gap-2">
                             <span>${remaining} Left</span>
                             <button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster">
@@ -519,22 +521,12 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div>
-                        <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span>
-                    </td>
-                    <td class="px-4 py-3 text-xs">
-                        <div class="font-bold text-slate-700">${alloc.chief}</div>
-                        <div class="text-slate-500">${alloc.additional}</div>
-                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
+                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
                     <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
-                    <td class="px-4 py-3 bg-slate-50 text-xs">
-                        <div class="reg-list">${listHtml}</div>
-                    </td>
+                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
                     <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
-                    <td class="px-4 py-3 text-center">
-                        <button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                    </td>
+                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
                 `;
                 tbody.appendChild(tr);
             });
