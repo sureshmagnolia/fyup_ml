@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V17 (Strikethrough & (A))</title>
+    <title>Valuation Board Manager V18 (Editable Rules)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -33,9 +33,21 @@
         td { vertical-align: top; }
         
         /* Reg No List Styling */
-        .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #334155; }
-        /* Absent Style in HTML: Red + Strikethrough */
-        .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
+        .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
+        .reg-list span.absent { color: #dc2626; font-weight: bold; }
+        
+        /* Small Inputs for Rules */
+        .rule-input { 
+            width: 2rem; 
+            padding: 0; 
+            text-align: center; 
+            border-bottom: 1px solid #94a3b8; 
+            background: transparent;
+            font-weight: 600;
+            color: #334155;
+            font-size: 0.75rem;
+        }
+        .rule-input:focus { outline: none; border-color: #2563eb; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
@@ -52,7 +64,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V17</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V18</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -88,20 +100,29 @@
                             <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Rule</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
                             <div class="flex gap-3">
-                                <label class="flex-1 cursor-pointer group">
+                                <label class="flex-1 cursor-pointer group relative">
                                     <input type="radio" name="quotaRule" value="ARTS" class="hidden peer" checked onchange="saveState(); updateEstimates()">
-                                    <div class="border border-slate-300 rounded-lg p-2.5 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-center transition-all">
-                                        <div class="font-bold text-sm">Arts</div>
-                                        <div class="text-[10px] text-slate-400">20 / 15</div>
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Arts</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="artsFn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="artsAn" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                        </div>
                                     </div>
                                 </label>
-                                <label class="flex-1 cursor-pointer group">
+                                
+                                <label class="flex-1 cursor-pointer group relative">
                                     <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="saveState(); updateEstimates()">
-                                    <div class="border border-slate-300 rounded-lg p-2.5 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-center transition-all">
-                                        <div class="font-bold text-sm">Science</div>
-                                        <div class="text-[10px] text-slate-400">18 / 12</div>
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Science</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="sciFn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="sciAn" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                        </div>
                                     </div>
                                 </label>
                             </div>
@@ -235,8 +256,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV17';
+        const STORAGE_KEY = 'valuationBoardStateV18';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -247,6 +267,20 @@
             loadFacultyData();
             loadStudentData();
         });
+
+        // --- Helper: Get Current Rules from Inputs ---
+        function getCurrentRules() {
+            return {
+                ARTS: { 
+                    FN: parseInt(document.getElementById('artsFn').value) || 20, 
+                    AN: parseInt(document.getElementById('artsAn').value) || 15 
+                },
+                SCIENCE: { 
+                    FN: parseInt(document.getElementById('sciFn').value) || 18, 
+                    AN: parseInt(document.getElementById('sciAn').value) || 12 
+                }
+            };
+        }
 
         // --- Loading ---
         function loadFacultyData() {
@@ -288,6 +322,8 @@
                 chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
+                // NEW: Save custom rule values
+                customRules: getCurrentRules(),
                 startSession: document.getElementById('startSessionSelect').value,
                 teams: teams,
                 stagingChief: document.getElementById('chiefInput').value,
@@ -305,9 +341,23 @@
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (!saved) return;
                 const state = JSON.parse(saved);
+                
                 if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
                 if (state.quotaRule) document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`).checked = true;
                 if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
+                
+                // Restore Custom Rules
+                if (state.customRules) {
+                    if(state.customRules.ARTS) {
+                        document.getElementById('artsFn').value = state.customRules.ARTS.FN;
+                        document.getElementById('artsAn').value = state.customRules.ARTS.AN;
+                    }
+                    if(state.customRules.SCIENCE) {
+                        document.getElementById('sciFn').value = state.customRules.SCIENCE.FN;
+                        document.getElementById('sciAn').value = state.customRules.SCIENCE.AN;
+                    }
+                }
+
                 if (state.teams) { teams = state.teams; renderActiveTeams(); }
                 if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
                 if (state.stagingAdditionals) { currentStagingAdditionals = state.stagingAdditionals; renderStaging(); }
@@ -411,7 +461,12 @@
         function updateEstimates() {
             if(!currentDiscipline) return;
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
-            const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
+            
+            // Use Dynamic Rules
+            const rules = getCurrentRules();
+            const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const rule = rules[selectedRuleKey];
+            
             const startSession = document.getElementById('startSessionSelect').value;
             
             let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
@@ -473,32 +528,22 @@
             });
 
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : ''; // Space included
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : '';
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    // For the first item, prepend prefix (HTML already does this visually by span, but user wants joined text in some cases)
-                    // The request: "The 1st reg no s coming like this VPAYAEG 019, it should be like VPAYAEG019"
-                    // HTML View: We structure it as <div><span>Prefix</span> Numbers...</div>
-                    // To satisfy "VPAYAEG019", we should just join them in the text node if it's the first one.
-                    
                     if (idx === 0 && group.prefix !== 'OTHER') {
-                        val = group.prefix + it.number; // Joined
+                        val = group.prefix + it.number;
                     } else if (idx === 0 && group.prefix === 'OTHER') {
                         val = it.full;
                     }
                     
-                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`; // (A) added
+                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
                     return val;
                 }).join(', ');
-                
-                // If the first item absorbed the prefix, we don't need the prefix span anymore, 
-                // BUT subsequent lines for same prefix might not exist in this logic (groups are contiguous).
-                // Simplified: Just return the list of numbers where first has prefix.
                 return `<div>${nums}</div>`;
             }).join('');
         }
         
-        // Helper to convert string to unicode strikethrough for PDF
         function toStrikethrough(text) {
             return text.split('').map(char => char + '\u0336').join('');
         }
@@ -521,12 +566,12 @@
             return groups.map(group => {
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; // Joined
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
                     else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
                     
                     if (it.isAbsent) {
                         const txt = `${val}(A)`;
-                        return toStrikethrough(txt); // Apply Strikethrough
+                        return toStrikethrough(txt);
                     }
                     return val; 
                 }).join(', ');
@@ -536,7 +581,12 @@
 
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
-            const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
+            
+            // USE DYNAMIC RULES HERE
+            const rules = getCurrentRules();
+            const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const rule = rules[selectedRuleKey];
+            
             const startSession = document.getElementById('startSessionSelect').value;
             
             generatedPlan = [];
