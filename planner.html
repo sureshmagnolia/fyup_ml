@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V22 (Search Fixed)</title>
+    <title>Valuation Board Manager V23 (Search Fixed & Robust)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,15 +14,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* FIX: High Z-Index for container to ensure dropdown floats ON TOP of siblings */
         .autocomplete-container { position: relative; z-index: 50; }
-        
         .suggestions {
-            position: absolute; 
-            top: 100%; left: 0; /* Force position */
-            z-index: 100; 
-            width: 100%; max-height: 250px;
-            overflow-y: auto; background: white; border: 1px solid #cbd5e1;
+            position: absolute; top: 100%; left: 0; z-index: 100; 
+            width: 100%; max-height: 250px; overflow-y: auto; 
+            background: white; border: 1px solid #cbd5e1;
             border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
@@ -37,7 +33,6 @@
         
         td { vertical-align: top; }
         
-        /* Reg No List Styling */
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #000; }
         .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
         
@@ -57,12 +52,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management (QP Code Based)</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Smart Lists</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V22</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V23</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -85,13 +80,15 @@
                     
                     <div class="mb-5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board</label>
-                        <div class="autocomplete-container" style="z-index: 60;"> <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        <div class="autocomplete-container" style="z-index: 60;">
+                            <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
                             <div id="chairmanSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="autocomplete-container" style="z-index: 50;"> <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
+                        <div class="autocomplete-container" style="z-index: 50;">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
                             <div class="relative">
                                 <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 pr-8 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
                                 <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2.5 text-slate-400 hover:text-red-500" title="Clear Selection">
@@ -255,19 +252,89 @@
     </div>
 
     <script>
-        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV22';
+        // --- UTILITIES (Moved to Top) ---
+        function showSuggestions(list, input, container, callback) {
+            container.innerHTML = ''; 
+            if (!list || list.length === 0) { container.classList.add('hidden'); return; }
+            list.forEach(item => {
+                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
+                div.onclick = () => { callback(item); container.classList.add('hidden'); };
+                container.appendChild(div);
+            });
+            container.classList.remove('hidden');
+        }
 
-        let rawStudentData = [], facultyData = [], disciplineList = [];
-        let currentDiscipline = null, pooledStudents = [];
-        let teams = [], currentStagingAdditionals = [], generatedPlan = [];
+        function clearDisciplineSearch() {
+            document.getElementById('disciplineSearch').value = '';
+            document.getElementById('disciplineSearch').focus();
+            currentDiscipline = null;
+            document.getElementById('planningSection').classList.add('hidden');
+            saveState();
+        }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            restoreSessionBasic();
-            loadFacultyData();
-            loadStudentData();
-        });
+        function getSmartRange(start, end) {
+            if (!start || !end) return '';
+            if (start === end) return start;
+            const regex = /^([A-Z]+)(\d+)$/;
+            const startMatch = start.match(regex);
+            const endMatch = end.match(regex);
+            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
+                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
+            }
+            return `${start} - ${end}`;
+        }
+
+        function generateSmartList(regsArray) {
+            if (!regsArray || regsArray.length === 0) return '';
+            const groups = [];
+            const regex = /^([A-Z]+)(\d+)$/;
+            regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
+            });
+            return groups.map(group => {
+                const nums = group.items.map((it, idx) => {
+                    let val = it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
+                    return val;
+                }).join(', ');
+                return `<div>${nums}</div>`;
+            }).join('');
+        }
+
+        function generateSmartListText(regsArray) {
+             if (!regsArray || regsArray.length === 0) return '';
+             const groups = [];
+             const regex = /^([A-Z]+)(\d+)$/;
+             regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
+            });
+            return groups.map(group => {
+                const nums = group.items.map((it, idx) => {
+                    let val = it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; 
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    if (it.isAbsent) return `${val}(A)`; 
+                    return val; 
+                }).join(', ');
+                return nums;
+            }).join('\n');
+        }
 
         function getCurrentRules() {
             return {
@@ -281,6 +348,21 @@
                 }
             };
         }
+
+        // --- APP LOGIC ---
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
+        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
+        const STORAGE_KEY = 'valuationBoardStateV23';
+
+        let rawStudentData = [], facultyData = [], disciplineList = [];
+        let currentDiscipline = null, pooledStudents = [];
+        let teams = [], currentStagingAdditionals = [], generatedPlan = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            restoreSessionBasic();
+            loadFacultyData();
+            loadStudentData();
+        });
 
         // --- Loading ---
         function loadFacultyData() {
@@ -296,17 +378,29 @@
                 }, error: () => updateStatus('faculty', false, "Error")
             });
         }
+
         function loadStudentData() {
             Papa.parse(studentCsvUrl, {
                 download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
                 complete: (res) => {
+                    // ROBUST KEY FINDING
+                    if (!res.data || res.data.length === 0) return;
+                    const keys = Object.keys(res.data[0]);
+                    const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
+
+                    const qpKey = findKey('QPCODE') || 'QPCode';
+                    const discKey = findKey('DISCIPLINE') || 'Discipline';
+                    const paperKey = findKey('PAPER') || 'Paper';
+                    const regKey = findKey('REGNO') || 'RegNo';
+                    const attKey = findKey('ATTENDANCE') || 'Attendance';
+
                     rawStudentData = res.data.map(row => ({
                         ...row,
-                        QPCode: row['QPCode'] || 'UNKNOWN',
-                        Discipline: row['Discipline'] || 'Unknown',
-                        Paper: row['Paper'] || 'Unknown Paper',
-                        RegNo: row['RegNo'] || '',
-                        Attendance: row['Attendance'] || ''
+                        QPCode: row[qpKey] || 'UNKNOWN',
+                        Discipline: row[discKey] || 'Unknown',
+                        Paper: row[paperKey] || 'Unknown Paper',
+                        RegNo: row[regKey] || '',
+                        Attendance: row[attKey] || ''
                     }));
                     
                     extractDisciplines();
@@ -316,9 +410,13 @@
                     document.getElementById('disciplineSearch').disabled = false;
                     document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
                     restoreSessionDataDependent();
-                }, error: () => updateStatus('student', false, "Error")
+                }, error: (err) => {
+                    console.error(err);
+                    updateStatus('student', false, "Error");
+                }
             });
         }
+
         function updateStatus(type, success, msg) {
             const el = document.getElementById(`${type}LoadStatus`), bar = document.getElementById(`${type}Loader`);
             el.textContent = msg; el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
@@ -394,14 +492,6 @@
             
             document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
         }
-        
-        function clearDisciplineSearch() {
-            document.getElementById('disciplineSearch').value = '';
-            document.getElementById('disciplineSearch').focus();
-            currentDiscipline = null;
-            document.getElementById('planningSection').classList.add('hidden');
-            saveState();
-        }
 
         function selectDiscipline(name, resetDates = true) {
             document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
@@ -412,7 +502,6 @@
                 return (a.QPCode || '').localeCompare(b.QPCode || '');
             });
 
-            // Count Unique QP Codes
             const qpCodes = new Set(pooledStudents.map(s => s.QPCode));
             const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
             
@@ -518,78 +607,6 @@
             }
         }
 
-        // --- SMART LIST LOGIC ---
-        function getSmartRange(start, end) {
-            if (!start || !end) return '';
-            if (start === end) return start;
-            const regex = /^([A-Z]+)(\d+)$/;
-            const startMatch = start.match(regex);
-            const endMatch = end.match(regex);
-            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
-                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
-            }
-            return `${start} - ${end}`;
-        }
-
-        function generateSmartList(regsArray) {
-            if (!regsArray || regsArray.length === 0) return '';
-            const groups = [];
-            const regex = /^([A-Z]+)(\d+)$/;
-            
-            regsArray.forEach(item => {
-                const match = item.regNo.match(regex);
-                const prefix = match ? match[1] : 'OTHER';
-                const number = match ? match[2] : item.regNo;
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
-                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
-                } else {
-                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
-                }
-            });
-
-            return groups.map(group => {
-                const nums = group.items.map((it, idx) => {
-                    let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
-                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
-                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
-                    return val;
-                }).join(', ');
-                return `<div>${nums}</div>`;
-            }).join('');
-        }
-        
-        function toStrikethrough(text) {
-            return text.split('').map(char => char + '\u0336').join('');
-        }
-
-        function generateSmartListText(regsArray) {
-             if (!regsArray || regsArray.length === 0) return '';
-             const groups = [];
-             const regex = /^([A-Z]+)(\d+)$/;
-             regsArray.forEach(item => {
-                const match = item.regNo.match(regex);
-                const prefix = match ? match[1] : 'OTHER';
-                const number = match ? match[2] : item.regNo;
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
-                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
-                } else {
-                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
-                }
-            });
-            
-            return groups.map(group => {
-                const nums = group.items.map((it, idx) => {
-                    let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; 
-                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
-                    if (it.isAbsent) return `${val}(A)`; 
-                    return val; 
-                }).join(', ');
-                return nums;
-            }).join('\n');
-        }
-
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
             const rules = getCurrentRules();
@@ -618,7 +635,6 @@
 
                         while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
-                            // *** MODIFIED BUNDLE LOGIC ***
                             const currentQP = currentStudent.QPCode;
                             const displayPaperName = `${currentQP} (${currentStudent.Paper})`; 
                             
@@ -631,7 +647,6 @@
 
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
-                                // BREAK IF QP CODE CHANGES
                                 if (s.QPCode !== currentQP) break;
                                 
                                 if (!bundle.startReg) bundle.startReg = s.RegNo;
