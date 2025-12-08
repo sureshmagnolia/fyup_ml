@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V10 (Wrapped Text)</title>
+    <title>Valuation Board Manager V11 (Full Persistence)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,7 +45,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V10</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V11</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -138,7 +138,7 @@
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 mb-1">CHIEF EXAMINER</label>
                                     <div class="autocomplete-container">
-                                        <input type="text" id="chiefInput" placeholder="Search Chief..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <input type="text" id="chiefInput" placeholder="Search Chief..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
                                         <div id="chiefSuggestions" class="suggestions hidden"></div>
                                     </div>
                                 </div>
@@ -156,7 +156,7 @@
                                 </div>
                             </div>
                             <div id="stagingArea" class="bg-slate-50 rounded-lg p-3 mb-4 hidden border border-slate-200">
-                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging</div>
+                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging (Unsaved)</div>
                                 <div id="stagingList" class="flex flex-wrap gap-2"></div>
                             </div>
                             <button onclick="saveTeam()" id="saveTeamBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
@@ -201,7 +201,8 @@
                                 <th class="px-5 py-4 w-32">Date / Session</th>
                                 <th class="px-5 py-4 w-40">Reporting Chief</th>
                                 <th class="px-5 py-4 w-40">Additional Examiner</th>
-                                <th class="px-5 py-4 w-64">Paper Name</th> <th class="px-5 py-4 w-40">RegNo Range (From - To)</th>
+                                <th class="px-5 py-4 w-64">Paper Name</th>
+                                <th class="px-5 py-4 w-40">RegNo Range (From - To)</th>
                                 <th class="px-5 py-4 text-center w-20">Present Count</th>
                             </tr>
                         </thead>
@@ -217,16 +218,23 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV10';
+        const STORAGE_KEY = 'valuationBoardStateV11';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
         let teams = [], currentStagingAdditionals = [], generatedPlan = [];
-        let savedDates = {};
 
-        document.addEventListener('DOMContentLoaded', () => { loadFacultyData(); loadStudentData(); });
+        // Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Restore UI-only state immediately (Teams, Staging, Chairman)
+            restoreSessionBasic();
+            
+            // 2. Start Data Load
+            loadFacultyData();
+            loadStudentData();
+        });
 
-        // --- Loading & Restoration ---
+        // --- Loading ---
         function loadFacultyData() {
             Papa.parse(facultyCsvUrl, {
                 download: true, header: true, skipEmptyLines: true,
@@ -250,7 +258,9 @@
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
                     document.getElementById('disciplineSearch').disabled = false;
                     document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
-                    restoreSession();
+                    
+                    // 3. Restore Data-dependent state (Discipline selection)
+                    restoreSessionDataDependent();
                 }, error: () => updateStatus('student', false, "Error")
             });
         }
@@ -260,13 +270,18 @@
             bar.style.width = success ? "100%" : "0%"; bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- State Management ---
+        // --- State Management (Enhanced) ---
         function saveState() {
             const state = {
                 chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
                 teams: teams,
+                
+                // NEW: Staging Area Persistence
+                stagingChief: document.getElementById('chiefInput').value,
+                stagingAdditionals: currentStagingAdditionals,
+                
                 dates: {}
             };
             const inputs = document.querySelectorAll('#dateMappingContainer input[type="date"]');
@@ -277,19 +292,46 @@
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
         }
 
-        function restoreSession() {
+        function restoreSessionBasic() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (!saved) return;
                 const state = JSON.parse(saved);
-                
+
+                // Restore Input Fields
                 if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
                 if (state.quotaRule) {
                     const radio = document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`);
                     if (radio) radio.checked = true;
                 }
-                if (state.teams) { teams = state.teams; renderActiveTeams(); }
-                if (state.currentDiscipline && rawStudentData.length > 0) selectDiscipline(state.currentDiscipline, false);
+                
+                // Restore Active Teams
+                if (state.teams) { 
+                    teams = state.teams; 
+                    renderActiveTeams(); 
+                }
+
+                // Restore Staging Area
+                if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
+                if (state.stagingAdditionals) {
+                    currentStagingAdditionals = state.stagingAdditionals;
+                    renderStaging();
+                }
+
+            } catch (e) { console.error("Restore Basic failed", e); }
+        }
+
+        function restoreSessionDataDependent() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (!saved) return;
+                const state = JSON.parse(saved);
+
+                if (state.currentDiscipline && rawStudentData.length > 0) {
+                    selectDiscipline(state.currentDiscipline, false);
+                }
+                
+                // Restore Dates (After Discipline selects)
                 if (state.dates) {
                     setTimeout(() => {
                         Object.keys(state.dates).forEach(id => {
@@ -298,7 +340,7 @@
                         });
                     }, 50);
                 }
-            } catch (e) { console.error("Restore failed", e); }
+            } catch (e) { console.error("Restore Data failed", e); }
         }
 
         function clearSession() {
@@ -341,10 +383,14 @@
         }
 
         // --- Team Management ---
-        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => document.getElementById('chiefInput').value = val);
+        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => {
+            document.getElementById('chiefInput').value = val;
+            saveState(); // Trigger save on selection
+        });
         setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => {
             document.getElementById('addlInput').value = val; document.getElementById('addlInput').dataset.desig = desig;
         });
+
         function setupAutocomplete(inputId, suggId, onSelect) {
             const input = document.getElementById(inputId), sugg = document.getElementById(suggId);
             input.addEventListener('input', () => {
@@ -365,21 +411,30 @@
             const input = document.getElementById('addlInput'); const name = input.value.trim();
             if(!name) return;
             currentStagingAdditionals.push({ name, designation: input.dataset.desig || '' });
-            input.value = ''; renderStaging();
+            input.value = ''; 
+            renderStaging();
+            saveState(); // SAVE STAGING
         }
         function renderStaging() {
             const area = document.getElementById('stagingArea'); const list = document.getElementById('stagingList');
             area.classList.toggle('hidden', currentStagingAdditionals.length === 0);
             list.innerHTML = '';
             currentStagingAdditionals.forEach((ex, idx) => {
-                list.innerHTML += `<span class="bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2">${ex.name} <button onclick="currentStagingAdditionals.splice(${idx}, 1); renderStaging()" class="text-red-400 hover:text-red-600">×</button></span>`;
+                list.innerHTML += `<span class="bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2">${ex.name} <button onclick="removeFromStaging(${idx})" class="text-red-400 hover:text-red-600">×</button></span>`;
             });
+        }
+        function removeFromStaging(idx) {
+            currentStagingAdditionals.splice(idx, 1);
+            renderStaging();
+            saveState();
         }
         function saveTeam() {
             const chiefName = document.getElementById('chiefInput').value.trim();
             if(!chiefName || currentStagingAdditionals.length === 0) return alert("Select Chief and at least one Additional");
             teams.push({ id: Date.now(), chief: { name: chiefName, designation: '' }, additionals: [...currentStagingAdditionals] });
-            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); saveState(); updateEstimates();
+            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); 
+            saveState(); // SAVE
+            updateEstimates();
         }
         function deleteTeam(id) { teams = teams.filter(t => t.id !== id); renderActiveTeams(); saveState(); updateEstimates(); }
         function renderActiveTeams() {
@@ -479,7 +534,8 @@
                         <td class="px-5 py-4 whitespace-nowrap"><div class="font-bold text-slate-800">${r.date}</div><span class="text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">${r.session}</span></td>
                         <td class="px-5 py-4 font-medium text-indigo-700">${r.chief}</td>
                         <td class="px-5 py-4 text-slate-600">${r.examiner}</td>
-                        <td class="px-5 py-4 text-xs text-slate-500 whitespace-normal break-words" title="${r.paper}">${r.paper}</td> <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
+                        <td class="px-5 py-4 text-xs text-slate-500 whitespace-normal break-words" title="${r.paper}">${r.paper}</td>
+                        <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
                         <td class="px-5 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">${r.count}</span></td>
                     </tr>`;
             });
@@ -506,7 +562,7 @@
                 r.date + ' ' + r.session,
                 r.chief,
                 r.examiner,
-                r.paper, // Full Paper Name
+                r.paper,
                 `${r.startReg} - ${r.endReg}\n${r.absents.length ? 'Absent: ' + r.absents.join(', ') : ''}`,
                 r.count
             ]);
@@ -523,10 +579,10 @@
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
-                styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }, // Enabled Wrap
+                styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' },
                 columnStyles: { 
-                    3: { cellWidth: 50 }, // Paper Column Width
-                    4: { cellWidth: 35 } // Range Column Width
+                    3: { cellWidth: 50 },
+                    4: { cellWidth: 35 }
                 }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
