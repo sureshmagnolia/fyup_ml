@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V13 (Smart RegNos)</title>
+    <title>Valuation Board Manager V14 (Flexible Start)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -31,7 +31,6 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Table Optimization */
         td { vertical-align: top; }
     </style>
 </head>
@@ -49,7 +48,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V13</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V14</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -179,6 +178,15 @@
                         <h4 class="font-bold text-slate-800 border-b pb-3 mb-4 flex items-center">
                             <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
                         </h4>
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Start Valuation On:</label>
+                            <select id="startSessionSelect" onchange="saveState(); updateEstimates()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="FN">Day 1 - Forenoon (FN)</option>
+                                <option value="AN">Day 1 - Afternoon (AN)</option>
+                            </select>
+                        </div>
+
                         <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4 border border-yellow-100">
                             <strong>Status:</strong> <span id="capacityStatus">Waiting for teams...</span>
                         </div>
@@ -206,7 +214,8 @@
                                 <th class="px-3 py-4 w-32">Chief</th>
                                 <th class="px-3 py-4 w-32">Additional</th>
                                 <th class="px-3 py-4 w-48">Paper</th>
-                                <th class="px-3 py-4 w-48 bg-indigo-50 text-indigo-900">Allotted Register Nos</th> <th class="px-3 py-4 text-center w-16">Count</th>
+                                <th class="px-3 py-4 w-48 bg-indigo-50 text-indigo-900">Allotted Register Nos</th>
+                                <th class="px-3 py-4 text-center w-16">Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -221,7 +230,7 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV13';
+        const STORAGE_KEY = 'valuationBoardStateV14';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -273,6 +282,7 @@
                 chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
+                startSession: document.getElementById('startSessionSelect').value,
                 teams: teams,
                 stagingChief: document.getElementById('chiefInput').value,
                 stagingAdditionals: currentStagingAdditionals,
@@ -291,6 +301,7 @@
                 const state = JSON.parse(saved);
                 if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
                 if (state.quotaRule) document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`).checked = true;
+                if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
                 if (state.teams) { teams = state.teams; renderActiveTeams(); }
                 if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
                 if (state.stagingAdditionals) { currentStagingAdditionals = state.stagingAdditionals; renderStaging(); }
@@ -395,18 +406,41 @@
             if(!currentDiscipline) return;
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
             const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
+            const startSession = document.getElementById('startSessionSelect').value;
+            
             let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
-            const capacity = totalExaminers * (rule.FN + rule.AN);
-            if (capacity > 0) {
-                const days = Math.ceil(totalPresent / capacity);
+            const sessionQuota = (rule.FN + rule.AN); // Per day per examiner
+            const totalDailyCapacity = totalExaminers * sessionQuota;
+
+            if (totalDailyCapacity > 0) {
+                // Calculate total sessions needed (approximate logic for estimation)
+                // A better way is: Total Scripts / (Examiners * SessionAverage) -> Slots
+                // Let's stick to days for UI simplicity, but refined:
+                
+                // Pure scripts / capacity logic:
+                let rawDays = totalPresent / totalDailyCapacity;
+                let days = Math.ceil(rawDays);
+                
+                // If starting AN, we lose 0.5 day effectively on Day 1
+                if (startSession === 'AN') {
+                    // Check if the fractional part pushes it to next day
+                    // e.g. need 1.2 days. Start FN = 2 days. Start AN = 2 days (0.5 + 1 + 0.5)
+                    // e.g. need 0.4 days. Start FN = 1 day. Start AN = 1 day (0.5 fits).
+                    // e.g. need 0.8 days. Start FN = 1 day. Start AN = 2 days.
+                    
+                    // Simple heuristic: Add 0.5 to raw demand then ceil
+                    days = Math.ceil(rawDays + 0.5); 
+                }
+
                 document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
-                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${capacity} scripts/day</strong>`;
+                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${totalDailyCapacity} scripts/day</strong>`;
                 generateDateInputs(days);
             } else {
                 document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
                 document.getElementById('dateMappingContainer').innerHTML = '';
             }
         }
+        
         function generateDateInputs(numDays) {
             const container = document.getElementById('dateMappingContainer'); 
             const currentValues = {}; container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
@@ -421,43 +455,32 @@
         function getSmartRange(start, end) {
             if (!start || !end) return '';
             if (start === end) return start;
-            
-            // Regex to separate Letters and Numbers
             const regex = /^([A-Z]+)(\d+)$/;
             const startMatch = start.match(regex);
             const endMatch = end.match(regex);
-
-            // If patterns match (Same Prefix)
             if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
-                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`; // VPAZAEC 001 - 020
+                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
             }
-            
-            // Fallback
             return `${start} - ${end}`;
         }
         
         function formatAbsent(absentList, startReg) {
             if (!absentList || absentList.length === 0) return '';
-            
-            // Try to detect prefix from startReg
             const regex = /^([A-Z]+)(\d+)$/;
             const match = startReg.match(regex);
             const prefix = match ? match[1] : null;
-
-            // Map absent list: if starts with prefix, strip it
             const shortList = absentList.map(reg => {
-                if (prefix && reg.startsWith(prefix)) {
-                    return reg.replace(prefix, ''); // Show only '005'
-                }
+                if (prefix && reg.startsWith(prefix)) return reg.replace(prefix, ''); 
                 return reg;
             });
-            
             return `Absent: ${shortList.join(', ')}`;
         }
 
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
             const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
+            const startSession = document.getElementById('startSessionSelect').value;
+            
             generatedPlan = [];
             let queueIndex = 0;
             const daysCount = document.getElementById('dateMappingContainer').children.length;
@@ -470,6 +493,9 @@
                 const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB') : `Day ${d}`;
                 
                 ['FN', 'AN'].forEach(sess => {
+                    // *** FLEXIBLE START LOGIC ***
+                    if (d === 1 && startSession === 'AN' && sess === 'FN') return; // Skip FN on Day 1 if Start=AN
+
                     const sessionQuota = rule[sess];
                     allExaminers.forEach(examiner => {
                         if (queueIndex >= pooledStudents.length) return;
@@ -570,17 +596,7 @@
                 columnStyles: { 
                     0: { cellWidth: 20 },
                     3: { cellWidth: 50 },
-                    4: { cellWidth: 40, textColor: [50, 50, 50], fontStyle: 'bold' } // Highlight Range col
-                },
-                didParseCell: function(data) {
-                    // Make Absent text Red in PDF
-                    if (data.section === 'body' && data.column.index === 4) {
-                        if (data.cell.raw.includes('Absent:')) {
-                            // jsPDF-AutoTable doesn't support multi-color text in one cell easily out of box
-                            // Keep it simple for now, or use complex hooks. 
-                            // We will rely on the "Absent:" text being clear.
-                        }
-                    }
+                    4: { cellWidth: 40, textColor: [50, 50, 50], fontStyle: 'bold' }
                 }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
