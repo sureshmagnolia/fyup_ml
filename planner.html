@@ -14,54 +14,66 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Autocomplete Styles */
+        /* Custom UI Elements */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px;
             overflow-y: auto; background: white; border: 1px solid #ccc;
             border-radius: 0 0 4px 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
-        .suggestion-item:hover { background-color: #f3f4f6; }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #f3f4f6; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #f0f9ff; color: #0369a1; }
         .hidden { display: none; }
         
-        /* Loading Bar Animation */
+        /* Loaders */
         .loader-bar { height: 4px; width: 100%; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
         .loader-progress { height: 100%; background-color: #4f46e5; width: 0%; transition: width 0.5s ease; }
         .loader-progress.indeterminate { width: 50%; animation: slide 1.5s infinite ease-in-out; }
         @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+
+        /* Animations */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-6">
+<body class="bg-gray-50 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
-        <div class="bg-indigo-800 p-6 text-white flex justify-between items-center">
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+        
+        <div class="bg-indigo-800 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold"><i class="fas fa-graduation-cap mr-2"></i>Valuation Board Manager</h1>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fas fa-graduation-cap text-indigo-300"></i> Valuation Board Manager
+                </h1>
                 <p class="text-indigo-200 text-sm mt-1">Discipline-wise Paper Distribution & Session Management</p>
             </div>
             <div class="text-right">
-                <span class="bg-indigo-600 px-3 py-1 rounded text-xs font-mono">CHAIRMAN MODULE</span>
-                <div class="text-xs text-indigo-300 mt-1" id="connectionStatus">Connecting...</div>
+                <span class="bg-indigo-600 px-3 py-1 rounded text-xs font-mono border border-indigo-500">CHAIRMAN MODULE</span>
+                <div class="text-xs text-indigo-300 mt-2 flex items-center justify-end gap-2">
+                    <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="connectionStatus">Connecting to DB...</span>
+                </div>
             </div>
         </div>
 
         <div class="p-6 space-y-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-200 pb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-200 pb-8">
                 
-                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 col-span-2">
-                    <h3 class="font-semibold text-gray-800 mb-4 border-b border-blue-200 pb-2">1. Select Discipline Board</h3>
+                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 col-span-2 shadow-sm">
+                    <h3 class="font-bold text-gray-800 mb-4 border-b border-blue-200 pb-2 flex items-center gap-2">
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                        Select Discipline Board
+                    </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Filter by Discipline</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Filter by Discipline Name</label>
                             <div class="autocomplete-container">
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-2 text-gray-400">
-                                        <i class="fas fa-search"></i>
-                                    </span>
-                                    <input type="text" id="disciplineSearch" placeholder="Type to search (e.g. Tamil...)" class="w-full border border-blue-300 rounded pl-8 p-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" disabled>
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                    <input type="text" id="disciplineSearch" placeholder="Loading data..." class="w-full border border-gray-300 rounded-lg pl-10 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" disabled>
                                 </div>
                                 <div id="disciplineSuggestions" class="suggestions hidden"></div>
                             </div>
@@ -70,18 +82,18 @@
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Valuation Quota Rule</label>
                             <div class="flex gap-3">
-                                <label class="flex-1 flex items-center justify-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:border-indigo-500 hover:bg-indigo-50 transition-all">
-                                    <input type="radio" name="quotaRule" value="ARTS" class="form-radio text-indigo-600 h-4 w-4" checked onchange="updateEstimates()">
-                                    <div>
-                                        <span class="font-bold text-gray-800 text-sm block">Arts</span>
-                                        <span class="text-[10px] text-gray-500">FN:20 / AN:15</span>
+                                <label class="flex-1 cursor-pointer group">
+                                    <input type="radio" name="quotaRule" value="ARTS" class="hidden peer" checked onchange="updateEstimates()">
+                                    <div class="border border-gray-300 rounded-lg p-3 bg-white peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all shadow-sm group-hover:border-indigo-300">
+                                        <div class="font-bold text-gray-800 peer-checked:text-indigo-700">Arts</div>
+                                        <div class="text-xs text-gray-500">FN: 20 | AN: 15</div>
                                     </div>
                                 </label>
-                                <label class="flex-1 flex items-center justify-center space-x-2 cursor-pointer bg-white px-3 py-2 rounded border border-blue-200 shadow-sm hover:border-indigo-500 hover:bg-indigo-50 transition-all">
-                                    <input type="radio" name="quotaRule" value="SCIENCE" class="form-radio text-indigo-600 h-4 w-4" onchange="updateEstimates()">
-                                    <div>
-                                        <span class="font-bold text-gray-800 text-sm block">Science</span>
-                                        <span class="text-[10px] text-gray-500">FN:18 / AN:12</span>
+                                <label class="flex-1 cursor-pointer group">
+                                    <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="updateEstimates()">
+                                    <div class="border border-gray-300 rounded-lg p-3 bg-white peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all shadow-sm group-hover:border-indigo-300">
+                                        <div class="font-bold text-gray-800 peer-checked:text-indigo-700">Science</div>
+                                        <div class="text-xs text-gray-500">FN: 18 | AN: 12</div>
                                     </div>
                                 </label>
                             </div>
@@ -89,19 +101,19 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 flex flex-col justify-center">
-                    <h3 class="font-semibold text-gray-700 mb-3 border-b border-gray-200 pb-2">System Status</h3>
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 flex flex-col justify-center shadow-sm">
+                    <h3 class="font-bold text-gray-700 mb-4 border-b border-gray-200 pb-2">Database Status</h3>
                     <div class="space-y-4">
                         <div>
-                            <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span><i class="fas fa-database mr-1"></i> Student DB</span>
+                            <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                <span><i class="fas fa-database mr-1"></i> Student Records</span>
                                 <span id="studentLoadStatus" class="font-bold text-orange-500">Connecting...</span>
                             </div>
                             <div class="loader-bar"><div id="studentLoader" class="loader-progress indeterminate"></div></div>
                         </div>
                         <div>
-                            <div class="flex justify-between text-xs text-gray-500 mb-1">
-                                <span><i class="fas fa-users mr-1"></i> Faculty DB</span>
+                            <div class="flex justify-between text-xs text-gray-600 mb-1">
+                                <span><i class="fas fa-chalkboard-teacher mr-1"></i> Faculty Records</span>
                                 <span id="facultyLoadStatus" class="font-bold text-orange-500">Connecting...</span>
                             </div>
                             <div class="loader-bar"><div id="facultyLoader" class="loader-progress indeterminate"></div></div>
@@ -110,98 +122,112 @@
                 </div>
             </div>
 
-            <div id="planningSection" class="hidden animate-fade-in-down">
+            <div id="planningSection" class="hidden fade-in">
                 
-                <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-6 flex flex-wrap justify-between items-center shadow-sm">
+                <div class="bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-xl p-5 mb-8 flex flex-wrap justify-between items-center shadow-sm">
                     <div>
-                        <h2 class="text-xl font-bold text-indigo-800" id="selectedDisciplineTitle">Discipline Name</h2>
-                        <div class="text-sm text-indigo-600 mt-1">
-                            <span class="mr-4"><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
-                            <span><i class="fas fa-file-alt mr-1"></i> Total Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
+                        <h2 class="text-2xl font-bold text-indigo-900 mb-1" id="selectedDisciplineTitle">Discipline Name</h2>
+                        <div class="text-sm text-indigo-700 flex gap-4">
+                            <span class="bg-indigo-100 px-2 py-0.5 rounded"><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded"><i class="fas fa-check-circle mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold">0</span></span>
                         </div>
                     </div>
-                    <div class="text-right mt-2 md:mt-0">
-                        <div class="text-xs text-gray-500 uppercase font-bold">Estimated Duration</div>
-                        <div class="text-2xl font-bold text-gray-800" id="estimatedDaysDisplay">0 Days</div>
-                        <div class="text-xs text-gray-500" id="capacityDisplay">with current team</div>
+                    <div class="text-right mt-3 md:mt-0 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">Estimated Duration</div>
+                        <div class="text-3xl font-bold text-gray-800 leading-none my-1" id="estimatedDaysDisplay">0 Days</div>
+                        <div class="text-[10px] text-gray-500" id="capacityDisplay">Add examiners to calculate</div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     
-                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-5">
-                        <h4 class="font-bold text-gray-800 border-b pb-2 mb-4"><i class="fas fa-chalkboard-teacher mr-2 text-indigo-500"></i>Examiner Team</h4>
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 relative">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-xl"></div>
+                        <h4 class="font-bold text-gray-800 border-b pb-3 mb-5 flex items-center">
+                            <i class="fas fa-users text-indigo-500 mr-2"></i> Examiner Team
+                        </h4>
                         
-                        <div class="mb-4">
+                        <div class="mb-5">
                             <label class="block text-xs font-bold text-gray-500 mb-1">CHIEF EXAMINER</label>
                             <div class="autocomplete-container">
-                                <input type="text" id="chiefInput" placeholder="Search Chief Examiner..." class="w-full border rounded p-2 text-sm bg-gray-50 focus:bg-white transition-colors outline-none focus:ring-2 focus:ring-indigo-500">
+                                <input type="text" id="chiefInput" placeholder="Search Chief Examiner..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
                                 <div id="chiefSuggestions" class="suggestions hidden"></div>
                             </div>
                         </div>
 
-                        <div class="mb-2">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">ADDITIONAL EXAMINERS (TEAM)</label>
-                            <div class="flex gap-2 mb-2">
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">ADDITIONAL EXAMINERS (TEAM MEMBERS)</label>
+                            <div class="flex gap-2">
                                 <div class="autocomplete-container flex-1">
-                                    <input type="text" id="addlInput" placeholder="Search & Add Examiner..." class="w-full border rounded p-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <input type="text" id="addlInput" placeholder="Type name to search..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
                                     <div id="addlSuggestions" class="suggestions hidden"></div>
                                 </div>
-                                <button onclick="addExaminer()" class="bg-indigo-600 text-white px-4 rounded hover:bg-indigo-700 transition-colors">
-                                    <i class="fas fa-plus"></i>
+                                <button onclick="addExaminer()" class="bg-indigo-600 text-white px-5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium">
+                                    <i class="fas fa-plus mr-1"></i> Add
                                 </button>
                             </div>
                         </div>
 
-                        <div class="bg-gray-50 rounded border border-gray-200 h-48 overflow-y-auto p-2" id="examinerListContainer">
-                            <div class="text-center text-gray-400 text-xs mt-4 italic">No additional examiners added yet.</div>
+                        <div class="bg-gray-50 rounded-lg border border-gray-200 h-64 overflow-y-auto p-3" id="examinerListContainer">
+                            <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                                <i class="fas fa-user-plus text-2xl mb-2 opacity-30"></i>
+                                <span class="text-xs">Add examiners to build your team</span>
+                            </div>
                         </div>
                         <div class="text-right mt-2 text-xs text-gray-500">
-                            Total Additional: <span id="teamSizeCount" class="font-bold text-indigo-600">0</span>
+                            Team Size: <span id="teamSizeCount" class="font-bold text-indigo-600 text-sm">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-5">
-                        <h4 class="font-bold text-gray-800 border-b pb-2 mb-4"><i class="far fa-calendar-alt mr-2 text-indigo-500"></i>Session Calendar</h4>
+                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 relative">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400 rounded-l-xl"></div>
+                        <h4 class="font-bold text-gray-800 border-b pb-3 mb-5 flex items-center">
+                            <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
+                        </h4>
                         
-                        <div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 mb-4 flex items-start">
-                            <i class="fas fa-info-circle mt-0.5 mr-2"></i>
-                            <div>The system calculated the days based on your Team Size. Please map specific dates below.</div>
+                        <div class="bg-yellow-50 p-4 rounded-lg text-xs text-yellow-800 mb-4 flex items-start">
+                            <i class="fas fa-lightbulb mt-0.5 mr-2 text-yellow-600"></i>
+                            <div>The system automatically calculates the number of days needed based on your <strong>Total Scripts</strong> and <strong>Team Size</strong>. Assign real dates below.</div>
                         </div>
 
-                        <div id="dateMappingContainer" class="max-h-60 overflow-y-auto space-y-2 pr-2">
-                            <div class="text-center text-gray-400 text-sm py-8">Select Discipline and Add Examiners to generate schedule.</div>
+                        <div id="dateMappingContainer" class="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                            <div class="text-center text-gray-400 text-sm py-12">
+                                Waiting for team setup...
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-100">
-                    <button onclick="generatePlan()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded shadow-md font-medium text-sm transition-all flex items-center">
-                        <i class="fas fa-table mr-2"></i> Generate Distribution Table
+                <div class="mt-8 flex justify-end pt-6 border-t border-gray-200">
+                    <button onclick="generatePlan()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg shadow-lg font-bold text-sm transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
+                        <i class="fas fa-table"></i> Generate Distribution Plan
                     </button>
                 </div>
             </div>
 
-            <div id="outputSection" class="hidden mt-8 animate-fade-in-up">
-                <div class="flex justify-between items-end mb-3">
-                    <h3 class="font-bold text-xl text-gray-800">Distribution Plan</h3>
-                    <button onclick="downloadPDF()" class="bg-gray-800 text-white px-4 py-2 rounded text-sm hover:bg-gray-900 transition-colors shadow-sm">
-                        <i class="fas fa-file-pdf mr-2"></i> Download PDF
+            <div id="outputSection" class="hidden mt-10 fade-in border-t-4 border-gray-800 pt-6">
+                <div class="flex flex-col sm:flex-row justify-between items-end mb-4 gap-4">
+                    <div>
+                        <h3 class="font-bold text-xl text-gray-900">Final Distribution Plan</h3>
+                        <p class="text-sm text-gray-500">Review the bundles before downloading.</p>
+                    </div>
+                    <button onclick="downloadPDF()" class="bg-gray-800 text-white px-5 py-2.5 rounded-lg text-sm hover:bg-gray-900 transition-colors shadow-md flex items-center gap-2">
+                        <i class="fas fa-file-pdf"></i> Download PDF Report
                     </button>
                 </div>
                 
-                <div class="overflow-x-auto border rounded-lg shadow-lg">
+                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-lg">
                     <table class="min-w-full text-sm text-left" id="distributionTable">
                         <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
                             <tr>
-                                <th class="px-4 py-3">Date / Session</th>
-                                <th class="px-4 py-3">Examiner</th>
-                                <th class="px-4 py-3">Paper Code</th>
-                                <th class="px-4 py-3">RegNo Range</th>
-                                <th class="px-4 py-3 text-center">Scripts</th>
+                                <th class="px-5 py-4">Date / Session</th>
+                                <th class="px-5 py-4">Examiner</th>
+                                <th class="px-5 py-4">Paper Code</th>
+                                <th class="px-5 py-4">Register No. Range</th>
+                                <th class="px-5 py-4 text-center">Script Count</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200 text-gray-700">
+                        <tbody class="bg-white divide-y divide-gray-100 text-gray-700">
                             </tbody>
                     </table>
                 </div>
@@ -211,44 +237,49 @@
     </div>
 
     <script>
-        // --- Constants & State ---
+        // --- Constants & Config ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         
-        let rawStudentData = [];
-        let facultyData = [];
-        let disciplineList = [];
-        
-        // Planning State
-        let currentDiscipline = null;
-        let pooledStudents = []; // All students in selected discipline
-        let additionalExaminers = []; // List of selected examiner objects {name, desig}
-        let generatedPlan = [];
-        
-        // Rules
         const RULES = {
             ARTS: { FN: 20, AN: 15 },
             SCIENCE: { FN: 18, AN: 12 }
         };
 
-        // --- Init ---
+        // --- Application State ---
+        let rawStudentData = [];
+        let facultyData = [];
+        let disciplineList = [];
+        
+        let currentDiscipline = null;
+        let pooledStudents = []; // All students for selected discipline
+        let additionalExaminers = []; // Array of {name, designation}
+        let generatedPlan = []; // The final Calculated Rows
+
+        // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
             loadFacultyData();
             loadStudentData();
         });
 
-        // --- Data Loading ---
+        // --- Data Loading Functions ---
         function loadFacultyData() {
             Papa.parse(facultyCsvUrl, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: (res) => {
-                    facultyData = res.data.map(r => ({
-                        name: r['NAME'] || r['Name'], 
-                        designation: r['Designation of Faculty'] || ''
-                    })).filter(f => f.name);
-                    updateStatus('faculty', true, `Ready (${facultyData.length} records)`);
+                    // normalize keys
+                    const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
+                    const desigKey = res.meta.fields.find(k => k.toUpperCase().includes('DESIGNATION'));
+                    
+                    if(nameKey) {
+                        facultyData = res.data.map(r => ({
+                            name: r[nameKey], 
+                            designation: r[desigKey] || ''
+                        })).filter(f => f.name);
+                        updateStatus('faculty', true, `Ready (${facultyData.length} records)`);
+                    }
                 },
-                error: () => updateStatus('faculty', false, "Failed")
+                error: () => updateStatus('faculty', false, "Connection Failed")
             });
         }
 
@@ -259,10 +290,17 @@
                     rawStudentData = res.data;
                     extractDisciplines();
                     updateStatus('student', true, `Ready (${rawStudentData.length} records)`);
-                    document.getElementById('connectionStatus').textContent = "Connected";
-                    document.getElementById('connectionStatus').className = "text-xs text-green-300 mt-1";
+                    
+                    document.getElementById('connectionStatus').textContent = "Database Connected";
+                    document.getElementById('connectionStatus').className = "text-xs text-green-300 font-bold";
+                    document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                    
+                    // Enable Search
+                    const searchInput = document.getElementById('disciplineSearch');
+                    searchInput.disabled = false;
+                    searchInput.placeholder = "Type discipline name (e.g. Tamil)...";
                 },
-                error: () => updateStatus('student', false, "Failed")
+                error: () => updateStatus('student', false, "Connection Failed")
             });
         }
 
@@ -276,15 +314,15 @@
             bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- Discipline Handling ---
+        // --- Discipline Selection Logic ---
         function extractDisciplines() {
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
             
+            // Setup Autocomplete
             const input = document.getElementById('disciplineSearch');
-            input.disabled = false;
-            
             const suggestions = document.getElementById('disciplineSuggestions');
+            
             input.addEventListener('focus', () => showSuggestions(disciplineList, input, suggestions, selectDiscipline));
             input.addEventListener('input', () => {
                 const val = input.value.toLowerCase();
@@ -303,7 +341,7 @@
             // 1. Filter Data
             const disciplineRows = rawStudentData.filter(r => r.Discipline === name);
             
-            // 2. Sort: By Paper Name, then by Register Number
+            // 2. Sort Logic: Group by Paper Name, then Order by RegNo
             pooledStudents = disciplineRows.sort((a, b) => {
                 if (a.Paper === b.Paper) {
                     return (a.RegNo || '').localeCompare(b.RegNo || '');
@@ -311,21 +349,22 @@
                 return (a.Paper || '').localeCompare(b.Paper || '');
             });
 
-            // 3. Calc Stats
-            const papers = new Set(pooledStudents.map(s => s.Paper));
+            // 3. Calculate Stats
+            const uniquePapers = new Set(pooledStudents.map(s => s.Paper));
             const presentCount = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
 
             // 4. Update UI
             document.getElementById('planningSection').classList.remove('hidden');
             document.getElementById('selectedDisciplineTitle').textContent = name;
-            document.getElementById('summaryPaperCount').textContent = papers.size;
+            document.getElementById('summaryPaperCount').textContent = uniquePapers.size;
             document.getElementById('summaryScriptCount').textContent = presentCount;
+            document.getElementById('outputSection').classList.add('hidden');
             
             updateEstimates();
         }
 
-        // --- Team Management ---
-        // Setup Search
+        // --- Team Management Logic ---
+        // Additional Examiner Search
         const addlInput = document.getElementById('addlInput');
         const addlSugg = document.getElementById('addlSuggestions');
         addlInput.addEventListener('input', () => {
@@ -337,11 +376,34 @@
             matches.forEach(f => {
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
-                div.textContent = f.name;
-                div.onclick = () => { addlInput.value = f.name; addlInput.dataset.desig = f.designation; addlSugg.classList.add('hidden'); };
+                div.innerHTML = `<div>${f.name}</div><div class="text-xs text-gray-500">${f.designation}</div>`;
+                div.onclick = () => { 
+                    addlInput.value = f.name; 
+                    addlInput.dataset.desig = f.designation; 
+                    addlSugg.classList.add('hidden'); 
+                };
                 addlSugg.appendChild(div);
             });
             addlSugg.classList.remove('hidden');
+        });
+
+        // Chief Search
+        const chiefInput = document.getElementById('chiefInput');
+        const chiefSugg = document.getElementById('chiefSuggestions');
+        chiefInput.addEventListener('input', () => {
+             const val = chiefInput.value.toLowerCase();
+             if(val.length < 3) { chiefSugg.classList.add('hidden'); return; }
+             const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 5);
+             
+             chiefSugg.innerHTML = '';
+             matches.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.textContent = f.name;
+                div.onclick = () => { chiefInput.value = f.name; chiefSugg.classList.add('hidden'); };
+                chiefSugg.appendChild(div);
+            });
+            chiefSugg.classList.remove('hidden');
         });
 
         function addExaminer() {
@@ -350,7 +412,7 @@
             const desig = addlInput.dataset.desig || '';
             
             additionalExaminers.push({ name, designation: desig });
-            addlInput.value = ''; // Clear
+            addlInput.value = ''; 
             renderExaminerList();
             updateEstimates();
         }
@@ -365,39 +427,32 @@
             const container = document.getElementById('examinerListContainer');
             document.getElementById('teamSizeCount').textContent = additionalExaminers.length;
             
+            container.innerHTML = '';
             if(additionalExaminers.length === 0) {
-                container.innerHTML = '<div class="text-center text-gray-400 text-xs mt-4 italic">No additional examiners added yet.</div>';
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400"><i class="fas fa-user-plus text-2xl mb-2 opacity-30"></i><span class="text-xs">Add examiners to build your team</span></div>`;
                 return;
             }
             
-            container.innerHTML = '';
             additionalExaminers.forEach((ex, idx) => {
                 const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-white p-2 mb-1 border rounded shadow-sm text-sm';
+                div.className = 'flex justify-between items-center bg-white p-3 mb-2 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow';
                 div.innerHTML = `
-                    <div>
-                        <div class="font-medium text-gray-800">${ex.name}</div>
-                        <div class="text-xs text-gray-500">${ex.designation}</div>
+                    <div class="flex items-center gap-3">
+                        <div class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">${idx+1}</div>
+                        <div>
+                            <div class="font-bold text-gray-800 text-sm">${ex.name}</div>
+                            <div class="text-xs text-gray-500">${ex.designation}</div>
+                        </div>
                     </div>
-                    <button onclick="removeExaminer(${idx})" class="text-red-500 hover:text-red-700 px-2">
-                        <i class="fas fa-times"></i>
+                    <button onclick="removeExaminer(${idx})" class="text-gray-400 hover:text-red-500 transition-colors p-2">
+                        <i class="fas fa-trash-alt"></i>
                     </button>
                 `;
                 container.appendChild(div);
             });
         }
 
-        // Chief Search (Simple)
-        const chiefInput = document.getElementById('chiefInput');
-        const chiefSugg = document.getElementById('chiefSuggestions');
-        chiefInput.addEventListener('input', () => {
-             const val = chiefInput.value.toLowerCase();
-             if(val.length < 3) { chiefSugg.classList.add('hidden'); return; }
-             const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 5);
-             showSuggestions(matches.map(m=>m.name), chiefInput, chiefSugg, (n) => chiefInput.value = n);
-        });
-
-        // --- Logic & Calculation ---
+        // --- Calculation & Planning Logic ---
         function updateEstimates() {
             if(!currentDiscipline) return;
             
@@ -406,19 +461,17 @@
             const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = RULES[ruleKey];
             const dailyQuotaPerExaminer = rule.FN + rule.AN;
-            
             const totalDailyCapacity = teamSize * dailyQuotaPerExaminer;
             
-            let days = 0;
             if (teamSize > 0) {
-                days = Math.ceil(totalPresent / totalDailyCapacity);
+                const days = Math.ceil(totalPresent / totalDailyCapacity);
                 document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
-                document.getElementById('capacityDisplay').textContent = `Capacity: ${totalDailyCapacity} scripts/day (${teamSize} examiners)`;
+                document.getElementById('capacityDisplay').textContent = `Processing Capacity: ${totalDailyCapacity} scripts/day`;
                 generateDateInputs(days);
             } else {
                 document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
                 document.getElementById('capacityDisplay').textContent = "Add examiners to calculate";
-                document.getElementById('dateMappingContainer').innerHTML = '<div class="text-center text-gray-400 text-sm py-8">Add examiners to calculate schedule.</div>';
+                document.getElementById('dateMappingContainer').innerHTML = `<div class="text-center text-gray-400 text-sm py-12">Waiting for team setup...</div>`;
             }
         }
 
@@ -427,16 +480,16 @@
             container.innerHTML = '';
             for(let i=1; i<=numDays; i++) {
                 const div = document.createElement('div');
-                div.className = "flex items-center gap-2 bg-gray-50 p-2 rounded border";
+                div.className = "flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm";
                 div.innerHTML = `
-                    <span class="text-xs font-bold text-gray-500 w-12">Day ${i}</span>
-                    <input type="date" id="date_day_${i}" class="border rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500">
+                    <div class="text-xs font-bold text-gray-400 uppercase w-12 text-center">Day ${i}</div>
+                    <input type="date" id="date_day_${i}" class="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
                 `;
                 container.appendChild(div);
             }
         }
 
-        // --- Core Algorithm: Parallel Distribution ---
+        // --- Core Generator: Split Logic ---
         function generatePlan() {
             if(additionalExaminers.length === 0) return alert("Please add at least one Additional Examiner.");
             
@@ -444,69 +497,66 @@
             const quota = RULES[ruleKey];
             const sessions = ['FN', 'AN'];
             
-            generatedPlan = []; // Reset
-            
-            // Queue of Students (Already Sorted)
-            // We need to consume this queue sequentially
-            let queueIndex = 0;
+            generatedPlan = [];
+            let queueIndex = 0; // Pointer to pooledStudents
             const totalStudents = pooledStudents.length;
-            
-            // Get Dates
-            const daysCount = parseInt(document.getElementById('estimatedDaysDisplay').textContent);
+            const daysCount = document.getElementById('dateMappingContainer').children.length;
             
             for (let d = 1; d <= daysCount; d++) {
                 const dateInput = document.getElementById(`date_day_${d}`);
                 const dateStr = (dateInput && dateInput.value) ? formatDate(dateInput.value) : `Day ${d}`;
                 
-                // For each Session
                 sessions.forEach(sess => {
                     const sessionQuota = (sess === 'FN') ? quota.FN : quota.AN;
                     
-                    // Assign to each examiner in team
                     additionalExaminers.forEach(examiner => {
-                        if (queueIndex >= totalStudents) return; // Stop if no students left
-                        
-                        let currentBundle = {
-                            date: dateStr,
-                            session: sess,
-                            examiner: examiner.name,
-                            startReg: null,
-                            endReg: null,
-                            paper: null, // Keep track of paper to detect changes
-                            count: 0
-                        };
-                        
-                        let assignedCount = 0;
-                        
-                        // Fill Quota
-                        while (assignedCount < sessionQuota && queueIndex < totalStudents) {
-                            const student = pooledStudents[queueIndex];
-                            const isPresent = (student.Attendance || '').toUpperCase().includes('PRESENT');
+                        if (queueIndex >= totalStudents) return;
+
+                        let remainingQuota = sessionQuota;
+
+                        // While we still have quota for this examiner in this session
+                        while (remainingQuota > 0 && queueIndex < totalStudents) {
                             
-                            // Initialize Bundle Start
-                            if (currentBundle.startReg === null) {
-                                currentBundle.startReg = student.RegNo;
-                                currentBundle.paper = student.Paper;
+                            const currentStudent = pooledStudents[queueIndex];
+                            const currentPaper = currentStudent.Paper;
+                            
+                            // Initialize a sub-bundle for this specific paper
+                            let subBundle = {
+                                date: dateStr,
+                                session: sess,
+                                examiner: examiner.name,
+                                paper: currentPaper,
+                                startReg: null,
+                                endReg: null,
+                                count: 0
+                            };
+                            
+                            // Consume students of the SAME paper until quota is full OR paper changes
+                            while (remainingQuota > 0 && queueIndex < totalStudents) {
+                                const s = pooledStudents[queueIndex];
+                                
+                                // Detect paper change
+                                if (s.Paper !== currentPaper) {
+                                    break; // Stop this sub-bundle, loop will continue with new paper
+                                }
+                                
+                                const isPresent = (s.Attendance || '').toUpperCase().includes('PRESENT');
+                                
+                                if (subBundle.startReg === null) subBundle.startReg = s.RegNo;
+                                subBundle.endReg = s.RegNo;
+                                
+                                if (isPresent) {
+                                    subBundle.count++;
+                                    remainingQuota--;
+                                }
+                                
+                                queueIndex++;
                             }
                             
-                            // Check for Paper Change? 
-                            // If we want strictly separate bundles for separate papers, we break here.
-                            // If we want "Sum All" regardless of paper, we continue.
-                            // Better UX: Show "Multiple Papers" if mixed, or break line.
-                            // Let's keep it simple: Just fill the quota. The Range implies the students.
-                            
-                            currentBundle.endReg = student.RegNo;
-                            // Update Paper: if it changes, maybe note it? 
-                            // For simplicity, we just list the Paper of the *start* or "Mixed".
-                            if(student.Paper !== currentBundle.paper) currentBundle.paper = "Mixed / Multiple";
-                            
-                            if (isPresent) assignedCount++;
-                            queueIndex++;
-                        }
-                        
-                        currentBundle.count = assignedCount;
-                        if (currentBundle.count > 0 || (currentBundle.startReg)) {
-                            generatedPlan.push(currentBundle);
+                            // Only push if we actually assigned scripts or covered a range
+                            if (subBundle.count > 0 || subBundle.startReg) {
+                                generatedPlan.push(subBundle);
+                            }
                         }
                     });
                 });
@@ -521,13 +571,20 @@
             
             generatedPlan.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 border-b";
+                tr.className = "hover:bg-gray-50 border-b border-gray-100 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-4 py-3 font-medium text-indigo-700">${row.date} <span class="text-xs text-gray-500 bg-gray-100 px-1 rounded ml-1">${row.session}</span></td>
-                    <td class="px-4 py-3 font-medium text-gray-800">${row.examiner}</td>
-                    <td class="px-4 py-3 text-xs text-gray-500 max-w-xs truncate" title="${row.paper}">${row.paper}</td>
-                    <td class="px-4 py-3 font-mono text-xs text-gray-600">${row.startReg} - ${row.endReg}</td>
-                    <td class="px-4 py-3 text-center font-bold text-green-600">${row.count}</td>
+                    <td class="px-5 py-4 whitespace-nowrap">
+                        <div class="font-bold text-gray-800">${row.date}</div>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${row.session}</span>
+                    </td>
+                    <td class="px-5 py-4 font-medium text-gray-700">${row.examiner}</td>
+                    <td class="px-5 py-4 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded inline-block max-w-[200px] truncate" title="${row.paper}">
+                        ${row.paper}
+                    </td>
+                    <td class="px-5 py-4 font-mono text-xs text-gray-600">${row.startReg} - ${row.endReg}</td>
+                    <td class="px-5 py-4 text-center">
+                        <span class="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-xs">${row.count}</span>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -536,7 +593,7 @@
             document.getElementById('outputSection').scrollIntoView({behavior: 'smooth'});
         }
 
-        // --- Helpers ---
+        // --- Helper Functions ---
         function showSuggestions(list, input, container, callback) {
             container.innerHTML = '';
             if (list.length === 0) { container.classList.add('hidden'); return; }
@@ -556,33 +613,39 @@
 
         function formatDate(dateStr) {
             const d = new Date(dateStr);
-            return d.toLocaleDateString('en-GB');
+            return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
         }
 
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            doc.setFillColor(67, 56, 202); // Indigo
-            doc.rect(0, 0, 210, 20, 'F');
+            // Header Color
+            doc.setFillColor(55, 65, 81); // gray-800
+            doc.rect(0, 0, 210, 25, 'F');
+            
             doc.setTextColor(255, 255, 255);
-            doc.setFontSize(16);
-            doc.text("Valuation Board Schedule", 14, 13);
+            doc.setFontSize(18);
+            doc.text("Valuation Camp Plan", 14, 16);
             
             doc.setTextColor(0,0,0);
-            doc.setFontSize(11);
-            doc.text(`Board: ${currentDiscipline}`, 14, 30);
-            doc.text(`Chief Examiner: ${document.getElementById('chiefInput').value || 'Not Assigned'}`, 14, 36);
+            doc.setFontSize(10);
+            doc.text(`Board: ${currentDiscipline}`, 14, 35);
+            doc.text(`Chief Examiner: ${document.getElementById('chiefInput').value || 'TBA'}`, 14, 40);
             
             doc.autoTable({
                 html: '#distributionTable',
                 startY: 45,
                 theme: 'grid',
                 headStyles: { fillColor: [55, 65, 81] },
-                styles: { fontSize: 9 }
+                styles: { fontSize: 8, cellPadding: 2 },
+                columnStyles: { 
+                    2: { cellWidth: 50 }, // Paper column width
+                    4: { halign: 'center' } // Count align center
+                }
             });
 
-            doc.save(`${currentDiscipline}_Schedule.pdf`);
+            doc.save(`${currentDiscipline}_Plan.pdf`);
         }
     </script>
 </body>
