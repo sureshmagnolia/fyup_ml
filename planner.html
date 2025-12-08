@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V20 (Search Fix)</title>
+    <title>Valuation Board Manager V21 (QP Code Based)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -52,12 +52,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Smart Lists</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management (QP Code Based)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V20</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V21</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -142,7 +142,7 @@
                     <div>
                         <h2 class="text-xl font-bold text-indigo-900" id="selectedDisciplineTitle">Discipline Name</h2>
                         <div class="text-sm text-indigo-600 mt-1 flex gap-4">
-                            <span><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span><i class="fas fa-copy mr-1"></i> QP Codes: <span id="summaryPaperCount" class="font-bold">0</span></span>
                             <span><i class="fas fa-file-signature mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
                         </div>
                     </div>
@@ -236,7 +236,7 @@
                                 <th class="px-3 py-4 w-[10%]">Date/Session</th>
                                 <th class="px-3 py-4 w-[12%]">Chief</th>
                                 <th class="px-3 py-4 w-[12%]">Additional</th>
-                                <th class="px-3 py-4 w-[15%]">Paper</th>
+                                <th class="px-3 py-4 w-[15%]">QP Code (Paper)</th>
                                 <th class="px-3 py-4 w-[12%]">Range (From-To)</th>
                                 <th class="px-3 py-4 w-[34%]">Allotted Register Nos</th>
                                 <th class="px-3 py-4 text-center w-[5%]">Count</th>
@@ -253,7 +253,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV20';
+        const STORAGE_KEY = 'valuationBoardStateV21';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -265,6 +265,7 @@
             loadStudentData();
         });
 
+        // --- Helper: Get Current Rules from Inputs ---
         function getCurrentRules() {
             return {
                 ARTS: { 
@@ -296,7 +297,19 @@
             Papa.parse(studentCsvUrl, {
                 download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
                 complete: (res) => {
-                    rawStudentData = res.data; extractDisciplines();
+                    // PROCESS QP CODES
+                    rawStudentData = res.data.map(row => {
+                        return {
+                            ...row,
+                            QPCode: row['QPCode'] || 'UNKNOWN',
+                            Discipline: row['Discipline'] || 'Unknown',
+                            Paper: row['Paper'] || 'Unknown Paper',
+                            RegNo: row['RegNo'] || '',
+                            Attendance: row['Attendance'] || ''
+                        };
+                    });
+                    
+                    extractDisciplines();
                     updateStatus('student', true, `Ready (${rawStudentData.length})`);
                     document.getElementById('connectionStatus').textContent = "Connected";
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
@@ -376,7 +389,6 @@
             disciplineList = Array.from(unique).sort();
             const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
             
-            // Standard search handlers
             input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, (val) => selectDiscipline(val, true)));
             input.addEventListener('input', () => showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, (val) => selectDiscipline(val, true)));
             
@@ -393,12 +405,22 @@
 
         function selectDiscipline(name, resetDates = true) {
             document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
-            pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => (a.Paper === b.Paper ? (a.RegNo || '').localeCompare(b.RegNo || '') : (a.Paper || '').localeCompare(b.Paper || '')));
-            const papers = new Set(pooledStudents.map(s => s.Paper));
+            
+            // SORT BY QPCODE FIRST, THEN REGNO
+            pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => {
+                if (a.QPCode === b.QPCode) {
+                    return (a.RegNo || '').localeCompare(b.RegNo || '');
+                }
+                return (a.QPCode || '').localeCompare(b.QPCode || '');
+            });
+
+            // Count Unique QP Codes instead of Papers
+            const qpCodes = new Set(pooledStudents.map(s => s.QPCode));
             const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
+            
             document.getElementById('planningSection').classList.remove('hidden');
             document.getElementById('selectedDisciplineTitle').textContent = name;
-            document.getElementById('summaryPaperCount').textContent = papers.size;
+            document.getElementById('summaryPaperCount').textContent = qpCodes.size;
             document.getElementById('summaryScriptCount').textContent = present;
             document.getElementById('outputSection').classList.add('hidden');
             if(resetDates) { document.querySelectorAll('#dateMappingContainer input[type="date"]').forEach(inp => inp.value = ''); saveState(); }
@@ -530,8 +552,11 @@
             return groups.map(group => {
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
-                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    if (idx === 0 && group.prefix !== 'OTHER') {
+                        val = group.prefix + it.number;
+                    } else if (idx === 0 && group.prefix === 'OTHER') {
+                        val = it.full;
+                    }
                     if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
                     return val;
                 }).join(', ');
@@ -598,15 +623,25 @@
 
                         while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
-                            const currentPaper = currentStudent.Paper;
+                            
+                            // *** MODIFIED BUNDLE LOGIC ***
+                            // Group by QP Code instead of Paper Name
+                            const currentQP = currentStudent.QPCode;
+                            const displayPaperName = `${currentQP} (${currentStudent.Paper})`; // Format for display
+                            
                             let bundle = {
                                 date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
-                                paper: currentPaper, count: 0, allRegs: [], startReg: null, endReg: null
+                                paper: displayPaperName, // Storing formatted name
+                                qpCode: currentQP,       // Storing raw QP
+                                count: 0, allRegs: [], startReg: null, endReg: null
                             };
 
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
-                                if (s.Paper !== currentPaper) break;
+                                
+                                // BREAK IF QP CODE CHANGES
+                                if (s.QPCode !== currentQP) break;
+                                
                                 if (!bundle.startReg) bundle.startReg = s.RegNo;
                                 bundle.endReg = s.RegNo;
                                 const isAbsent = !(s.Attendance || '').toUpperCase().includes('PRESENT');
@@ -640,16 +675,6 @@
             });
             document.getElementById('outputSection').classList.remove('hidden');
             document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
-        }
-
-        function showSuggestions(list, input, container, callback) {
-            container.innerHTML = ''; if (list.length === 0) { container.classList.add('hidden'); return; }
-            list.forEach(item => {
-                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
-                div.onclick = () => { callback(item); container.classList.add('hidden'); };
-                container.appendChild(div);
-            });
-            container.classList.remove('hidden');
         }
 
         function downloadPDF() {
