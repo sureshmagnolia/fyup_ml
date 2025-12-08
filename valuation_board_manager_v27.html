@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V27 (Rules Restored)</title>
+    <title>Valuation Board Manager V28 (Logic Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -32,7 +32,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         td { vertical-align: top; }
-        
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #000; }
         .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
         
@@ -52,12 +51,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management (With Paper Rules)</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management (Stable)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V27</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V28</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -99,32 +98,31 @@
                         </div>
                         
                         <div class="relative z-0">
-                           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
-<div class="flex gap-3">
-    <label class="flex-1 cursor-pointer group relative">
-        <input type="radio" name="quotaRule" value="RULE1" class="hidden peer" checked onchange="saveState(); updateEstimates(); renderPaperRules()">
-        <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
-            <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 1</div>
-            <div class="flex items-center justify-center gap-1 text-xs">
-                <input type="number" id="rule1Fn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                <span class="text-slate-400">/</span>
-                <input type="number" id="rule1An" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-            </div>
-        </div>
-    </label>
-    
-    <label class="flex-1 cursor-pointer group relative">
-        <input type="radio" name="quotaRule" value="RULE2" class="hidden peer" onchange="saveState(); updateEstimates(); renderPaperRules()">
-        <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
-            <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 2</div>
-            <div class="flex items-center justify-center gap-1 text-xs">
-                <input type="number" id="rule2Fn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                <span class="text-slate-400">/</span>
-                <input type="number" id="rule2An" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-            </div>
-        </div>
-    </label>
-</div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
+                            <div class="flex gap-3">
+                                <label class="flex-1 cursor-pointer group relative">
+                                    <input type="radio" name="quotaRule" value="RULE1" class="hidden peer" checked onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 1</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="rule1Fn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="rule1An" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="flex-1 cursor-pointer group relative">
+                                    <input type="radio" name="quotaRule" value="RULE2" class="hidden peer" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 2</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="rule2Fn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="rule2An" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -360,29 +358,26 @@
             }).join('\n');
         }
 
-       function getCurrentRules() {
-        return {
-        RULE1: { 
-            FN: parseInt(document.getElementById('rule1Fn').value) || 20, 
-            AN: parseInt(document.getElementById('rule1An').value) || 15 
-        },
-        RULE2: { 
-            FN: parseInt(document.getElementById('rule2Fn').value) || 18, 
-            AN: parseInt(document.getElementById('rule2An').value) || 12 
+        // --- DYNAMIC RULE GETTER (FIXED) ---
+        function getCurrentRules() {
+            return {
+                RULE1: { 
+                    FN: parseInt(document.getElementById('rule1Fn').value) || 20, 
+                    AN: parseInt(document.getElementById('rule1An').value) || 15 
+                },
+                RULE2: { 
+                    FN: parseInt(document.getElementById('rule2Fn').value) || 18, 
+                    AN: parseInt(document.getElementById('rule2An').value) || 12 
+                }
+            };
         }
-    };
-}
 
         // --- CONSTANTS ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV27';
+        const STORAGE_KEY = 'valuationBoardStateV28';
         
-        // RULE DEFINITIONS
-        const PRESETS = {
-            RULE1: { FN: 20, AN: 15 },
-            RULE2: { FN: 18, AN: 12 }
-        };
+        let PRESETS = {}; // Populated dynamically
 
         // --- STATE ---
         let rawStudentData = [], facultyData = [], disciplineList = [];
@@ -461,7 +456,7 @@
                 currentDiscipline: currentDiscipline,
                 paperRulesMap: paperRulesMap,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
-                customRules: getCurrentRules(),
+                customRules: getCurrentRules(), // SAVE Rule1/Rule2 Values
                 startSession: document.getElementById('startSessionSelect').value,
                 teams: teams,
                 stagingChief: document.getElementById('chiefInput').value,
@@ -485,17 +480,17 @@
                 if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
                 if (state.paperRulesMap) paperRulesMap = state.paperRulesMap;
                 
-                // Inside restoreSessionBasic(), replace the "if (state.customRules) { ... }" block with this:
-if (state.customRules) {
-    if(state.customRules.RULE1) {
-        document.getElementById('rule1Fn').value = state.customRules.RULE1.FN;
-        document.getElementById('rule1An').value = state.customRules.RULE1.AN;
-    }
-    if(state.customRules.RULE2) {
-        document.getElementById('rule2Fn').value = state.customRules.RULE2.FN;
-        document.getElementById('rule2An').value = state.customRules.RULE2.AN;
-    }
-}
+                // RESTORE Rules
+                if (state.customRules) {
+                    if(state.customRules.RULE1) {
+                        document.getElementById('rule1Fn').value = state.customRules.RULE1.FN;
+                        document.getElementById('rule1An').value = state.customRules.RULE1.AN;
+                    }
+                    if(state.customRules.RULE2) {
+                        document.getElementById('rule2Fn').value = state.customRules.RULE2.FN;
+                        document.getElementById('rule2An').value = state.customRules.RULE2.AN;
+                    }
+                }
 
                 if (state.teams) { teams = state.teams; renderActiveTeams(); }
                 if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
@@ -560,12 +555,12 @@ if (state.customRules) {
             updateEstimates();
         }
 
-        // --- Paper Rules ---
+        // --- Paper Rules Render ---
         function renderPaperRules() {
             const tbody = document.getElementById('paperRuleTableBody');
             tbody.innerHTML = '';
             
-            // Get Current Dynamic Rules (Updated Keys)
+            // Dynamic Labels
             const rules = getCurrentRules();
             const r1Label = `Rule 1 (${rules.RULE1.FN}/${rules.RULE1.AN})`;
             const r2Label = `Rule 2 (${rules.RULE2.FN}/${rules.RULE2.AN})`;
@@ -689,14 +684,15 @@ if (state.customRules) {
         function updateEstimates() {
             if(!currentDiscipline || teams.length === 0) return;
             
+            // MAP RULES DYNAMICALLY (FIX)
             const currentRules = getCurrentRules();
-            PRESETS.RULE1 = currentRules.ARTS;
-            PRESETS.RULE2 = currentRules.SCIENCE;
+            PRESETS.RULE1 = currentRules.RULE1;
+            PRESETS.RULE2 = currentRules.RULE2;
 
             let totalWorkDaysRequired = 0;
             papersData.forEach(p => {
                 const ruleName = paperRulesMap[p.qp] || 'RULE1';
-                const rule = PRESETS[ruleName];
+                const rule = PRESETS[ruleName]; // This will now resolve correctly
                 const dailyQuota = rule.FN + rule.AN;
                 const present = p.students.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
                 totalWorkDaysRequired += (present / dailyQuota);
@@ -726,9 +722,10 @@ if (state.customRules) {
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
             
+            // Sync current rule values
             const currentRules = getCurrentRules();
-            PRESETS.RULE1 = currentRules.ARTS;
-            PRESETS.RULE2 = currentRules.SCIENCE;
+            PRESETS.RULE1 = currentRules.RULE1;
+            PRESETS.RULE2 = currentRules.RULE2;
 
             const startSession = document.getElementById('startSessionSelect').value;
             generatedPlan = [];
@@ -773,7 +770,7 @@ if (state.customRules) {
                         }
 
                         let paperObj = workQueue[pIdx];
-                        let sessionQuota = paperObj.rule[sess];
+                        let sessionQuota = paperObj.rule[sess]; // This will now work
                         let remainingQuota = sessionQuota;
 
                         let bundle = {
