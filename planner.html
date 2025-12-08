@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V18 (Editable Rules)</title>
+    <title>Valuation Board Manager V19 (PDF Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -33,19 +33,13 @@
         td { vertical-align: top; }
         
         /* Reg No List Styling */
-        .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
-        .reg-list span.absent { color: #dc2626; font-weight: bold; }
+        .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #000; }
+        /* Absent Style in HTML: Red + Strikethrough */
+        .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
         
-        /* Small Inputs for Rules */
         .rule-input { 
-            width: 2rem; 
-            padding: 0; 
-            text-align: center; 
-            border-bottom: 1px solid #94a3b8; 
-            background: transparent;
-            font-weight: 600;
-            color: #334155;
-            font-size: 0.75rem;
+            width: 2rem; padding: 0; text-align: center; border-bottom: 1px solid #94a3b8; 
+            background: transparent; font-weight: 600; color: #334155; font-size: 0.75rem;
         }
         .rule-input:focus { outline: none; border-color: #2563eb; }
     </style>
@@ -64,7 +58,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V18</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V19</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -113,7 +107,6 @@
                                         </div>
                                     </div>
                                 </label>
-                                
                                 <label class="flex-1 cursor-pointer group relative">
                                     <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="saveState(); updateEstimates()">
                                     <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
@@ -256,7 +249,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV18';
+        const STORAGE_KEY = 'valuationBoardStateV19';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -322,7 +315,6 @@
                 chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
-                // NEW: Save custom rule values
                 customRules: getCurrentRules(),
                 startSession: document.getElementById('startSessionSelect').value,
                 teams: teams,
@@ -346,7 +338,6 @@
                 if (state.quotaRule) document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`).checked = true;
                 if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
                 
-                // Restore Custom Rules
                 if (state.customRules) {
                     if(state.customRules.ARTS) {
                         document.getElementById('artsFn').value = state.customRules.ARTS.FN;
@@ -462,7 +453,6 @@
             if(!currentDiscipline) return;
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
             
-            // Use Dynamic Rules
             const rules = getCurrentRules();
             const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = rules[selectedRuleKey];
@@ -528,11 +518,13 @@
             });
 
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : '';
+                // Ensure prefixStr isn't used for first item if it's already part of the joined string
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : ''; 
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
+                    // Join logic: Only join for the FIRST item of the group
                     if (idx === 0 && group.prefix !== 'OTHER') {
-                        val = group.prefix + it.number;
+                        val = group.prefix + it.number; // e.g. VPAYAEG019
                     } else if (idx === 0 && group.prefix === 'OTHER') {
                         val = it.full;
                     }
@@ -544,10 +536,6 @@
             }).join('');
         }
         
-        function toStrikethrough(text) {
-            return text.split('').map(char => char + '\u0336').join('');
-        }
-
         function generateSmartListText(regsArray) {
              if (!regsArray || regsArray.length === 0) return '';
              const groups = [];
@@ -566,13 +554,10 @@
             return groups.map(group => {
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; 
                     else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
                     
-                    if (it.isAbsent) {
-                        const txt = `${val}(A)`;
-                        return toStrikethrough(txt);
-                    }
+                    if (it.isAbsent) return `${val}(A)`; // Clean text for PDF
                     return val; 
                 }).join(', ');
                 return nums;
@@ -582,7 +567,6 @@
         function generatePlan() {
             if(teams.length === 0) return alert("Create at least one team.");
             
-            // USE DYNAMIC RULES HERE
             const rules = getCurrentRules();
             const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = rules[selectedRuleKey];
@@ -658,16 +642,6 @@
             });
             document.getElementById('outputSection').classList.remove('hidden');
             document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
-        }
-
-        function showSuggestions(list, input, container, callback) {
-            container.innerHTML = ''; if (list.length === 0) { container.classList.add('hidden'); return; }
-            list.forEach(item => {
-                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
-                div.onclick = () => { callback(item); container.classList.add('hidden'); };
-                container.appendChild(div);
-            });
-            container.classList.remove('hidden');
         }
 
         function downloadPDF() {
