@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V21 (QP Code Based)</title>
+    <title>Valuation Board Manager V22 (Search Fixed)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,9 +14,14 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        .autocomplete-container { position: relative; }
+        /* FIX: High Z-Index for container to ensure dropdown floats ON TOP of siblings */
+        .autocomplete-container { position: relative; z-index: 50; }
+        
         .suggestions {
-            position: absolute; z-index: 100; width: 100%; max-height: 250px;
+            position: absolute; 
+            top: 100%; left: 0; /* Force position */
+            z-index: 100; 
+            width: 100%; max-height: 250px;
             overflow-y: auto; background: white; border: 1px solid #cbd5e1;
             border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
@@ -57,7 +62,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V21</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V22</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -72,7 +77,7 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-100 pb-8">
-                <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 col-span-2 shadow-sm">
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 col-span-2 shadow-sm relative z-40">
                     <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
                         Board Configuration
@@ -80,24 +85,23 @@
                     
                     <div class="mb-5">
                         <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board</label>
-                        <div class="autocomplete-container">
-                            <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        <div class="autocomplete-container" style="z-index: 60;"> <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
                             <div id="chairmanSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="autocomplete-container">
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
+                        <div class="autocomplete-container" style="z-index: 50;"> <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
                             <div class="relative">
                                 <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 pr-8 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
-                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2.5 text-slate-400 hover:text-red-500">
+                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2.5 text-slate-400 hover:text-red-500" title="Clear Selection">
                                     <i class="fas fa-times-circle"></i>
                                 </button>
                             </div>
                             <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
-                        <div>
+                        
+                        <div class="relative z-0">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
                             <div class="flex gap-3">
                                 <label class="flex-1 cursor-pointer group relative">
@@ -127,7 +131,7 @@
                     </div>
                 </div>
 
-                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-center shadow-sm">
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-center shadow-sm relative z-0">
                     <h3 class="font-bold text-slate-700 mb-4 text-sm">Database Sync</h3>
                     <div class="space-y-4">
                         <div><div class="flex justify-between text-xs mb-1"><span>Students</span><span id="studentLoadStatus" class="font-bold text-orange-500">...</span></div><div class="loader-bar"><div id="studentLoader" class="loader-progress" style="width:50%"></div></div></div>
@@ -142,7 +146,7 @@
                     <div>
                         <h2 class="text-xl font-bold text-indigo-900" id="selectedDisciplineTitle">Discipline Name</h2>
                         <div class="text-sm text-indigo-600 mt-1 flex gap-4">
-                            <span><i class="fas fa-copy mr-1"></i> QP Codes: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
                             <span><i class="fas fa-file-signature mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
                         </div>
                     </div>
@@ -155,7 +159,7 @@
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
                     
                     <div class="xl:col-span-2 space-y-6">
-                        <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-indigo-400 transition-colors">
+                        <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-indigo-400 transition-colors relative z-20">
                             <h4 class="font-bold text-slate-700 mb-4 flex items-center">
                                 <i class="fas fa-user-plus text-indigo-500 mr-2"></i> Create Valuation Team
                             </h4>
@@ -197,7 +201,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 h-fit sticky top-6">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 h-fit sticky top-6 z-10">
                         <h4 class="font-bold text-slate-800 border-b pb-3 mb-4 flex items-center">
                             <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
                         </h4>
@@ -253,7 +257,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardStateV21';
+        const STORAGE_KEY = 'valuationBoardStateV22';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -265,7 +269,6 @@
             loadStudentData();
         });
 
-        // --- Helper: Get Current Rules from Inputs ---
         function getCurrentRules() {
             return {
                 ARTS: { 
@@ -297,17 +300,14 @@
             Papa.parse(studentCsvUrl, {
                 download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
                 complete: (res) => {
-                    // PROCESS QP CODES
-                    rawStudentData = res.data.map(row => {
-                        return {
-                            ...row,
-                            QPCode: row['QPCode'] || 'UNKNOWN',
-                            Discipline: row['Discipline'] || 'Unknown',
-                            Paper: row['Paper'] || 'Unknown Paper',
-                            RegNo: row['RegNo'] || '',
-                            Attendance: row['Attendance'] || ''
-                        };
-                    });
+                    rawStudentData = res.data.map(row => ({
+                        ...row,
+                        QPCode: row['QPCode'] || 'UNKNOWN',
+                        Discipline: row['Discipline'] || 'Unknown',
+                        Paper: row['Paper'] || 'Unknown Paper',
+                        RegNo: row['RegNo'] || '',
+                        Attendance: row['Attendance'] || ''
+                    }));
                     
                     extractDisciplines();
                     updateStatus('student', true, `Ready (${rawStudentData.length})`);
@@ -405,8 +405,6 @@
 
         function selectDiscipline(name, resetDates = true) {
             document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
-            
-            // SORT BY QPCODE FIRST, THEN REGNO
             pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => {
                 if (a.QPCode === b.QPCode) {
                     return (a.RegNo || '').localeCompare(b.RegNo || '');
@@ -414,7 +412,7 @@
                 return (a.QPCode || '').localeCompare(b.QPCode || '');
             });
 
-            // Count Unique QP Codes instead of Papers
+            // Count Unique QP Codes
             const qpCodes = new Set(pooledStudents.map(s => s.QPCode));
             const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
             
@@ -552,11 +550,8 @@
             return groups.map(group => {
                 const nums = group.items.map((it, idx) => {
                     let val = it.number;
-                    if (idx === 0 && group.prefix !== 'OTHER') {
-                        val = group.prefix + it.number;
-                    } else if (idx === 0 && group.prefix === 'OTHER') {
-                        val = it.full;
-                    }
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
                     if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
                     return val;
                 }).join(', ');
@@ -623,22 +618,19 @@
 
                         while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
-                            
                             // *** MODIFIED BUNDLE LOGIC ***
-                            // Group by QP Code instead of Paper Name
                             const currentQP = currentStudent.QPCode;
-                            const displayPaperName = `${currentQP} (${currentStudent.Paper})`; // Format for display
+                            const displayPaperName = `${currentQP} (${currentStudent.Paper})`; 
                             
                             let bundle = {
                                 date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
-                                paper: displayPaperName, // Storing formatted name
-                                qpCode: currentQP,       // Storing raw QP
+                                paper: displayPaperName,
+                                qpCode: currentQP,
                                 count: 0, allRegs: [], startReg: null, endReg: null
                             };
 
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
-                                
                                 // BREAK IF QP CODE CHANGES
                                 if (s.QPCode !== currentQP) break;
                                 
