@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V8 (Auto-Save)</title>
+    <title>Valuation Board Manager V9 (Chairman Save)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,7 +45,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V8</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V9</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -63,8 +63,17 @@
                 <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 col-span-2 shadow-sm">
                     <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                        Select Discipline
+                        Board Configuration
                     </h3>
+                    
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board (Name)</label>
+                        <div class="relative">
+                            <i class="fas fa-user-tie absolute left-3 top-3 text-slate-400"></i>
+                            <input type="text" id="chairmanNameInput" placeholder="Enter Chairman's Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg pl-10 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="autocomplete-container">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
@@ -209,12 +218,12 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV8';
+        const STORAGE_KEY = 'valuationBoardStateV9';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
         let teams = [], currentStagingAdditionals = [], generatedPlan = [];
-        let savedDates = {}; // Store { "date_day_1": "2023-10-12" }
+        let savedDates = {};
 
         document.addEventListener('DOMContentLoaded', () => { loadFacultyData(); loadStudentData(); });
 
@@ -242,8 +251,6 @@
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
                     document.getElementById('disciplineSearch').disabled = false;
                     document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
-                    
-                    // Attempt to Restore Session
                     restoreSession();
                 }, error: () => updateStatus('student', false, "Error")
             });
@@ -254,54 +261,37 @@
             bar.style.width = success ? "100%" : "0%"; bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- State Management (LocalStorage) ---
+        // --- State Management ---
         function saveState() {
             const state = {
+                chairmanName: document.getElementById('chairmanNameInput').value,
                 currentDiscipline: currentDiscipline,
                 quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
                 teams: teams,
                 dates: {}
             };
-            
-            // Capture date inputs
             const inputs = document.querySelectorAll('#dateMappingContainer input[type="date"]');
             inputs.forEach(inp => { if(inp.value) state.dates[inp.id] = inp.value; });
-            
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
             
-            // UI Feedback
             const indicator = document.getElementById('saveStatus');
-            indicator.style.opacity = '1';
-            setTimeout(() => indicator.style.opacity = '0', 1000);
+            indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
         }
 
         function restoreSession() {
             try {
                 const saved = localStorage.getItem(STORAGE_KEY);
                 if (!saved) return;
-                
                 const state = JSON.parse(saved);
                 
-                // 1. Restore Rule
+                if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
                 if (state.quotaRule) {
                     const radio = document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`);
                     if (radio) radio.checked = true;
                 }
-
-                // 2. Restore Teams
-                if (state.teams && Array.isArray(state.teams)) {
-                    teams = state.teams;
-                    renderActiveTeams();
-                }
-
-                // 3. Restore Discipline (Requires Data)
-                if (state.currentDiscipline && rawStudentData.length > 0) {
-                    selectDiscipline(state.currentDiscipline, false); // false = don't overwrite saved dates yet
-                }
-
-                // 4. Restore Dates (After selectDiscipline regenerates inputs)
+                if (state.teams) { teams = state.teams; renderActiveTeams(); }
+                if (state.currentDiscipline && rawStudentData.length > 0) selectDiscipline(state.currentDiscipline, false);
                 if (state.dates) {
-                    // Wait a tick for inputs to generate
                     setTimeout(() => {
                         Object.keys(state.dates).forEach(id => {
                             const inp = document.getElementById(id);
@@ -309,13 +299,13 @@
                         });
                     }, 50);
                 }
-
             } catch (e) { console.error("Restore failed", e); }
         }
 
         function clearSession() {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
+            if(confirm("Are you sure? This will clear all saved teams and planning data.")) {
+                localStorage.removeItem(STORAGE_KEY); location.reload();
+            }
         }
 
         // --- Discipline Logic ---
@@ -345,10 +335,8 @@
             document.getElementById('outputSection').classList.add('hidden');
             
             if(resetDates) {
-                // Clear saved dates from state if user explicitly changes discipline
                 const inputs = document.querySelectorAll('#dateMappingContainer input[type="date"]');
-                inputs.forEach(inp => inp.value = ''); 
-                saveState();
+                inputs.forEach(inp => inp.value = ''); saveState();
             }
             updateEstimates();
         }
@@ -392,9 +380,7 @@
             const chiefName = document.getElementById('chiefInput').value.trim();
             if(!chiefName || currentStagingAdditionals.length === 0) return alert("Select Chief and at least one Additional");
             teams.push({ id: Date.now(), chief: { name: chiefName, designation: '' }, additionals: [...currentStagingAdditionals] });
-            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); 
-            saveState(); // SAVE
-            updateEstimates();
+            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); saveState(); updateEstimates();
         }
         function deleteTeam(id) { teams = teams.filter(t => t.id !== id); renderActiveTeams(); saveState(); updateEstimates(); }
         function renderActiveTeams() {
@@ -425,18 +411,11 @@
         }
         function generateDateInputs(numDays) {
             const container = document.getElementById('dateMappingContainer'); 
-            // Only rebuild if count changes to avoid losing focus/values, 
-            // BUT we need to handle the case where we are restoring state.
-            // Simplified: Rebuild and restore values from DOM or State.
-            
-            // Check current input values to preserve them during rule toggles
             const currentValues = {};
             container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
-
             container.innerHTML = '';
             for(let i=1; i<=numDays; i++) {
-                const id = `date_day_${i}`;
-                const val = currentValues[id] || '';
+                const id = `date_day_${i}`; const val = currentValues[id] || '';
                 container.innerHTML += `<div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200"><span class="text-xs font-bold text-slate-500 w-12 text-center">Day ${i}</span><input type="date" id="${id}" value="${val}" onchange="saveState()" class="border border-slate-300 rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500"></div>`;
             }
         }
@@ -523,6 +502,8 @@
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
+            
             const tableData = generatedPlan.map(r => [
                 r.date + ' ' + r.session,
                 r.chief,
@@ -534,12 +515,15 @@
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Plan", 14, 16);
-            doc.setFontSize(10); doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
+            doc.setFontSize(10); 
+            doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
+            doc.text(`Chairman: ${chairman}`, 14, 40);
 
+            doc.setTextColor(0,0,0);
             doc.autoTable({
                 head: [['Date/Session', 'Chief', 'Examiner', 'Paper', 'Range (Absent)', 'Count']],
                 body: tableData,
-                startY: 40, theme: 'grid',
+                startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3 },
                 columnStyles: { 3: { cellWidth: 40 } }
