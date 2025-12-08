@@ -99,31 +99,32 @@
                         </div>
                         
                         <div class="relative z-0">
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
-                            <div class="flex gap-3">
-                                <label class="flex-1 cursor-pointer group relative">
-                                    <input type="radio" name="quotaRule" value="ARTS" class="hidden peer" checked onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
-                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 1 (Arts)</div>
-                                        <div class="flex items-center justify-center gap-1 text-xs">
-                                            <input type="number" id="artsFn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                            <span class="text-slate-400">/</span>
-                                            <input type="number" id="artsAn" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                        </div>
-                                    </div>
-                                </label>
-                                <label class="flex-1 cursor-pointer group relative">
-                                    <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
-                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 2 (Sci)</div>
-                                        <div class="flex items-center justify-center gap-1 text-xs">
-                                            <input type="number" id="sciFn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                            <span class="text-slate-400">/</span>
-                                            <input type="number" id="sciAn" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
-                                        </div>
-                                    </div>
-                                </label>
-                            </div>
+                           <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
+<div class="flex gap-3">
+    <label class="flex-1 cursor-pointer group relative">
+        <input type="radio" name="quotaRule" value="RULE1" class="hidden peer" checked onchange="saveState(); updateEstimates(); renderPaperRules()">
+        <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+            <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 1</div>
+            <div class="flex items-center justify-center gap-1 text-xs">
+                <input type="number" id="rule1Fn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                <span class="text-slate-400">/</span>
+                <input type="number" id="rule1An" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+            </div>
+        </div>
+    </label>
+    
+    <label class="flex-1 cursor-pointer group relative">
+        <input type="radio" name="quotaRule" value="RULE2" class="hidden peer" onchange="saveState(); updateEstimates(); renderPaperRules()">
+        <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+            <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Rule 2</div>
+            <div class="flex items-center justify-center gap-1 text-xs">
+                <input type="number" id="rule2Fn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+                <span class="text-slate-400">/</span>
+                <input type="number" id="rule2An" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates(); renderPaperRules()">
+            </div>
+        </div>
+    </label>
+</div>
                         </div>
                     </div>
                 </div>
@@ -359,18 +360,18 @@
             }).join('\n');
         }
 
-        function getCurrentRules() {
-            return {
-                ARTS: { 
-                    FN: parseInt(document.getElementById('artsFn').value) || 20, 
-                    AN: parseInt(document.getElementById('artsAn').value) || 15 
-                },
-                SCIENCE: { 
-                    FN: parseInt(document.getElementById('sciFn').value) || 18, 
-                    AN: parseInt(document.getElementById('sciAn').value) || 12 
-                }
-            };
+       function getCurrentRules() {
+        return {
+        RULE1: { 
+            FN: parseInt(document.getElementById('rule1Fn').value) || 20, 
+            AN: parseInt(document.getElementById('rule1An').value) || 15 
+        },
+        RULE2: { 
+            FN: parseInt(document.getElementById('rule2Fn').value) || 18, 
+            AN: parseInt(document.getElementById('rule2An').value) || 12 
         }
+    };
+}
 
         // --- CONSTANTS ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
@@ -484,16 +485,17 @@
                 if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
                 if (state.paperRulesMap) paperRulesMap = state.paperRulesMap;
                 
-                if (state.customRules) {
-                    if(state.customRules.ARTS) {
-                        document.getElementById('artsFn').value = state.customRules.ARTS.FN;
-                        document.getElementById('artsAn').value = state.customRules.ARTS.AN;
-                    }
-                    if(state.customRules.SCIENCE) {
-                        document.getElementById('sciFn').value = state.customRules.SCIENCE.FN;
-                        document.getElementById('sciAn').value = state.customRules.SCIENCE.AN;
-                    }
-                }
+                // Inside restoreSessionBasic(), replace the "if (state.customRules) { ... }" block with this:
+if (state.customRules) {
+    if(state.customRules.RULE1) {
+        document.getElementById('rule1Fn').value = state.customRules.RULE1.FN;
+        document.getElementById('rule1An').value = state.customRules.RULE1.AN;
+    }
+    if(state.customRules.RULE2) {
+        document.getElementById('rule2Fn').value = state.customRules.RULE2.FN;
+        document.getElementById('rule2An').value = state.customRules.RULE2.AN;
+    }
+}
 
                 if (state.teams) { teams = state.teams; renderActiveTeams(); }
                 if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
@@ -563,10 +565,10 @@
             const tbody = document.getElementById('paperRuleTableBody');
             tbody.innerHTML = '';
             
-            // Get Current Dynamic Rules
+            // Get Current Dynamic Rules (Updated Keys)
             const rules = getCurrentRules();
-            const r1Label = `Rule 1 (${rules.ARTS.FN}/${rules.ARTS.AN})`;
-            const r2Label = `Rule 2 (${rules.SCIENCE.FN}/${rules.SCIENCE.AN})`;
+            const r1Label = `Rule 1 (${rules.RULE1.FN}/${rules.RULE1.AN})`;
+            const r2Label = `Rule 2 (${rules.RULE2.FN}/${rules.RULE2.AN})`;
 
             papersData.forEach(paper => {
                 const assignedRule = paperRulesMap[paper.qp] || 'RULE1';
