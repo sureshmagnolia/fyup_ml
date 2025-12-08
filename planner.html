@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V15 (Smart List)</title>
+    <title>Valuation Board Manager V16 (Range & List)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -34,12 +34,12 @@
         
         /* Reg No List Styling */
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
-        .reg-list span.absent { color: #dc2626; font-weight: bold; text-decoration: line-through; text-decoration-color: #fca5a5; }
+        .reg-list span.absent { color: #dc2626; font-weight: bold; }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-[95%] mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+    <div class="max-w-[98%] mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
@@ -51,7 +51,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V15</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V16</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -215,10 +215,11 @@
                         <thead class="bg-slate-800 text-white text-xs uppercase">
                             <tr>
                                 <th class="px-3 py-4 w-[10%]">Date/Session</th>
-                                <th class="px-3 py-4 w-[15%]">Chief</th>
-                                <th class="px-3 py-4 w-[15%]">Additional</th>
+                                <th class="px-3 py-4 w-[12%]">Chief</th>
+                                <th class="px-3 py-4 w-[12%]">Additional</th>
                                 <th class="px-3 py-4 w-[15%]">Paper</th>
-                                <th class="px-3 py-4 w-[40%] bg-indigo-50 text-indigo-900 border-l border-r border-indigo-100">Allotted Register Nos</th> <th class="px-3 py-4 text-center w-[5%]">Count</th>
+                                <th class="px-3 py-4 w-[12%]">Range (From-To)</th> <th class="px-3 py-4 w-[34%]">Allotted Register Nos</th>
+                                <th class="px-3 py-4 text-center w-[5%]">Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -233,7 +234,7 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV15';
+        const STORAGE_KEY = 'valuationBoardStateV16';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -439,11 +440,21 @@
         }
 
         // --- SMART LIST LOGIC ---
+        function getSmartRange(start, end) {
+            if (!start || !end) return '';
+            if (start === end) return start;
+            const regex = /^([A-Z]+)(\d+)$/;
+            const startMatch = start.match(regex);
+            const endMatch = end.match(regex);
+            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
+                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
+            }
+            return `${start} - ${end}`;
+        }
+
         function generateSmartList(regsArray) {
             if (!regsArray || regsArray.length === 0) return '';
             
-            // Format: [{regNo: "ABC", isAbsent: bool}]
-            // Group by Prefix
             const groups = [];
             const regex = /^([A-Z]+)(\d+)$/;
             
@@ -452,7 +463,6 @@
                 const prefix = match ? match[1] : 'OTHER';
                 const number = match ? match[2] : item.regNo;
                 
-                // Add to last group if prefix matches, else new group
                 if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
                     groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
                 } else {
@@ -460,23 +470,20 @@
                 }
             });
 
-            // Build HTML
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : '';
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : ''; // No trailing space
                 const nums = group.items.map((it, idx) => {
-                    // First item gets the prefix implicitly if not 'OTHER'
-                    // Actually, let's just output prefix once then list
-                    const val = (idx === 0 && group.prefix === 'OTHER') ? it.full : it.number;
-                    // Styling
+                    const val = (idx === 0 && group.prefix !== 'OTHER') ? (prefixStr + it.number) : it.number;
+                    if (idx === 0 && group.prefix === 'OTHER') return it.full;
+                    
                     if (it.isAbsent) return `<span class="absent">${val}</span>`;
                     return val;
                 }).join(', ');
-                return `<div><span class="font-bold text-slate-700">${prefixStr}</span>${nums}</div>`;
-            }).join(''); // New line per group implicitly by div
+                return `<div>${nums}</div>`;
+            }).join('');
         }
         
         function generateSmartListText(regsArray) {
-             // For PDF (Text Only)
              if (!regsArray || regsArray.length === 0) return '';
              const groups = [];
              const regex = /^([A-Z]+)(\d+)$/;
@@ -492,12 +499,13 @@
             });
             
             return groups.map(group => {
-                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix} ` : '';
+                const prefixStr = group.prefix !== 'OTHER' ? `${group.prefix}` : '';
                 const nums = group.items.map((it, idx) => {
-                    const val = (idx === 0 && group.prefix === 'OTHER') ? it.full : it.number;
-                    return it.isAbsent ? `${val}(A)` : val; // Mark absent in PDF text
+                    const val = (idx === 0 && group.prefix !== 'OTHER') ? (prefixStr + it.number) : it.number;
+                    if (idx === 0 && group.prefix === 'OTHER') return it.isAbsent ? `${it.full}(A)` : it.full;
+                    return it.isAbsent ? `${val}(A)` : val; 
                 }).join(', ');
-                return `${prefixStr}${nums}`;
+                return nums;
             }).join('\n');
         }
 
@@ -529,15 +537,17 @@
                             const currentStudent = pooledStudents[queueIndex];
                             const currentPaper = currentStudent.Paper;
                             
-                            // Initialize Bundle with All Regs Array
                             let bundle = {
                                 date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
-                                paper: currentPaper, count: 0, allRegs: []
+                                paper: currentPaper, count: 0, allRegs: [], startReg: null, endReg: null
                             };
 
                             while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
                                 if (s.Paper !== currentPaper) break;
+                                
+                                if (!bundle.startReg) bundle.startReg = s.RegNo;
+                                bundle.endReg = s.RegNo;
                                 
                                 const isAbsent = !(s.Attendance || '').toUpperCase().includes('PRESENT');
                                 bundle.allRegs.push({ regNo: s.RegNo, isAbsent: isAbsent });
@@ -558,6 +568,7 @@
         function renderTable() {
             const tbody = document.querySelector('#distributionTable tbody'); tbody.innerHTML = '';
             generatedPlan.forEach(r => {
+                const rangeStr = getSmartRange(r.startReg, r.endReg);
                 const listHtml = generateSmartList(r.allRegs);
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
@@ -565,7 +576,8 @@
                         <td class="px-3 py-4 text-xs font-medium text-indigo-700">${r.chief}</td>
                         <td class="px-3 py-4 text-xs text-slate-600">${r.examiner}</td>
                         <td class="px-3 py-4 text-[10px] text-slate-500 whitespace-normal break-words leading-tight" title="${r.paper}">${r.paper}</td>
-                        <td class="px-3 py-4 bg-indigo-50/50 text-xs"><div class="reg-list">${listHtml}</div></td>
+                        <td class="px-3 py-4 font-mono text-xs text-slate-600">${rangeStr}</td>
+                        <td class="px-3 py-4 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
                         <td class="px-3 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-2 py-1 rounded-full text-[10px]">${r.count}</span></td>
                     </tr>`;
             });
@@ -593,6 +605,7 @@
                 r.chief,
                 r.examiner,
                 r.paper,
+                getSmartRange(r.startReg, r.endReg),
                 generateSmartListText(r.allRegs),
                 r.count
             ]);
@@ -605,7 +618,7 @@
 
             doc.setTextColor(0,0,0);
             doc.autoTable({
-                head: [['Date/Session', 'Chief', 'Additional', 'Paper', 'Allotted Register Nos', 'Count']],
+                head: [['Date/Session', 'Chief', 'Additional', 'Paper', 'Range', 'Allotted Register Nos', 'Count']],
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
@@ -614,9 +627,10 @@
                     0: { cellWidth: 15 },
                     1: { cellWidth: 25 },
                     2: { cellWidth: 25 },
-                    3: { cellWidth: 40 },
-                    4: { cellWidth: 70 }, // Wide column for RegNos
-                    5: { cellWidth: 10, halign: 'center' }
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 50 },
+                    6: { cellWidth: 10, halign: 'center' }
                 }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
