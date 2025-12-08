@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V36 (Assignment Logic Fix)</title>
+    <title>Valuation Board Manager V37 (Smart Filter & Details)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,14 +45,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-check-double text-green-400"></i> Valuation Board Manager
+                    <i class="fas fa-tasks text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V36 (Assignment Logic Fixed)</p>
+                <p class="text-indigo-200 text-sm mt-1">V37 (Smart Filter & Detailed View)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V36</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V37</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -132,7 +132,7 @@
                             </div>
 
                             <div class="autocomplete-container md:col-span-2">
-                                <label class="block text-xs font-bold text-slate-500 mb-1">Select Paper (QP Code)</label>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Select Paper (Pending Only)</label>
                                 <input type="text" id="allocQP" placeholder="Type QP Code or Paper Name..." class="w-full border border-slate-300 rounded-lg p-2 text-sm">
                                 <div id="suggQP" class="suggestions hidden"></div>
                             </div>
@@ -170,8 +170,8 @@
                                 <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold">
                                     <tr>
                                         <th class="px-4 py-3">Date/Session</th>
-                                        <th class="px-4 py-3">Team</th>
-                                        <th class="px-4 py-3">QP Code</th>
+                                        <th class="px-4 py-3">Examiners</th>
+                                        <th class="px-4 py-3 w-1/4">Paper</th>
                                         <th class="px-4 py-3 w-1/3">Register Nos</th>
                                         <th class="px-4 py-3 text-center">Count</th>
                                         <th class="px-4 py-3 text-center">Action</th>
@@ -203,15 +203,15 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV36'; // New Key for logic fix
+        const STORAGE_KEY = 'valuationBoardV37';
 
-        // --- STATE ---
+        // --- OPTIMIZED STATE ---
         let rawStudentData = []; 
         let facultyData = [];
         let studentsByDiscipline = {}; 
         let studentsByQP = {}; 
         let allocations = []; 
-        let assignedRegs = new Set(); // Stores composite key: "QPCODE_REGNO"
+        let assignedRegs = new Set();
         let currentDiscipline = null;
         let saveTimeout = null;
 
@@ -284,10 +284,26 @@
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
+            // SMART QP FILTER: Only show pending papers
             const getQPs = () => {
                 if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) return [];
-                const qps = new Set(studentsByDiscipline[currentDiscipline].map(s => `${s.qp} (${s.paperName.substring(0,25)}...)`));
-                return [...qps].sort();
+                
+                const pendingQPs = [];
+                // Group by QP to check status
+                const groups = {};
+                studentsByDiscipline[currentDiscipline].forEach(s => {
+                    if(!groups[s.qp]) groups[s.qp] = { total: 0, assigned: 0, name: s.paperName };
+                    groups[s.qp].total++;
+                    if(assignedRegs.has(`${s.qp}_${s.regNo}`)) groups[s.qp].assigned++;
+                });
+
+                Object.keys(groups).forEach(qp => {
+                    if(groups[qp].assigned < groups[qp].total) {
+                        pendingQPs.push(`${qp} (${groups[qp].name.substring(0,30)}...)`);
+                    }
+                });
+                
+                return pendingQPs.sort();
             };
             
             setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => {
@@ -298,7 +314,6 @@
                 const qpFull = document.getElementById('allocQP').value;
                 const qp = qpFull.split(' ')[0];
                 if(!qp || !studentsByQP[qp]) return [];
-                // CRITICAL FIX: Check assignment using composite key
                 return studentsByQP[qp]
                     .filter(s => !assignedRegs.has(`${qp}_${s.regNo}`))
                     .map(s => s.regNo);
@@ -308,7 +323,6 @@
 
         function updateStartRegSuggestion(qp) {
             if(!studentsByQP[qp]) return;
-            // CRITICAL FIX: Check using composite key
             const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(`${qp}_${s.regNo}`));
             
             const input = document.getElementById('allocStartReg');
@@ -329,6 +343,11 @@
             if(!date || !chief || !additional || !qpFull || !startReg) return alert("Please fill all fields");
 
             const qp = qpFull.split(' ')[0];
+            
+            // Re-fetch paper name from data to ensure full name is stored
+            const studentRef = studentsByQP[qp] ? studentsByQP[qp][0] : null;
+            const fullPaperName = studentRef ? studentRef.paperName : qpFull;
+            
             const students = studentsByQP[qp]; 
             if(!students) return alert("Invalid QP Code");
 
@@ -341,7 +360,6 @@
             
             while(currentCount < targetCount && i < students.length) {
                 const s = students[i];
-                // CRITICAL FIX: Check composite key
                 if(assignedRegs.has(`${qp}_${s.regNo}`)) { i++; continue; } 
 
                 const isAbsent = !s.attendance.includes('PRESENT');
@@ -353,27 +371,28 @@
             if(bundleList.length === 0) return alert("No valid students found.");
 
             const newAlloc = {
-                id: Date.now(), date, session, chief, additional, qp, fullPaperName: qpFull,
+                id: Date.now(), date, session, chief, additional, 
+                qp, 
+                paperName: fullPaperName, // STORE NAME
                 startReg: bundleList[0].regNo, endReg: bundleList[bundleList.length - 1].regNo,
                 count: currentCount, allRegs: bundleList
             };
 
             allocations.push(newAlloc);
-            // CRITICAL FIX: Add composite keys
             bundleList.forEach(b => assignedRegs.add(`${qp}_${b.regNo}`));
             
             saveState(true);
             renderTable();
             updateDashboard();
             updateStartRegSuggestion(qp);
+            document.getElementById('allocQP').value = ''; // Clear QP input to force re-filter next time
+            document.getElementById('allocStartReg').value = '';
         }
 
         function deleteAllocation(id) {
             const alloc = allocations.find(a => a.id === id);
             if(!alloc) return;
-            // CRITICAL FIX: Delete composite keys
             alloc.allRegs.forEach(b => assignedRegs.delete(`${alloc.qp}_${b.regNo}`));
-            
             allocations = allocations.filter(a => a.id !== id);
             saveState(true);
             renderTable();
@@ -392,7 +411,6 @@
             studentsByDiscipline[currentDiscipline].forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName };
                 stats[s.qp].total++;
-                // CRITICAL FIX: Check composite key
                 if(assignedRegs.has(`${s.qp}_${s.regNo}`)) stats[s.qp].assigned++;
             });
 
@@ -404,16 +422,17 @@
                 const remaining = s.total - s.assigned;
                 const percent = s.total > 0 ? Math.round((s.assigned / s.total) * 100) : 0;
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
+                const opacity = remaining === 0 ? 'opacity-60' : 'opacity-100'; // Fade completed
                 
                 const item = document.createElement('div');
-                item.className = "bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors";
+                item.className = `bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors ${opacity}`;
                 item.innerHTML = `
                     <div class="flex justify-between font-bold ${color} items-start">
-                        <div class="flex flex-col">
+                        <div class="flex flex-col overflow-hidden">
                             <span>${qp}</span>
-                            <span class="text-[10px] font-normal text-slate-500 truncate w-32" title="${s.name}">${s.name}</span>
+                            <span class="text-[10px] font-normal text-slate-500 truncate w-40" title="${s.name}">${s.name}</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 flex-shrink-0">
                             <span>${remaining} Left</span>
                             <button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button>
                         </div>
@@ -557,7 +576,6 @@
                 if(state.allocs) {
                     allocations = state.allocs;
                     assignedRegs = new Set();
-                    // REBUILD SET WITH COMPOSITE KEY
                     allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(`${a.qp}_${b.regNo}`)));
                     renderTable();
                 }
@@ -613,8 +631,14 @@
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
                 tr.innerHTML = `
                     <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
-                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
-                    <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
+                    <td class="px-4 py-3 text-xs">
+                        <div class="font-bold text-slate-700">C: ${alloc.chief}</div>
+                        <div class="text-slate-500">A: ${alloc.additional}</div>
+                    </td>
+                    <td class="px-4 py-3 text-xs w-1/4">
+                        <div class="font-mono font-bold text-indigo-600">${alloc.qp}</div>
+                        <div class="text-[10px] text-slate-400 leading-tight">${alloc.paperName}</div>
+                    </td>
                     <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
                     <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
                     <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
@@ -628,7 +652,13 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
-            const tableData = allocations.map(r => [r.date + '\n' + r.session, r.chief + '\n' + r.additional, r.qp, generateSmartListText(r.allRegs), r.count]);
+            const tableData = allocations.map(r => [
+                r.date + '\n' + r.session,
+                `C: ${r.chief}\nA: ${r.additional}`,
+                `${r.qp}\n${r.paperName}`,
+                generateSmartListText(r.allRegs),
+                r.count
+            ]);
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Allocation", 14, 16);
@@ -636,12 +666,15 @@
             doc.setTextColor(0,0,0);
             
             doc.autoTable({
-                head: [['Date/Session', 'Team', 'QP Code', 'Register Nos', 'Count']],
+                head: [['Date/Session', 'Examiners', 'Paper', 'Register Nos', 'Count']],
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
-                columnStyles: { 3: { cellWidth: 80 } }
+                columnStyles: { 
+                    2: { cellWidth: 40 },
+                    3: { cellWidth: 70 }
+                }
             });
             doc.save(`Valuation_Plan.pdf`);
         }
