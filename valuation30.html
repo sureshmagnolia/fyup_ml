@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V33 (Dashboard Updated)</title>
+    <title>Valuation Board Manager V34 (Performance Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -22,6 +22,7 @@
             border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
         .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
+        .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
         .hidden { display: none; }
         
@@ -44,14 +45,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-edit text-indigo-300"></i> Valuation Board Manager
+                    <i class="fas fa-bolt text-yellow-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Manual Allocation Mode (Discipline-Wise Camps)</p>
+                <p class="text-indigo-200 text-sm mt-1">V34 (High Performance & Crash Fix)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V33</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V34</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -61,31 +62,18 @@
         </div>
 
         <div class="p-6 space-y-8">
-            
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-5">
-                <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                    <span class="bg-slate-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                    Board Setup (Required)
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex justify-between items-center">
+                <div class="w-1/3">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
                     <div class="autocomplete-container">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
-                        <input type="text" id="chairmanNameInput" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Search Faculty..." oninput="checkVisibility()">
+                        <input type="text" id="chairmanNameInput" class="border border-slate-300 rounded px-2 py-1 text-sm w-full" placeholder="Search Faculty..." oninput="debounceSave()">
                         <div id="suggChairman" class="suggestions hidden"></div>
                     </div>
-                    
-                    <div class="autocomplete-container">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
-                        <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
-                        <div id="disciplineSuggestions" class="suggestions hidden"></div>
-                    </div>
                 </div>
-                <div class="mt-4 flex justify-end">
-                    <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline">Reset Session</button>
-                </div>
+                <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline">Reset Entire Session</button>
             </div>
 
-            <div id="planningSection" class="hidden fade-in grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
                 <div class="lg:col-span-1 bg-slate-50 rounded-xl border border-slate-200 p-5 h-fit shadow-inner">
                     <h3 class="font-bold text-slate-700 mb-4 flex items-center justify-between">
@@ -93,11 +81,20 @@
                         <span class="text-xs bg-slate-200 px-2 py-1 rounded text-slate-600" id="totalPapersCount">0 Papers</span>
                     </h3>
                     
-                    <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
+                    <div class="mb-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
+                        <div class="autocomplete-container">
+                            <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                            <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
+                    </div>
+
+                    <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
+                        <div class="text-center text-slate-400 text-xs py-10">Select Discipline to View Status</div>
+                    </div>
                 </div>
 
-                <div class="lg:col-span-2 space-y-8">
+                <div id="allocationPanel" class="lg:col-span-2 space-y-8 hidden">
                     
                     <div class="bg-white border-2 border-indigo-100 rounded-xl p-6 shadow-sm relative z-20">
                         <h4 class="font-bold text-indigo-800 mb-6 border-b pb-2 flex items-center gap-2">
@@ -145,7 +142,7 @@
                                 <div class="flex gap-2">
                                     <input type="number" id="allocCount" value="20" class="w-24 border border-slate-300 rounded-lg p-2 text-sm font-bold text-center">
                                     <div class="text-xs text-slate-400 flex items-center">
-                                        Includes absents automatically.<br>Won't count them in quota.
+                                        Includes absents automatically.
                                     </div>
                                 </div>
                             </div>
@@ -201,77 +198,31 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV33'; // New key for V33
+        const STORAGE_KEY = 'valuationBoardV34';
 
-        let rawStudentData = [], facultyData = [];
+        // --- OPTIMIZED STATE ---
+        let rawStudentData = []; // Full Data
+        let facultyData = [];
+        let studentsByDiscipline = {}; // Index: Discipline -> Array of Students
+        let studentsByQP = {}; // Index: QP -> Array of Students (Sorted)
         let allocations = []; 
         let assignedRegs = new Set();
         let currentDiscipline = null;
+        let saveTimeout = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadFacultyData();
             loadStudentData();
         });
 
-        // --- UTILS ---
-        function showSuggestions(list, input, container, callback) {
-            container.innerHTML = ''; 
-            if (!list || list.length === 0) { container.classList.add('hidden'); return; }
-            list.forEach(item => {
-                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
-                div.onmousedown = (e) => { e.preventDefault(); callback(item); container.classList.add('hidden'); }; 
-                container.appendChild(div);
-            });
-            container.classList.remove('hidden');
-        }
-
-        function setupAutocomplete(inputId, listId, dataFn, onSelect) {
-            const input = document.getElementById(inputId);
-            const list = document.getElementById(listId);
-            const handler = () => {
-                const val = input.value.toLowerCase();
-                const data = dataFn();
-                const matches = data.filter(d => d.toLowerCase().includes(val)).slice(0, 10);
-                showSuggestions(matches, input, list, (sel) => {
-                    input.value = sel;
-                    if(onSelect) onSelect(sel);
-                    saveState(); // Auto save on selection
-                    checkVisibility(); // Re-check visibility logic
-                });
-            };
-            input.addEventListener('focus', handler);
-            input.addEventListener('input', handler);
-            input.addEventListener('blur', () => setTimeout(() => list.classList.add('hidden'), 200));
-        }
-
-        // --- VISIBILITY CHECK ---
-        function checkVisibility() {
-            const chairman = document.getElementById('chairmanNameInput').value.trim();
-            const section = document.getElementById('planningSection');
-            
-            if (chairman && currentDiscipline) {
-                section.classList.remove('hidden');
-                updateDashboard();
-                saveState();
-            } else {
-                section.classList.add('hidden');
-            }
-        }
-
-        // --- DISCIPLINE SELECTION ---
-        function selectDiscipline(name) {
-            document.getElementById('disciplineSearch').value = name;
-            currentDiscipline = name;
-            checkVisibility(); 
-        }
-
-        // --- DATA LOADING ---
+        // --- DATA LOADING & INDEXING ---
         function loadFacultyData() {
             Papa.parse(facultyCsvUrl, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: (res) => {
                     const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
                     if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n);
+                    setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData); // Setup Chairman Auto
                 }
             });
         }
@@ -283,19 +234,44 @@
                     if (!res.data || res.data.length === 0) return;
                     const keys = Object.keys(res.data[0]);
                     const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
-                    const qpKey = findKey('QPCODE') || 'QPCode';
-                    const regKey = findKey('REGNO') || 'RegNo';
-                    const attKey = findKey('ATTENDANCE') || 'Attendance';
-                    const paperKey = findKey('PAPER') || 'Paper';
-                    const discKey = findKey('DISCIPLINE') || 'Discipline';
+                    
+                    const k = {
+                        qp: findKey('QPCODE') || 'QPCode',
+                        reg: findKey('REGNO') || 'RegNo',
+                        att: findKey('ATTENDANCE') || 'Attendance',
+                        paper: findKey('PAPER') || 'Paper',
+                        disc: findKey('DISCIPLINE') || 'Discipline'
+                    };
 
-                    rawStudentData = res.data.map(row => ({
-                        regNo: row[regKey],
-                        qp: row[qpKey] || 'UNKNOWN',
-                        paperName: row[paperKey] || '',
-                        discipline: row[discKey] || 'Unknown',
-                        attendance: (row[attKey] || '').toUpperCase()
-                    })).filter(s => s.regNo && s.qp);
+                    // 1. Parse & Index in one pass
+                    rawStudentData = [];
+                    studentsByDiscipline = {};
+                    studentsByQP = {};
+
+                    res.data.forEach(row => {
+                        const s = {
+                            regNo: row[k.reg],
+                            qp: row[k.qp] || 'UNKNOWN',
+                            paperName: row[k.paper] || '',
+                            discipline: row[k.disc] || 'Unknown',
+                            attendance: (row[k.att] || '').toUpperCase()
+                        };
+                        
+                        if(s.regNo && s.qp) {
+                            rawStudentData.push(s);
+                            
+                            // Index by Discipline
+                            if(!studentsByDiscipline[s.discipline]) studentsByDiscipline[s.discipline] = [];
+                            studentsByDiscipline[s.discipline].push(s);
+
+                            // Index by QP
+                            if(!studentsByQP[s.qp]) studentsByQP[s.qp] = [];
+                            studentsByQP[s.qp].push(s);
+                        }
+                    });
+
+                    // 2. Sort QP Arrays once
+                    Object.values(studentsByQP).forEach(list => list.sort((a,b) => a.regNo.localeCompare(b.regNo)));
 
                     initApp();
                 },
@@ -307,58 +283,128 @@
             document.getElementById('connectionStatus').textContent = "Connected";
             document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
             
-            const disciplines = [...new Set(rawStudentData.map(s => s.discipline))].sort();
-            document.getElementById('disciplineSearch').disabled = false;
-            document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
+            // Setup Discipline Search
+            const disciplines = Object.keys(studentsByDiscipline).sort();
+            const discInput = document.getElementById('disciplineSearch');
+            discInput.disabled = false;
+            discInput.placeholder = "Search Discipline...";
             setupAutocomplete('disciplineSearch', 'disciplineSuggestions', () => disciplines, selectDiscipline);
 
+            // Restore
             restoreState();
+            
+            // Setup Form Search (Dependent on selection)
             setupForm();
         }
 
-        // --- FORM SETUP ---
+        // --- AUTOCOMPLETE UTILS (DEBOUNCED & OPTIMIZED) ---
+        function showSuggestions(list, input, container, callback) {
+            container.innerHTML = ''; 
+            if (!list || list.length === 0) { container.classList.add('hidden'); return; }
+            
+            // Limit render to 20 items for speed
+            list.slice(0, 20).forEach(item => {
+                const div = document.createElement('div'); 
+                div.className = 'suggestion-item'; 
+                div.textContent = item;
+                div.onmousedown = (e) => { 
+                    e.preventDefault(); 
+                    callback(item); 
+                    container.classList.add('hidden'); 
+                }; 
+                container.appendChild(div);
+            });
+            container.classList.remove('hidden');
+        }
+
+        function setupAutocomplete(inputId, listId, dataFn, onSelect) {
+            const input = document.getElementById(inputId);
+            const list = document.getElementById(listId);
+            let debounceTimer;
+
+            const handler = () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const val = input.value.toLowerCase();
+                    if(val.length < 2 && inputId !== 'disciplineSearch') { list.classList.add('hidden'); return; } // Min chars optimization
+                    
+                    const data = dataFn(); // Get pre-calculated array
+                    const matches = data.filter(d => d.toLowerCase().includes(val));
+                    showSuggestions(matches, input, list, (sel) => {
+                        input.value = sel;
+                        if(onSelect) onSelect(sel);
+                    });
+                }, 200); // 200ms debounce
+            };
+
+            input.addEventListener('focus', () => { 
+                const data = dataFn();
+                showSuggestions(data, input, list, (sel) => {
+                    input.value = sel;
+                    if(onSelect) onSelect(sel);
+                });
+            });
+            input.addEventListener('input', handler);
+            input.addEventListener('blur', () => setTimeout(() => list.classList.add('hidden'), 200));
+        }
+
+        // --- CORE LOGIC ---
+        function selectDiscipline(name) {
+            document.getElementById('disciplineSearch').value = name;
+            currentDiscipline = name;
+            
+            // Show Panel
+            document.getElementById('planningPanel').classList.remove('hidden');
+            
+            // Update QP List source for Form
+            updateDashboard();
+            debounceSave();
+        }
+
         function setupForm() {
-            setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
+            // QP Autocomplete - Use Pre-indexed Data
             const getQPs = () => {
-                if(!currentDiscipline) return [];
-                return [...new Set(rawStudentData
-                    .filter(s => s.discipline === currentDiscipline)
-                    .map(s => `${s.qp} (${s.paperName.substring(0, 30)}...)`))].sort();
+                if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) return [];
+                // Return unique QPs in this discipline
+                const qps = new Set(studentsByDiscipline[currentDiscipline].map(s => `${s.qp} (${s.paperName.substring(0,25)}...)`));
+                return [...qps].sort();
             };
             
             setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => {
+                // Auto-suggest next start reg
                 updateStartRegSuggestion(val.split(' ')[0]); 
             });
 
+            // Start Reg Autocomplete
             const getStartRegs = () => {
                 const qpFull = document.getElementById('allocQP').value;
                 const qp = qpFull.split(' ')[0];
-                if(!qp) return [];
-                return rawStudentData
-                    .filter(s => s.qp === qp && !assignedRegs.has(s.regNo))
-                    .map(s => s.regNo)
-                    .sort();
+                if(!qp || !studentsByQP[qp]) return [];
+                // Filter only unassigned
+                return studentsByQP[qp]
+                    .filter(s => !assignedRegs.has(s.regNo))
+                    .map(s => s.regNo);
             };
             setupAutocomplete('allocStartReg', 'suggStartReg', getStartRegs);
         }
 
         function updateStartRegSuggestion(qp) {
-            const unassigned = rawStudentData
-                .filter(s => s.qp === qp && !assignedRegs.has(s.regNo))
-                .sort((a,b) => a.regNo.localeCompare(b.regNo));
+            if(!studentsByQP[qp]) return;
+            const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(s.regNo));
             
-            if(unassigned.length > 0) {
-                document.getElementById('allocStartReg').value = unassigned[0].regNo;
+            const input = document.getElementById('allocStartReg');
+            if(unassigned) {
+                input.value = unassigned.regNo;
             } else {
-                document.getElementById('allocStartReg').value = '';
-                document.getElementById('allocStartReg').placeholder = "All Assigned";
+                input.value = '';
+                input.placeholder = "All Assigned";
             }
         }
 
-        // --- ALLOCATION LOGIC ---
+        // --- ALLOCATION ---
         function addAllocation() {
             const date = document.getElementById('allocDate').value;
             const session = document.getElementById('allocSession').value;
@@ -371,10 +417,12 @@
             if(!date || !chief || !additional || !qpFull || !startReg) return alert("Please fill all fields");
 
             const qp = qpFull.split(' ')[0];
-            const students = rawStudentData.filter(s => s.qp === qp).sort((a,b) => a.regNo.localeCompare(b.regNo));
-            const startIndex = students.findIndex(s => s.regNo === startReg);
+            const students = studentsByQP[qp]; // Use index!
             
-            if(startIndex === -1) return alert("Start Register Number not found in this QP");
+            if(!students) return alert("Invalid QP Code");
+
+            const startIndex = students.findIndex(s => s.regNo === startReg);
+            if(startIndex === -1) return alert("Start Reg not found in this QP");
 
             let currentCount = 0;
             let bundleList = [];
@@ -382,7 +430,7 @@
             
             while(currentCount < targetCount && i < students.length) {
                 const s = students[i];
-                if(assignedRegs.has(s.regNo)) { i++; continue; }
+                if(assignedRegs.has(s.regNo)) { i++; continue; } // Skip assigned
 
                 const isAbsent = !s.attendance.includes('PRESENT');
                 bundleList.push({ regNo: s.regNo, isAbsent: isAbsent, full: s.regNo }); 
@@ -402,7 +450,7 @@
             allocations.push(newAlloc);
             bundleList.forEach(b => assignedRegs.add(b.regNo));
             
-            saveState();
+            saveState(true); // Force save
             renderTable();
             updateDashboard();
             updateStartRegSuggestion(qp);
@@ -413,33 +461,37 @@
             if(!alloc) return;
             alloc.allRegs.forEach(b => assignedRegs.delete(b.regNo));
             allocations = allocations.filter(a => a.id !== id);
-            saveState();
+            saveState(true);
             renderTable();
             updateDashboard();
         }
 
-        // --- DASHBOARD (UPDATED FOR NAME) ---
+        // --- DASHBOARD ---
         function updateDashboard() {
             const db = document.getElementById('statusDashboard');
             const totalCountEl = document.getElementById('totalPapersCount');
-            db.innerHTML = '';
             
-            if(!currentDiscipline) return;
+            if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) {
+                db.innerHTML = `<div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>`;
+                return;
+            }
 
+            // Calc Stats
             const stats = {};
-            // Filter by discipline
-            rawStudentData.filter(s => s.discipline === currentDiscipline).forEach(s => {
-                if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName }; // Add Name
+            studentsByDiscipline[currentDiscipline].forEach(s => {
+                if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName };
                 stats[s.qp].total++;
                 if(assignedRegs.has(s.regNo)) stats[s.qp].assigned++;
             });
 
+            // Render
+            db.innerHTML = '';
             let qpCount = 0;
             Object.keys(stats).sort().forEach(qp => {
                 qpCount++;
                 const s = stats[qp];
                 const remaining = s.total - s.assigned;
-                const percent = Math.round((s.assigned / s.total) * 100);
+                const percent = s.total > 0 ? Math.round((s.assigned / s.total) * 100) : 0;
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
                 
                 const item = document.createElement('div');
@@ -452,9 +504,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             <span>${remaining} Left</span>
-                            <button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster">
-                                <i class="fas fa-eye"></i>
-                            </button>
+                            <button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button>
                         </div>
                     </div>
                     <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
@@ -467,50 +517,12 @@
             totalCountEl.textContent = `${qpCount} QP Codes`;
         }
 
-        // --- ROSTER MODAL LOGIC ---
-        function viewRoster(qp) {
-            const modal = document.getElementById('rosterModal');
-            const title = document.getElementById('rosterModalTitle');
-            const tbody = document.querySelector('#rosterTable tbody');
-            const students = rawStudentData.filter(s => s.qp === qp).sort((a,b) => a.regNo.localeCompare(b.regNo));
-            
-            title.textContent = `QP Code: ${qp}`;
-            tbody.innerHTML = '';
-            let serial = 0;
-            
-            students.forEach(s => {
-                const isAbsent = !s.attendance.includes('PRESENT');
-                if(!isAbsent) serial++;
-                const slNo = isAbsent ? '' : serial;
-                const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>';
-                const regClass = isAbsent ? 'text-red-500 line-through' : 'font-mono font-bold';
-                const rowClass = isAbsent ? 'bg-red-50' : '';
-
-                tbody.innerHTML += `
-                    <tr class="border-b border-slate-100 ${rowClass}">
-                        <td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td>
-                        <td class="border-r border-slate-300 px-4 py-2 ${regClass}">${s.regNo}</td>
-                        <td class="px-4 py-2 text-xs">${status}</td>
-                    </tr>`;
-            });
-            modal.classList.remove('hidden');
-        }
-
-        function closeRosterModal() { document.getElementById('rosterModal').classList.add('hidden'); }
-        
-        function printRoster() {
-            const content = document.getElementById('rosterTable').outerHTML;
-            const title = document.getElementById('rosterModalTitle').textContent;
-            const win = window.open('', '', 'width=800,height=600');
-            win.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:left;}.text-red-600{color:red;font-weight:bold;}.line-through{text-decoration:line-through;}</style></head><body><h2>${title} - Master List</h2>${content}</body></html>`);
-            win.document.close(); win.print();
-        }
-
         // --- RENDER TABLE ---
         function renderTable() {
             const tbody = document.getElementById('allocationBody');
             tbody.innerHTML = '';
             
+            // Reverse chronological display (newest on top) or Sorted
             const sorted = [...allocations].sort((a,b) => {
                 if(a.date !== b.date) return a.date.localeCompare(b.date);
                 return a.session.localeCompare(b.session);
@@ -534,11 +546,13 @@
 
         // --- HELPERS ---
         function generateSmartList(regsArray) {
+            if(!regsArray) return '';
             const groups = [];
             const regex = /^([A-Z]+)(\d+)$/;
             regsArray.forEach(item => {
                 const match = item.regNo.match(regex);
                 const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
                 if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
                 else groups.push({ prefix, items: [item] });
             });
@@ -581,17 +595,21 @@
         }
 
         // --- PERSISTENCE ---
-        function saveState() {
+        function debounceSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveState, 500);
+        }
+
+        function saveState(immediate = false) {
             const state = {
                 chairman: document.getElementById('chairmanNameInput').value,
                 discipline: currentDiscipline,
                 allocs: allocations
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            
             const indicator = document.getElementById('saveStatus');
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
-            
-            checkVisibility();
         }
 
         function restoreState() {
@@ -601,24 +619,63 @@
                 const state = JSON.parse(saved);
                 if(state.chairman) document.getElementById('chairmanNameInput').value = state.chairman;
                 if(state.discipline) {
-                    document.getElementById('disciplineSearch').value = state.discipline;
                     currentDiscipline = state.discipline;
+                    document.getElementById('disciplineSearch').value = state.discipline;
+                    document.getElementById('allocationPanel').classList.remove('hidden');
                 }
                 if(state.allocs) {
                     allocations = state.allocs;
-                    assignedRegs.clear();
+                    // Rebuild assigned Set
+                    assignedRegs = new Set();
                     allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(b.regNo)));
+                    renderTable();
                 }
-                
-                checkVisibility();
+                updateDashboard(); // Initial dash
             } catch(e) {}
         }
 
         function clearSession() {
-            if(confirm("Delete all allocations and reset settings?")) {
+            if(confirm("Delete all allocations?")) {
                 localStorage.removeItem(STORAGE_KEY);
                 location.reload();
             }
+        }
+
+        // --- ROSTER MODAL ---
+        function viewRoster(qp) {
+            const modal = document.getElementById('rosterModal');
+            const title = document.getElementById('rosterModalTitle');
+            const tbody = document.querySelector('#rosterTable tbody');
+            const students = studentsByQP[qp]; 
+            
+            title.textContent = `QP Code: ${qp}`;
+            tbody.innerHTML = '';
+            let serial = 0;
+            
+            students.forEach(s => {
+                const isAbsent = !s.attendance.includes('PRESENT');
+                if(!isAbsent) serial++;
+                const slNo = isAbsent ? '' : serial;
+                const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>';
+                const regClass = isAbsent ? 'text-red-500 line-through' : 'font-mono font-bold';
+                const rowClass = isAbsent ? 'bg-red-50' : '';
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-100 ${rowClass}">
+                        <td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td>
+                        <td class="border-r border-slate-300 px-4 py-2 ${regClass}">${s.regNo}</td>
+                        <td class="px-4 py-2 text-xs">${status}</td>
+                    </tr>`;
+            });
+            modal.classList.remove('hidden');
+        }
+        function closeRosterModal() { document.getElementById('rosterModal').classList.add('hidden'); }
+        function printRoster() {
+            const content = document.getElementById('rosterTable').outerHTML;
+            const title = document.getElementById('rosterModalTitle').textContent;
+            const win = window.open('', '', 'width=800,height=600');
+            win.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:left;}.text-red-600{color:red;font-weight:bold;}.line-through{text-decoration:line-through;}</style></head><body><h2>${title} - Master List</h2>${content}</body></html>`);
+            win.document.close(); win.print();
         }
 
         // --- PDF ---
