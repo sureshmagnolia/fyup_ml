@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V9 (Chairman Save)</title>
+    <title>Valuation Board Manager V10 (Wrapped Text)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,7 +45,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V9</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V10</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -198,12 +198,11 @@
                     <table class="min-w-full text-sm text-left" id="distributionTable">
                         <thead class="bg-slate-800 text-white text-xs uppercase">
                             <tr>
-                                <th class="px-5 py-4">Date / Session</th>
-                                <th class="px-5 py-4">Reporting Chief</th>
-                                <th class="px-5 py-4">Additional Examiner</th>
-                                <th class="px-5 py-4">Paper Code</th>
-                                <th class="px-5 py-4">RegNo Range (From - To)</th>
-                                <th class="px-5 py-4 text-center">Present Count</th>
+                                <th class="px-5 py-4 w-32">Date / Session</th>
+                                <th class="px-5 py-4 w-40">Reporting Chief</th>
+                                <th class="px-5 py-4 w-40">Additional Examiner</th>
+                                <th class="px-5 py-4 w-64">Paper Name</th> <th class="px-5 py-4 w-40">RegNo Range (From - To)</th>
+                                <th class="px-5 py-4 text-center w-20">Present Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -218,7 +217,7 @@
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
-        const STORAGE_KEY = 'valuationBoardStateV9';
+        const STORAGE_KEY = 'valuationBoardStateV10';
 
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
@@ -480,8 +479,7 @@
                         <td class="px-5 py-4 whitespace-nowrap"><div class="font-bold text-slate-800">${r.date}</div><span class="text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">${r.session}</span></td>
                         <td class="px-5 py-4 font-medium text-indigo-700">${r.chief}</td>
                         <td class="px-5 py-4 text-slate-600">${r.examiner}</td>
-                        <td class="px-5 py-4 text-xs font-mono text-slate-500 max-w-[150px] truncate" title="${r.paper}">${r.paper}</td>
-                        <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
+                        <td class="px-5 py-4 text-xs text-slate-500 whitespace-normal break-words" title="${r.paper}">${r.paper}</td> <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
                         <td class="px-5 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">${r.count}</span></td>
                     </tr>`;
             });
@@ -508,7 +506,7 @@
                 r.date + ' ' + r.session,
                 r.chief,
                 r.examiner,
-                r.paper,
+                r.paper, // Full Paper Name
                 `${r.startReg} - ${r.endReg}\n${r.absents.length ? 'Absent: ' + r.absents.join(', ') : ''}`,
                 r.count
             ]);
@@ -525,8 +523,11 @@
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
-                styles: { fontSize: 8, cellPadding: 3 },
-                columnStyles: { 3: { cellWidth: 40 } }
+                styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak' }, // Enabled Wrap
+                columnStyles: { 
+                    3: { cellWidth: 50 }, // Paper Column Width
+                    4: { cellWidth: 35 } // Range Column Width
+                }
             });
             doc.save(`${currentDiscipline}_BoardPlan.pdf`);
         }
