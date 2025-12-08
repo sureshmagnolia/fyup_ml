@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V37 (Smart Filter & Details)</title>
+    <title>Valuation Board Manager V38 (Z-Index Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,13 +14,23 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        .autocomplete-container { position: relative; z-index: 50; }
+        /* --- Z-INDEX FIX START --- */
+        /* Default state */
+        .autocomplete-container { position: relative; }
+        
+        /* Critical Fix: When user clicks/types in this container, lift it to the highest layer */
+        .autocomplete-container:focus-within { z-index: 1000 !important; }
+        
+        /* Dropdown Styling */
         .suggestions {
-            position: absolute; top: 100%; left: 0; z-index: 100; 
+            position: absolute; top: 100%; left: 0; 
+            z-index: 2000; /* Always higher than container */
             width: 100%; max-height: 250px; overflow-y: auto; 
             background: white; border: 1px solid #cbd5e1;
             border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
+        /* --- Z-INDEX FIX END --- */
+
         .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
@@ -47,12 +57,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-tasks text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V37 (Smart Filter & Detailed View)</p>
+                <p class="text-indigo-200 text-sm mt-1">V38 (UI Z-Index Fix)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V37</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V38</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -101,7 +111,7 @@
 
                 <div id="allocationPanel" class="lg:col-span-2 space-y-8 hidden">
                     
-                    <div class="bg-white border-2 border-indigo-100 rounded-xl p-6 shadow-sm relative z-20">
+                    <div class="bg-white border-2 border-indigo-100 rounded-xl p-6 shadow-sm relative z-0">
                         <h4 class="font-bold text-indigo-800 mb-6 border-b pb-2 flex items-center gap-2">
                             <span class="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
                             Assign Bundle
@@ -160,7 +170,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden z-0">
                         <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                             <h4 class="font-bold text-slate-700">Allocation Table</h4>
                             <button onclick="downloadPDF()" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900">Download PDF</button>
@@ -170,8 +180,8 @@
                                 <thead class="bg-slate-100 text-slate-600 text-xs uppercase font-bold">
                                     <tr>
                                         <th class="px-4 py-3">Date/Session</th>
-                                        <th class="px-4 py-3">Examiners</th>
-                                        <th class="px-4 py-3 w-1/4">Paper</th>
+                                        <th class="px-4 py-3">Team</th>
+                                        <th class="px-4 py-3">QP Code</th>
                                         <th class="px-4 py-3 w-1/3">Register Nos</th>
                                         <th class="px-4 py-3 text-center">Count</th>
                                         <th class="px-4 py-3 text-center">Action</th>
@@ -203,11 +213,10 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV37';
+        const STORAGE_KEY = 'valuationBoardV38';
 
-        // --- OPTIMIZED STATE ---
-        let rawStudentData = []; 
-        let facultyData = [];
+        // --- STATE ---
+        let rawStudentData = [], facultyData = [];
         let studentsByDiscipline = {}; 
         let studentsByQP = {}; 
         let allocations = []; 
@@ -284,12 +293,11 @@
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
-            // SMART QP FILTER: Only show pending papers
             const getQPs = () => {
                 if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) return [];
                 
+                // Only show Pending QPs
                 const pendingQPs = [];
-                // Group by QP to check status
                 const groups = {};
                 studentsByDiscipline[currentDiscipline].forEach(s => {
                     if(!groups[s.qp]) groups[s.qp] = { total: 0, assigned: 0, name: s.paperName };
@@ -302,7 +310,6 @@
                         pendingQPs.push(`${qp} (${groups[qp].name.substring(0,30)}...)`);
                     }
                 });
-                
                 return pendingQPs.sort();
             };
             
@@ -343,12 +350,10 @@
             if(!date || !chief || !additional || !qpFull || !startReg) return alert("Please fill all fields");
 
             const qp = qpFull.split(' ')[0];
-            
-            // Re-fetch paper name from data to ensure full name is stored
             const studentRef = studentsByQP[qp] ? studentsByQP[qp][0] : null;
             const fullPaperName = studentRef ? studentRef.paperName : qpFull;
-            
             const students = studentsByQP[qp]; 
+
             if(!students) return alert("Invalid QP Code");
 
             const startIndex = students.findIndex(s => s.regNo === startReg);
@@ -372,8 +377,7 @@
 
             const newAlloc = {
                 id: Date.now(), date, session, chief, additional, 
-                qp, 
-                paperName: fullPaperName, // STORE NAME
+                qp, paperName: fullPaperName,
                 startReg: bundleList[0].regNo, endReg: bundleList[bundleList.length - 1].regNo,
                 count: currentCount, allRegs: bundleList
             };
@@ -385,7 +389,7 @@
             renderTable();
             updateDashboard();
             updateStartRegSuggestion(qp);
-            document.getElementById('allocQP').value = ''; // Clear QP input to force re-filter next time
+            document.getElementById('allocQP').value = ''; 
             document.getElementById('allocStartReg').value = '';
         }
 
@@ -422,7 +426,7 @@
                 const remaining = s.total - s.assigned;
                 const percent = s.total > 0 ? Math.round((s.assigned / s.total) * 100) : 0;
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
-                const opacity = remaining === 0 ? 'opacity-60' : 'opacity-100'; // Fade completed
+                const opacity = remaining === 0 ? 'opacity-60' : 'opacity-100'; 
                 
                 const item = document.createElement('div');
                 item.className = `bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors ${opacity}`;
