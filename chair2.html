@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valuation Board Manager V24 (Smart Sticky Allocation)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        .autocomplete-container { position: relative; z-index: 50; }
+        .suggestions {
+            position: absolute; top: 100%; left: 0; z-index: 100; 
+            width: 100%; max-height: 250px; overflow-y: auto; 
+            background: white; border: 1px solid #cbd5e1;
+            border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
+        .hidden { display: none; }
+        
+        .loader-bar { height: 4px; width: 100%; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
+        .loader-progress { height: 100%; background-color: #4f46e5; width: 0%; transition: width 0.5s ease; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        td { vertical-align: top; }
+        
+        .reg-list { font-family: 'Courier New', monospace; font-size: 0.75rem; line-height: 1.5; color: #000; }
+        .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
+        
+        .rule-input { 
+            width: 2rem; padding: 0; text-align: center; border-bottom: 1px solid #94a3b8; 
+            background: transparent; font-weight: 600; color: #334155; font-size: 0.75rem;
+        }
+        .rule-input:focus { outline: none; border-color: #2563eb; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-[98%] mx-auto bg-white rounded-2xl shadow-xl border border-slate-200">
+        
+        <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
+                </h1>
+                <p class="text-indigo-200 text-sm mt-1">Smart "Sticky" Paper Allocation & Absentee Management</p>
+            </div>
+            <div class="text-right flex flex-col items-end">
+                <div class="flex items-center gap-2">
+                    <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V24</span>
+                </div>
+                <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
+                    <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="connectionStatus">Connecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-8">
+            <div class="flex justify-end">
+                <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline">Reset Saved Session</button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-100 pb-8">
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 col-span-2 shadow-sm relative z-40">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
+                        <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+                        Board Configuration
+                    </h3>
+                    
+                    <div class="mb-5">
+                        <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Chairman of the Board</label>
+                        <div class="autocomplete-container" style="z-index: 60;">
+                            <input type="text" id="chairmanNameInput" placeholder="Search Faculty Name..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                            <div id="chairmanSuggestions" class="suggestions hidden"></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="autocomplete-container" style="z-index: 50;">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
+                            <div class="relative">
+                                <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 pr-8 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
+                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2.5 text-slate-400 hover:text-red-500" title="Clear Selection">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
+                            <div id="disciplineSuggestions" class="suggestions hidden"></div>
+                        </div>
+                        
+                        <div class="relative z-0">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Quota Rule (FN / AN)</label>
+                            <div class="flex gap-3">
+                                <label class="flex-1 cursor-pointer group relative">
+                                    <input type="radio" name="quotaRule" value="ARTS" class="hidden peer" checked onchange="saveState(); updateEstimates()">
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Arts</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="artsFn" value="20" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="artsAn" value="15" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="flex-1 cursor-pointer group relative">
+                                    <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="saveState(); updateEstimates()">
+                                    <div class="border border-slate-300 rounded-lg p-2 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all text-center h-full flex flex-col justify-center">
+                                        <div class="font-bold text-sm mb-1 text-slate-700 peer-checked:text-blue-700">Science</div>
+                                        <div class="flex items-center justify-center gap-1 text-xs">
+                                            <input type="number" id="sciFn" value="18" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                            <span class="text-slate-400">/</span>
+                                            <input type="number" id="sciAn" value="12" class="rule-input" onclick="event.stopPropagation()" onchange="saveState(); updateEstimates()">
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-center shadow-sm relative z-0">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm">Database Sync</h3>
+                    <div class="space-y-4">
+                        <div><div class="flex justify-between text-xs mb-1"><span>Students</span><span id="studentLoadStatus" class="font-bold text-orange-500">...</span></div><div class="loader-bar"><div id="studentLoader" class="loader-progress" style="width:50%"></div></div></div>
+                        <div><div class="flex justify-between text-xs mb-1"><span>Faculty</span><span id="facultyLoadStatus" class="font-bold text-orange-500">...</span></div><div class="loader-bar"><div id="facultyLoader" class="loader-progress" style="width:50%"></div></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="planningSection" class="hidden fade-in space-y-6">
+                
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5 flex flex-wrap justify-between items-center shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-indigo-900" id="selectedDisciplineTitle">Discipline Name</h2>
+                        <div class="text-sm text-indigo-600 mt-1 flex gap-4">
+                            <span><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span><i class="fas fa-file-signature mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs text-indigo-400 uppercase font-bold">Estimated Duration</div>
+                        <div class="text-3xl font-bold text-indigo-900" id="estimatedDaysDisplay">0 Days</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                    
+                    <div class="xl:col-span-2 space-y-6">
+                        <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-indigo-400 transition-colors relative z-20">
+                            <h4 class="font-bold text-slate-700 mb-4 flex items-center">
+                                <i class="fas fa-user-plus text-indigo-500 mr-2"></i> Create Valuation Team
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">CHIEF EXAMINER</label>
+                                    <div class="autocomplete-container">
+                                        <input type="text" id="chiefInput" placeholder="Search Chief..." oninput="saveState()" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <div id="chiefSuggestions" class="suggestions hidden"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">ADD ADDITIONAL EXAMINERS</label>
+                                    <div class="flex gap-2">
+                                        <div class="autocomplete-container flex-1">
+                                            <input type="text" id="addlInput" placeholder="Search Additional..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                            <div id="addlSuggestions" class="suggestions hidden"></div>
+                                        </div>
+                                        <button onclick="addCurrentAdditional()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 rounded-lg border border-slate-300">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="stagingArea" class="bg-slate-50 rounded-lg p-3 mb-4 hidden border border-slate-200">
+                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging</div>
+                                <div id="stagingList" class="flex flex-wrap gap-2"></div>
+                            </div>
+                            <button onclick="saveTeam()" id="saveTeamBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                Save Team to Board
+                            </button>
+                        </div>
+                        
+                        <div>
+                            <h4 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Active Teams on Board</h4>
+                            <div id="activeTeamsList" class="space-y-3">
+                                <div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 h-fit sticky top-6 z-10">
+                        <h4 class="font-bold text-slate-800 border-b pb-3 mb-4 flex items-center">
+                            <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
+                        </h4>
+                        
+                        <div class="mb-4">
+                            <label class="block text-xs font-bold text-slate-500 mb-1">Start Valuation On:</label>
+                            <select id="startSessionSelect" onchange="saveState(); updateEstimates()" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-slate-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="FN">Day 1 - Forenoon (FN)</option>
+                                <option value="AN">Day 1 - Afternoon (AN)</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4 border border-yellow-100">
+                            <strong>Status:</strong> <span id="capacityStatus">Waiting for teams...</span>
+                        </div>
+                        <div id="dateMappingContainer" class="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar"></div>
+                        <button onclick="generatePlan()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-table"></i> Generate Distribution
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="outputSection" class="hidden mt-12 pt-8 border-t border-slate-200 fade-in">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-bold text-xl text-slate-800">Distribution Table</h3>
+                    <button onclick="downloadPDF()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm hover:bg-slate-900 shadow-md">
+                        <i class="fas fa-file-pdf mr-2"></i> Download PDF
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto rounded-xl shadow-lg border border-slate-200">
+                    <table class="min-w-full text-sm text-left" id="distributionTable">
+                        <thead class="bg-slate-800 text-white text-xs uppercase">
+                            <tr>
+                                <th class="px-3 py-4 w-[10%]">Date/Session</th>
+                                <th class="px-3 py-4 w-[12%]">Chief</th>
+                                <th class="px-3 py-4 w-[12%]">Additional</th>
+                                <th class="px-3 py-4 w-[15%]">QP Code (Paper)</th>
+                                <th class="px-3 py-4 w-[12%]">Range (From-To)</th>
+                                <th class="px-3 py-4 w-[34%]">Allotted Register Nos</th>
+                                <th class="px-3 py-4 text-center w-[5%]">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- UTILITIES ---
+        function showSuggestions(list, input, container, callback) {
+            container.innerHTML = ''; 
+            if (!list || list.length === 0) { container.classList.add('hidden'); return; }
+            list.forEach(item => {
+                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
+                div.onclick = () => { callback(item); container.classList.add('hidden'); };
+                container.appendChild(div);
+            });
+            container.classList.remove('hidden');
+        }
+
+        function clearDisciplineSearch() {
+            document.getElementById('disciplineSearch').value = '';
+            document.getElementById('disciplineSearch').focus();
+            currentDiscipline = null;
+            document.getElementById('planningSection').classList.add('hidden');
+            saveState();
+        }
+
+        function getSmartRange(start, end) {
+            if (!start || !end) return '';
+            if (start === end) return start;
+            const regex = /^([A-Z]+)(\d+)$/;
+            const startMatch = start.match(regex);
+            const endMatch = end.match(regex);
+            if (startMatch && endMatch && startMatch[1] === endMatch[1]) {
+                return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`;
+            }
+            return `${start} - ${end}`;
+        }
+
+        function generateSmartList(regsArray) {
+            if (!regsArray || regsArray.length === 0) return '';
+            const groups = [];
+            const regex = /^([A-Z]+)(\d+)$/;
+            regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
+            });
+            return groups.map(group => {
+                const nums = group.items.map((it, idx) => {
+                    let val = it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number;
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
+                    return val;
+                }).join(', ');
+                return `<div>${nums}</div>`;
+            }).join('');
+        }
+
+        function generateSmartListText(regsArray) {
+             if (!regsArray || regsArray.length === 0) return '';
+             const groups = [];
+             const regex = /^([A-Z]+)(\d+)$/;
+             regsArray.forEach(item => {
+                const match = item.regNo.match(regex);
+                const prefix = match ? match[1] : 'OTHER';
+                const number = match ? match[2] : item.regNo;
+                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) {
+                    groups[groups.length - 1].items.push({ number, isAbsent: item.isAbsent, full: item.regNo });
+                } else {
+                    groups.push({ prefix, items: [{ number, isAbsent: item.isAbsent, full: item.regNo }] });
+                }
+            });
+            return groups.map(group => {
+                const nums = group.items.map((it, idx) => {
+                    let val = it.number;
+                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + it.number; 
+                    else if (idx === 0 && group.prefix === 'OTHER') val = it.full;
+                    if (it.isAbsent) return `${val}(A)`; 
+                    return val; 
+                }).join(', ');
+                return nums;
+            }).join('\n');
+        }
+
+        function getCurrentRules() {
+            return {
+                ARTS: { 
+                    FN: parseInt(document.getElementById('artsFn').value) || 20, 
+                    AN: parseInt(document.getElementById('artsAn').value) || 15 
+                },
+                SCIENCE: { 
+                    FN: parseInt(document.getElementById('sciFn').value) || 18, 
+                    AN: parseInt(document.getElementById('sciAn').value) || 12 
+                }
+            };
+        }
+
+        // --- CONSTANTS ---
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
+        const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
+        const STORAGE_KEY = 'valuationBoardStateV24';
+
+        // --- STATE ---
+        let rawStudentData = [], facultyData = [], disciplineList = [];
+        let currentDiscipline = null;
+        let teams = [], currentStagingAdditionals = [], generatedPlan = [];
+        
+        // **NEW STATE**: Papers Map (Grouped by QPCode)
+        // Structure: [ { qp: 'QP1', name: 'Paper 1', students: [Array of Row Objs], started: false } ]
+        let papersData = []; 
+
+        document.addEventListener('DOMContentLoaded', () => {
+            restoreSessionBasic();
+            loadFacultyData();
+            loadStudentData();
+        });
+
+        // --- Loading ---
+        function loadFacultyData() {
+            Papa.parse(facultyCsvUrl, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: (res) => {
+                    const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
+                    const desigKey = res.meta.fields.find(k => k.toUpperCase().includes('DESIGNATION'));
+                    if(nameKey) {
+                        facultyData = res.data.map(r => ({ name: r[nameKey], designation: r[desigKey] || '' })).filter(f => f.name);
+                        updateStatus('faculty', true, `Ready (${facultyData.length})`);
+                    }
+                }, error: () => updateStatus('faculty', false, "Error")
+            });
+        }
+
+        function loadStudentData() {
+            Papa.parse(studentCsvUrl, {
+                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
+                complete: (res) => {
+                    if (!res.data || res.data.length === 0) return;
+                    const keys = Object.keys(res.data[0]);
+                    const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
+
+                    const qpKey = findKey('QPCODE') || 'QPCode';
+                    const discKey = findKey('DISCIPLINE') || 'Discipline';
+                    const paperKey = findKey('PAPER') || 'Paper';
+                    const regKey = findKey('REGNO') || 'RegNo';
+                    const attKey = findKey('ATTENDANCE') || 'Attendance';
+
+                    rawStudentData = res.data.map(row => ({
+                        ...row,
+                        QPCode: row[qpKey] || 'UNKNOWN',
+                        Discipline: row[discKey] || 'Unknown',
+                        Paper: row[paperKey] || 'Unknown Paper',
+                        RegNo: row[regKey] || '',
+                        Attendance: row[attKey] || ''
+                    }));
+                    
+                    extractDisciplines();
+                    updateStatus('student', true, `Ready (${rawStudentData.length})`);
+                    document.getElementById('connectionStatus').textContent = "Connected";
+                    document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                    document.getElementById('disciplineSearch').disabled = false;
+                    document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
+                    restoreSessionDataDependent();
+                }, error: (err) => {
+                    console.error(err);
+                    updateStatus('student', false, "Error");
+                }
+            });
+        }
+
+        function updateStatus(type, success, msg) {
+            const el = document.getElementById(`${type}LoadStatus`), bar = document.getElementById(`${type}Loader`);
+            el.textContent = msg; el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
+            bar.style.width = success ? "100%" : "0%"; bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
+        }
+
+        // --- State Mgmt ---
+        function saveState() {
+            const state = {
+                chairmanName: document.getElementById('chairmanNameInput').value,
+                currentDiscipline: currentDiscipline,
+                quotaRule: document.querySelector('input[name="quotaRule"]:checked').value,
+                customRules: getCurrentRules(),
+                startSession: document.getElementById('startSessionSelect').value,
+                teams: teams,
+                stagingChief: document.getElementById('chiefInput').value,
+                stagingAdditionals: currentStagingAdditionals,
+                dates: {}
+            };
+            document.querySelectorAll('#dateMappingContainer input[type="date"]').forEach(inp => { if(inp.value) state.dates[inp.id] = inp.value; });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            const indicator = document.getElementById('saveStatus');
+            indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
+        }
+
+        function restoreSessionBasic() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (!saved) return;
+                const state = JSON.parse(saved);
+                
+                if (state.chairmanName) document.getElementById('chairmanNameInput').value = state.chairmanName;
+                if (state.quotaRule) document.querySelector(`input[name="quotaRule"][value="${state.quotaRule}"]`).checked = true;
+                if (state.startSession) document.getElementById('startSessionSelect').value = state.startSession;
+                
+                if (state.customRules) {
+                    if(state.customRules.ARTS) {
+                        document.getElementById('artsFn').value = state.customRules.ARTS.FN;
+                        document.getElementById('artsAn').value = state.customRules.ARTS.AN;
+                    }
+                    if(state.customRules.SCIENCE) {
+                        document.getElementById('sciFn').value = state.customRules.SCIENCE.FN;
+                        document.getElementById('sciAn').value = state.customRules.SCIENCE.AN;
+                    }
+                }
+
+                if (state.teams) { teams = state.teams; renderActiveTeams(); }
+                if (state.stagingChief) document.getElementById('chiefInput').value = state.stagingChief;
+                if (state.stagingAdditionals) { currentStagingAdditionals = state.stagingAdditionals; renderStaging(); }
+            } catch (e) {}
+        }
+
+        function restoreSessionDataDependent() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (!saved) return;
+                const state = JSON.parse(saved);
+                if (state.currentDiscipline && rawStudentData.length > 0) selectDiscipline(state.currentDiscipline, false);
+                if (state.dates) setTimeout(() => { Object.keys(state.dates).forEach(id => { const inp = document.getElementById(id); if (inp) inp.value = state.dates[id]; }); }, 50);
+            } catch (e) {}
+        }
+
+        function clearSession() { if(confirm("Clear all data?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+
+        // --- Core: Selection & Grouping ---
+        function extractDisciplines() {
+            const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
+            disciplineList = Array.from(unique).sort();
+            const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
+            
+            input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, (val) => selectDiscipline(val, true)));
+            input.addEventListener('input', () => showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, (val) => selectDiscipline(val, true)));
+            document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
+        }
+
+        function selectDiscipline(name, resetDates = true) {
+            document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
+            
+            // 1. Filter Raw Data
+            const disciplineRows = rawStudentData.filter(r => r.Discipline === name);
+            const presentCount = disciplineRows.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
+
+            // 2. Group into Papers Queue (The new "Sticky" Data Structure)
+            // Use Map to group by QP
+            const groups = new Map();
+            disciplineRows.forEach(row => {
+                if(!groups.has(row.QPCode)) {
+                    groups.set(row.QPCode, {
+                        qp: row.QPCode,
+                        name: row.Paper, // Store full name
+                        students: [], // Will hold sorted students
+                        started: false
+                    });
+                }
+                groups.get(row.QPCode).students.push(row);
+            });
+
+            // 3. Sort Students inside each paper & Convert Map to Array
+            papersData = Array.from(groups.values()).map(p => {
+                p.students.sort((a,b) => (a.RegNo || '').localeCompare(b.RegNo || ''));
+                return p;
+            });
+            // Optional: Sort papersData by QPCode or Size? Let's sort by QPCode
+            papersData.sort((a,b) => a.qp.localeCompare(b.qp));
+
+            // UI Updates
+            document.getElementById('planningSection').classList.remove('hidden');
+            document.getElementById('selectedDisciplineTitle').textContent = name;
+            document.getElementById('summaryPaperCount').textContent = papersData.length;
+            document.getElementById('summaryScriptCount').textContent = presentCount;
+            document.getElementById('outputSection').classList.add('hidden');
+            if(resetDates) { document.querySelectorAll('#dateMappingContainer input[type="date"]').forEach(inp => inp.value = ''); saveState(); }
+            updateEstimates();
+        }
+
+        // --- Team ---
+        setupAutocomplete('chairmanNameInput', 'chairmanSuggestions', (val) => { document.getElementById('chairmanNameInput').value = val; saveState(); });
+        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => { document.getElementById('chiefInput').value = val; saveState(); });
+        setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => { document.getElementById('addlInput').value = val; document.getElementById('addlInput').dataset.desig = desig; });
+
+        function setupAutocomplete(inputId, suggId, onSelect) {
+            const input = document.getElementById(inputId), sugg = document.getElementById(suggId);
+            input.addEventListener('input', () => {
+                const val = input.value.toLowerCase();
+                if(val.length < 3) { sugg.classList.add('hidden'); return; }
+                const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 6);
+                sugg.innerHTML = '';
+                matches.forEach(f => {
+                    const div = document.createElement('div'); div.className = 'suggestion-item';
+                    div.innerHTML = `<div>${f.name}</div><div class="text-[10px] text-gray-400">${f.designation}</div>`;
+                    div.onclick = () => { onSelect(f.name, f.designation); sugg.classList.add('hidden'); };
+                    sugg.appendChild(div);
+                });
+                sugg.classList.remove('hidden');
+            });
+            document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
+        }
+
+        function addCurrentAdditional() {
+            const input = document.getElementById('addlInput'); const name = input.value.trim();
+            if(!name) return;
+            currentStagingAdditionals.push({ name, designation: input.dataset.desig || '' });
+            input.value = ''; renderStaging(); saveState();
+        }
+
+        function renderStaging() {
+            const area = document.getElementById('stagingArea'), list = document.getElementById('stagingList');
+            area.classList.toggle('hidden', currentStagingAdditionals.length === 0);
+            list.innerHTML = '';
+            currentStagingAdditionals.forEach((ex, idx) => {
+                list.innerHTML += `<span class="bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2">${ex.name} <button onclick="removeFromStaging(${idx})" class="text-red-400 hover:text-red-600">×</button></span>`;
+            });
+        }
+        function removeFromStaging(idx) { currentStagingAdditionals.splice(idx, 1); renderStaging(); saveState(); }
+        
+        function saveTeam() {
+            const chiefName = document.getElementById('chiefInput').value.trim();
+            if(!chiefName || currentStagingAdditionals.length === 0) return alert("Select Chief and at least one Additional");
+            teams.push({ id: Date.now(), chief: { name: chiefName, designation: '' }, additionals: [...currentStagingAdditionals] });
+            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); saveState(); updateEstimates();
+        }
+        function deleteTeam(id) { teams = teams.filter(t => t.id !== id); renderActiveTeams(); saveState(); updateEstimates(); }
+        
+        function renderActiveTeams() {
+            const container = document.getElementById('activeTeamsList'); container.innerHTML = '';
+            if(teams.length === 0) { container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>`; return; }
+            teams.forEach(team => {
+                let addlHtml = team.additionals.map(a => `<span class="inline-block bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded mr-1 mb-1">${a.name}</span>`).join('');
+                container.innerHTML += `<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative"><button onclick="deleteTeam(${team.id})" class="absolute top-3 right-3 text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button><div class="flex items-start gap-3"><div class="bg-indigo-100 text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"><i class="fas fa-user-tie"></i></div><div><div class="text-xs font-bold text-slate-400 uppercase">Chief Examiner</div><div class="font-bold text-slate-800">${team.chief.name}</div><div class="mt-3"><div class="text-xs font-bold text-slate-400 uppercase mb-1">Additional Examiners (${team.additionals.length})</div><div class="flex flex-wrap">${addlHtml}</div></div></div></div></div>`;
+            });
+        }
+
+        // --- ESTIMATES ---
+        function updateEstimates() {
+            if(!currentDiscipline) return;
+            const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
+            const rules = getCurrentRules();
+            const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const rule = rules[selectedRuleKey];
+            const startSession = document.getElementById('startSessionSelect').value;
+            
+            let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
+            const sessionQuota = (rule.FN + rule.AN);
+            const totalDailyCapacity = totalExaminers * sessionQuota;
+
+            if (totalDailyCapacity > 0) {
+                let rawDays = totalPresent / totalDailyCapacity;
+                let days = Math.ceil(rawDays);
+                if (startSession === 'AN') days = Math.ceil(rawDays + 0.5); 
+
+                document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
+                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${totalDailyCapacity} scripts/day</strong>`;
+                generateDateInputs(days);
+            } else {
+                document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
+                document.getElementById('dateMappingContainer').innerHTML = '';
+            }
+        }
+        function generateDateInputs(numDays) {
+            const container = document.getElementById('dateMappingContainer'); 
+            const currentValues = {}; container.querySelectorAll('input').forEach(i => currentValues[i.id] = i.value);
+            container.innerHTML = '';
+            for(let i=1; i<=numDays; i++) {
+                const id = `date_day_${i}`; const val = currentValues[id] || '';
+                container.innerHTML += `<div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200"><span class="text-xs font-bold text-slate-500 w-12 text-center">Day ${i}</span><input type="date" id="${id}" value="${val}" onchange="saveState()" class="border border-slate-300 rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500"></div>`;
+            }
+        }
+
+        // --- NEW GENERATOR: SMART STICKY ---
+        function generatePlan() {
+            if(teams.length === 0) return alert("Create at least one team.");
+            const rules = getCurrentRules();
+            const selectedRuleKey = document.querySelector('input[name="quotaRule"]:checked').value;
+            const rule = rules[selectedRuleKey];
+            const startSession = document.getElementById('startSessionSelect').value;
+            
+            generatedPlan = [];
+            const daysCount = document.getElementById('dateMappingContainer').children.length;
+            
+            // 1. Prepare Workers (Examiners with state)
+            let workers = [];
+            teams.forEach(t => {
+                t.additionals.forEach(a => {
+                    workers.push({
+                        name: a.name,
+                        chief: t.chief.name,
+                        currentPaperIndex: null // Stickiness tracker
+                    });
+                });
+            });
+
+            // 2. Clone Paper Data (queue we consume)
+            // We use a clone so we don't mess up the master data if we regen
+            // Each item in workQueue is { qp: '...', name: '...', students: [...(shallow copy)] }
+            let workQueue = papersData.map(p => ({
+                qp: p.qp,
+                name: p.name,
+                students: [...p.students], // Copy array
+                started: false
+            }));
+
+            // 3. Loop Days/Sessions
+            for (let d = 1; d <= daysCount; d++) {
+                const dateVal = document.getElementById(`date_day_${d}`).value;
+                const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB') : `Day ${d}`;
+                
+                ['FN', 'AN'].forEach(sess => {
+                    if (d === 1 && startSession === 'AN' && sess === 'FN') return; 
+
+                    const sessionQuota = rule[sess];
+
+                    workers.forEach(w => {
+                        let remainingQuota = sessionQuota;
+
+                        while (remainingQuota > 0) {
+                            // A. Check Assignment
+                            let pIdx = w.currentPaperIndex;
+                            
+                            // If no paper or current paper finished, pick new
+                            if (pIdx === null || workQueue[pIdx].students.length === 0) {
+                                // HEURISTIC:
+                                // 1. Try to find first "Unstarted" paper (Parallelism)
+                                let candidate = workQueue.findIndex(p => !p.started && p.students.length > 0);
+                                
+                                // 2. If all started, help the one with MOST scripts remaining (Load Balance)
+                                if (candidate === -1) {
+                                    // Find max length
+                                    let maxLen = -1;
+                                    workQueue.forEach((p, idx) => {
+                                        if (p.students.length > maxLen) {
+                                            maxLen = p.students.length;
+                                            candidate = idx;
+                                        }
+                                    });
+                                    if (maxLen === 0) candidate = -1; // Done!
+                                }
+
+                                if (candidate === -1) break; // No work left
+                                
+                                w.currentPaperIndex = candidate;
+                                workQueue[candidate].started = true;
+                                pIdx = candidate;
+                            }
+
+                            // B. Consume Bundle
+                            let paperObj = workQueue[pIdx];
+                            let bundle = {
+                                date: dateStr, session: sess, chief: w.chief, examiner: w.name,
+                                paper: `${paperObj.qp} (${paperObj.name})`,
+                                count: 0, allRegs: [], startReg: null, endReg: null
+                            };
+
+                            while (remainingQuota > 0 && paperObj.students.length > 0) {
+                                const s = paperObj.students.shift(); // TAKE from queue
+                                
+                                if (!bundle.startReg) bundle.startReg = s.RegNo;
+                                bundle.endReg = s.RegNo;
+                                
+                                const isAbsent = !(s.Attendance || '').toUpperCase().includes('PRESENT');
+                                bundle.allRegs.push({ regNo: s.RegNo, isAbsent: isAbsent });
+                                
+                                if (!isAbsent) {
+                                    bundle.count++; remainingQuota--;
+                                }
+                            }
+                            
+                            if (bundle.count > 0 || bundle.allRegs.length > 0) {
+                                generatedPlan.push(bundle);
+                            }
+                        }
+                    });
+                });
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.querySelector('#distributionTable tbody'); tbody.innerHTML = '';
+            generatedPlan.forEach(r => {
+                const rangeStr = getSmartRange(r.startReg, r.endReg);
+                const listHtml = generateSmartList(r.allRegs);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                        <td class="px-3 py-4 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${r.date}</div><span class="text-[10px] bg-slate-200 px-1.5 py-0.5 rounded text-slate-600">${r.session}</span></td>
+                        <td class="px-3 py-4 text-xs font-medium text-indigo-700">${r.chief}</td>
+                        <td class="px-3 py-4 text-xs text-slate-600">${r.examiner}</td>
+                        <td class="px-3 py-4 text-[10px] text-slate-500 whitespace-normal break-words leading-tight" title="${r.paper}">${r.paper}</td>
+                        <td class="px-3 py-4 font-mono text-xs text-slate-600">${rangeStr}</td>
+                        <td class="px-3 py-4 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
+                        <td class="px-3 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-2 py-1 rounded-full text-[10px]">${r.count}</span></td>
+                    </tr>`;
+            });
+            document.getElementById('outputSection').classList.remove('hidden');
+            document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
+            
+            const tableData = generatedPlan.map(r => [
+                r.date + '\n' + r.session,
+                r.chief,
+                r.examiner,
+                r.paper,
+                getSmartRange(r.startReg, r.endReg),
+                generateSmartListText(r.allRegs),
+                r.count
+            ]);
+            
+            doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Plan", 14, 16);
+            doc.setFontSize(10); 
+            doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
+            doc.text(`Chairman: ${chairman}`, 14, 40);
+
+            doc.setTextColor(0,0,0);
+            doc.autoTable({
+                head: [['Date/Session', 'Chief', 'Additional', 'Paper', 'Range', 'Allotted Register Nos', 'Count']],
+                body: tableData,
+                startY: 45, theme: 'grid',
+                headStyles: { fillColor: [30, 41, 59] },
+                styles: { fontSize: 7, cellPadding: 2, overflow: 'linebreak', valign: 'top' },
+                columnStyles: { 
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 25 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 30 },
+                    5: { cellWidth: 50 },
+                    6: { cellWidth: 10, halign: 'center' }
+                }
+            });
+            doc.save(`${currentDiscipline}_BoardPlan.pdf`);
+        }
+    </script>
+</body>
+</html>
