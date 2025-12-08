@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager - Chairman's Module</title>
+    <title>Valuation Board Manager V6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,86 +14,73 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Custom UI Elements */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px;
-            overflow-y: auto; background: white; border: 1px solid #ccc;
-            border-radius: 0 0 4px 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            overflow-y: auto; background: white; border: 1px solid #e5e7eb;
+            border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; border-bottom: 1px solid #f3f4f6; }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #f3f4f6; font-size: 0.875rem; }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover { background-color: #f0f9ff; color: #0369a1; }
+        .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
         .hidden { display: none; }
         
         /* Loaders */
         .loader-bar { height: 4px; width: 100%; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
         .loader-progress { height: 100%; background-color: #4f46e5; width: 0%; transition: width 0.5s ease; }
-        .loader-progress.indeterminate { width: 50%; animation: slide 1.5s infinite ease-in-out; }
-        @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
-
-        /* Animations */
-        .fade-in { animation: fadeIn 0.5s ease-in; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen p-4 md:p-8">
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden">
+    <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
         
-        <div class="bg-indigo-800 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
-                <h1 class="text-2xl font-bold flex items-center gap-2">
-                    <i class="fas fa-graduation-cap text-indigo-300"></i> Valuation Board Manager
+                <h1 class="text-2xl font-bold flex items-center gap-3">
+                    <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Discipline-wise Paper Distribution & Session Management</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Distribution</p>
             </div>
-            <div class="text-right">
-                <span class="bg-indigo-600 px-3 py-1 rounded text-xs font-mono border border-indigo-500">CHAIRMAN MODULE</span>
-                <div class="text-xs text-indigo-300 mt-2 flex items-center justify-end gap-2">
+            <div class="text-right flex flex-col items-end">
+                <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V6</span>
+                <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span id="connectionStatus">Connecting to DB...</span>
+                    <span id="connectionStatus">Connecting...</span>
                 </div>
             </div>
         </div>
 
         <div class="p-6 space-y-8">
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-200 pb-8">
-                
-                <div class="bg-blue-50 p-5 rounded-lg border border-blue-100 col-span-2 shadow-sm">
-                    <h3 class="font-bold text-gray-800 mb-4 border-b border-blue-200 pb-2 flex items-center gap-2">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-slate-100 pb-8">
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-100 col-span-2 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center gap-2">
                         <span class="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-                        Select Discipline Board
+                        Select Discipline
                     </h3>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Filter by Discipline Name</label>
-                            <div class="autocomplete-container">
-                                <div class="relative">
-                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
-                                    <input type="text" id="disciplineSearch" placeholder="Loading data..." class="w-full border border-gray-300 rounded-lg pl-10 p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all shadow-sm" disabled>
-                                </div>
-                                <div id="disciplineSuggestions" class="suggestions hidden"></div>
-                            </div>
+                        <div class="autocomplete-container">
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Discipline Name</label>
+                            <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none shadow-sm" disabled>
+                            <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
-
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Valuation Quota Rule</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Rule</label>
                             <div class="flex gap-3">
                                 <label class="flex-1 cursor-pointer group">
                                     <input type="radio" name="quotaRule" value="ARTS" class="hidden peer" checked onchange="updateEstimates()">
-                                    <div class="border border-gray-300 rounded-lg p-3 bg-white peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all shadow-sm group-hover:border-indigo-300">
-                                        <div class="font-bold text-gray-800 peer-checked:text-indigo-700">Arts</div>
-                                        <div class="text-xs text-gray-500">FN: 20 | AN: 15</div>
+                                    <div class="border border-slate-300 rounded-lg p-2.5 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-center transition-all">
+                                        <div class="font-bold text-sm">Arts</div>
+                                        <div class="text-[10px] text-slate-400">20 / 15</div>
                                     </div>
                                 </label>
                                 <label class="flex-1 cursor-pointer group">
                                     <input type="radio" name="quotaRule" value="SCIENCE" class="hidden peer" onchange="updateEstimates()">
-                                    <div class="border border-gray-300 rounded-lg p-3 bg-white peer-checked:border-indigo-600 peer-checked:bg-indigo-50 transition-all shadow-sm group-hover:border-indigo-300">
-                                        <div class="font-bold text-gray-800 peer-checked:text-indigo-700">Science</div>
-                                        <div class="text-xs text-gray-500">FN: 18 | AN: 12</div>
+                                    <div class="border border-slate-300 rounded-lg p-2.5 bg-white peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-center transition-all">
+                                        <div class="font-bold text-sm">Science</div>
+                                        <div class="text-[10px] text-slate-400">18 / 12</div>
                                     </div>
                                 </label>
                             </div>
@@ -101,134 +88,121 @@
                     </div>
                 </div>
 
-                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 flex flex-col justify-center shadow-sm">
-                    <h3 class="font-bold text-gray-700 mb-4 border-b border-gray-200 pb-2">Database Status</h3>
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 flex flex-col justify-center shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 text-sm">Database Sync</h3>
                     <div class="space-y-4">
-                        <div>
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span><i class="fas fa-database mr-1"></i> Student Records</span>
-                                <span id="studentLoadStatus" class="font-bold text-orange-500">Connecting...</span>
-                            </div>
-                            <div class="loader-bar"><div id="studentLoader" class="loader-progress indeterminate"></div></div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-xs text-gray-600 mb-1">
-                                <span><i class="fas fa-chalkboard-teacher mr-1"></i> Faculty Records</span>
-                                <span id="facultyLoadStatus" class="font-bold text-orange-500">Connecting...</span>
-                            </div>
-                            <div class="loader-bar"><div id="facultyLoader" class="loader-progress indeterminate"></div></div>
-                        </div>
+                        <div><div class="flex justify-between text-xs mb-1"><span>Students</span><span id="studentLoadStatus" class="font-bold text-orange-500">...</span></div><div class="loader-bar"><div id="studentLoader" class="loader-progress" style="width:50%"></div></div></div>
+                        <div><div class="flex justify-between text-xs mb-1"><span>Faculty</span><span id="facultyLoadStatus" class="font-bold text-orange-500">...</span></div><div class="loader-bar"><div id="facultyLoader" class="loader-progress" style="width:50%"></div></div></div>
                     </div>
                 </div>
             </div>
 
-            <div id="planningSection" class="hidden fade-in">
+            <div id="planningSection" class="hidden fade-in space-y-6">
                 
-                <div class="bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 rounded-xl p-5 mb-8 flex flex-wrap justify-between items-center shadow-sm">
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-5 flex flex-wrap justify-between items-center shadow-sm">
                     <div>
-                        <h2 class="text-2xl font-bold text-indigo-900 mb-1" id="selectedDisciplineTitle">Discipline Name</h2>
-                        <div class="text-sm text-indigo-700 flex gap-4">
-                            <span class="bg-indigo-100 px-2 py-0.5 rounded"><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
-                            <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded"><i class="fas fa-check-circle mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold">0</span></span>
+                        <h2 class="text-xl font-bold text-indigo-900" id="selectedDisciplineTitle">Discipline Name</h2>
+                        <div class="text-sm text-indigo-600 mt-1 flex gap-4">
+                            <span><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
+                            <span><i class="fas fa-file-signature mr-1"></i> Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
                         </div>
                     </div>
-                    <div class="text-right mt-3 md:mt-0 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-                        <div class="text-xs text-gray-500 uppercase font-bold tracking-wider">Estimated Duration</div>
-                        <div class="text-3xl font-bold text-gray-800 leading-none my-1" id="estimatedDaysDisplay">0 Days</div>
-                        <div class="text-[10px] text-gray-500" id="capacityDisplay">Add examiners to calculate</div>
+                    <div class="text-right">
+                        <div class="text-xs text-indigo-400 uppercase font-bold">Estimated Duration</div>
+                        <div class="text-3xl font-bold text-indigo-900" id="estimatedDaysDisplay">0 Days</div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
                     
-                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 relative">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500 rounded-l-xl"></div>
-                        <h4 class="font-bold text-gray-800 border-b pb-3 mb-5 flex items-center">
-                            <i class="fas fa-users text-indigo-500 mr-2"></i> Examiner Team
-                        </h4>
+                    <div class="xl:col-span-2 space-y-6">
                         
-                        <div class="mb-5">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">CHIEF EXAMINER</label>
-                            <div class="autocomplete-container">
-                                <input type="text" id="chiefInput" placeholder="Search Chief Examiner..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition-colors">
-                                <div id="chiefSuggestions" class="suggestions hidden"></div>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs font-bold text-gray-500 mb-1">ADDITIONAL EXAMINERS (TEAM MEMBERS)</label>
-                            <div class="flex gap-2">
-                                <div class="autocomplete-container flex-1">
-                                    <input type="text" id="addlInput" placeholder="Type name to search..." class="w-full border border-gray-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                                    <div id="addlSuggestions" class="suggestions hidden"></div>
+                        <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-indigo-400 transition-colors">
+                            <h4 class="font-bold text-slate-700 mb-4 flex items-center">
+                                <i class="fas fa-user-plus text-indigo-500 mr-2"></i> Create Valuation Team
+                            </h4>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">CHIEF EXAMINER</label>
+                                    <div class="autocomplete-container">
+                                        <input type="text" id="chiefInput" placeholder="Search Chief..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <div id="chiefSuggestions" class="suggestions hidden"></div>
+                                    </div>
                                 </div>
-                                <button onclick="addExaminer()" class="bg-indigo-600 text-white px-5 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium">
-                                    <i class="fas fa-plus mr-1"></i> Add
-                                </button>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">ADD ADDITIONAL EXAMINERS</label>
+                                    <div class="flex gap-2">
+                                        <div class="autocomplete-container flex-1">
+                                            <input type="text" id="addlInput" placeholder="Search Additional..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                                            <div id="addlSuggestions" class="suggestions hidden"></div>
+                                        </div>
+                                        <button onclick="addCurrentAdditional()" class="bg-slate-100 text-slate-600 hover:bg-slate-200 px-3 rounded-lg border border-slate-300">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
+
+                            <div id="stagingArea" class="bg-slate-50 rounded-lg p-3 mb-4 hidden border border-slate-200">
+                                <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging</div>
+                                <div id="stagingList" class="flex flex-wrap gap-2"></div>
+                            </div>
+
+                            <button onclick="saveTeam()" id="saveTeamBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                                Save Team to Board
+                            </button>
                         </div>
 
-                        <div class="bg-gray-50 rounded-lg border border-gray-200 h-64 overflow-y-auto p-3" id="examinerListContainer">
-                            <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                                <i class="fas fa-user-plus text-2xl mb-2 opacity-30"></i>
-                                <span class="text-xs">Add examiners to build your team</span>
+                        <div>
+                            <h4 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Active Teams on Board</h4>
+                            <div id="activeTeamsList" class="space-y-3">
+                                <div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                                    No teams created yet.
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-right mt-2 text-xs text-gray-500">
-                            Team Size: <span id="teamSizeCount" class="font-bold text-indigo-600 text-sm">0</span>
                         </div>
                     </div>
 
-                    <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-6 relative">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-yellow-400 rounded-l-xl"></div>
-                        <h4 class="font-bold text-gray-800 border-b pb-3 mb-5 flex items-center">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-6 h-fit sticky top-6">
+                        <h4 class="font-bold text-slate-800 border-b pb-3 mb-4 flex items-center">
                             <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
                         </h4>
                         
-                        <div class="bg-yellow-50 p-4 rounded-lg text-xs text-yellow-800 mb-4 flex items-start">
-                            <i class="fas fa-lightbulb mt-0.5 mr-2 text-yellow-600"></i>
-                            <div>The system automatically calculates the number of days needed based on your <strong>Total Scripts</strong> and <strong>Team Size</strong>. Assign real dates below.</div>
+                        <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4 border border-yellow-100">
+                            <strong>Status:</strong> <span id="capacityStatus">Waiting for teams...</span>
                         </div>
 
-                        <div id="dateMappingContainer" class="max-h-80 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-                            <div class="text-center text-gray-400 text-sm py-12">
-                                Waiting for team setup...
-                            </div>
-                        </div>
+                        <div id="dateMappingContainer" class="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar"></div>
+
+                        <button onclick="generatePlan()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-table"></i> Generate Distribution
+                        </button>
                     </div>
-                </div>
-
-                <div class="mt-8 flex justify-end pt-6 border-t border-gray-200">
-                    <button onclick="generatePlan()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg shadow-lg font-bold text-sm transition-all transform hover:-translate-y-0.5 flex items-center gap-2">
-                        <i class="fas fa-table"></i> Generate Distribution Plan
-                    </button>
                 </div>
             </div>
 
-            <div id="outputSection" class="hidden mt-10 fade-in border-t-4 border-gray-800 pt-6">
-                <div class="flex flex-col sm:flex-row justify-between items-end mb-4 gap-4">
-                    <div>
-                        <h3 class="font-bold text-xl text-gray-900">Final Distribution Plan</h3>
-                        <p class="text-sm text-gray-500">Review the bundles before downloading.</p>
-                    </div>
-                    <button onclick="downloadPDF()" class="bg-gray-800 text-white px-5 py-2.5 rounded-lg text-sm hover:bg-gray-900 transition-colors shadow-md flex items-center gap-2">
-                        <i class="fas fa-file-pdf"></i> Download PDF Report
+            <div id="outputSection" class="hidden mt-12 pt-8 border-t border-slate-200 fade-in">
+                <div class="flex justify-between items-end mb-4">
+                    <h3 class="font-bold text-xl text-slate-800">Distribution Table</h3>
+                    <button onclick="downloadPDF()" class="bg-slate-800 text-white px-5 py-2 rounded-lg text-sm hover:bg-slate-900 shadow-md">
+                        <i class="fas fa-file-pdf mr-2"></i> Download PDF
                     </button>
                 </div>
                 
-                <div class="overflow-x-auto border border-gray-200 rounded-xl shadow-lg">
+                <div class="overflow-x-auto rounded-xl shadow-lg border border-slate-200">
                     <table class="min-w-full text-sm text-left" id="distributionTable">
-                        <thead class="bg-gray-800 text-white text-xs uppercase tracking-wider">
+                        <thead class="bg-slate-800 text-white text-xs uppercase">
                             <tr>
                                 <th class="px-5 py-4">Date / Session</th>
-                                <th class="px-5 py-4">Examiner</th>
+                                <th class="px-5 py-4">Reporting Chief</th>
+                                <th class="px-5 py-4">Additional Examiner</th>
                                 <th class="px-5 py-4">Paper Code</th>
-                                <th class="px-5 py-4">Register No. Range</th>
-                                <th class="px-5 py-4 text-center">Script Count</th>
+                                <th class="px-5 py-4">RegNo Range</th>
+                                <th class="px-5 py-4 text-center">Count</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-100 text-gray-700">
-                            </tbody>
+                        <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
                     </table>
                 </div>
             </div>
@@ -237,49 +211,36 @@
     </div>
 
     <script>
-        // --- Constants & Config ---
+        // --- Configuration ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         
-        const RULES = {
-            ARTS: { FN: 20, AN: 15 },
-            SCIENCE: { FN: 18, AN: 12 }
-        };
+        const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
 
-        // --- Application State ---
-        let rawStudentData = [];
-        let facultyData = [];
-        let disciplineList = [];
+        // --- State ---
+        let rawStudentData = [], facultyData = [], disciplineList = [];
+        let currentDiscipline = null, pooledStudents = [];
         
-        let currentDiscipline = null;
-        let pooledStudents = []; // All students for selected discipline
-        let additionalExaminers = []; // Array of {name, designation}
-        let generatedPlan = []; // The final Calculated Rows
+        // Multi-Team Data Structure
+        // teams = [ { id: 1, chief: {name, desig}, additionals: [ {name, desig}, ... ] }, ... ]
+        let teams = [];
+        let currentStagingAdditionals = []; // For the team currently being built
+        let generatedPlan = [];
 
-        // --- Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            loadFacultyData();
-            loadStudentData();
-        });
+        document.addEventListener('DOMContentLoaded', () => { loadFacultyData(); loadStudentData(); });
 
-        // --- Data Loading Functions ---
+        // --- Loading ---
         function loadFacultyData() {
             Papa.parse(facultyCsvUrl, {
                 download: true, header: true, skipEmptyLines: true,
                 complete: (res) => {
-                    // normalize keys
                     const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
                     const desigKey = res.meta.fields.find(k => k.toUpperCase().includes('DESIGNATION'));
-                    
                     if(nameKey) {
-                        facultyData = res.data.map(r => ({
-                            name: r[nameKey], 
-                            designation: r[desigKey] || ''
-                        })).filter(f => f.name);
-                        updateStatus('faculty', true, `Ready (${facultyData.length} records)`);
+                        facultyData = res.data.map(r => ({ name: r[nameKey], designation: r[desigKey] || '' })).filter(f => f.name);
+                        updateStatus('faculty', true, `Ready (${facultyData.length})`);
                     }
-                },
-                error: () => updateStatus('faculty', false, "Connection Failed")
+                }, error: () => updateStatus('faculty', false, "Error")
             });
         }
 
@@ -289,189 +250,206 @@
                 complete: (res) => {
                     rawStudentData = res.data;
                     extractDisciplines();
-                    updateStatus('student', true, `Ready (${rawStudentData.length} records)`);
-                    
-                    document.getElementById('connectionStatus').textContent = "Database Connected";
-                    document.getElementById('connectionStatus').className = "text-xs text-green-300 font-bold";
+                    updateStatus('student', true, `Ready (${rawStudentData.length})`);
+                    document.getElementById('connectionStatus').textContent = "Connected";
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
-                    
-                    // Enable Search
-                    const searchInput = document.getElementById('disciplineSearch');
-                    searchInput.disabled = false;
-                    searchInput.placeholder = "Type discipline name (e.g. Tamil)...";
-                },
-                error: () => updateStatus('student', false, "Connection Failed")
+                    document.getElementById('disciplineSearch').disabled = false;
+                    document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
+                }, error: () => updateStatus('student', false, "Error")
             });
         }
 
         function updateStatus(type, success, msg) {
-            const el = document.getElementById(`${type}LoadStatus`);
-            const bar = document.getElementById(`${type}Loader`);
-            el.textContent = msg;
-            el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
-            bar.className = "loader-progress";
-            bar.style.width = success ? "100%" : "0%";
-            bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
+            const el = document.getElementById(`${type}LoadStatus`), bar = document.getElementById(`${type}Loader`);
+            el.textContent = msg; el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
+            bar.style.width = success ? "100%" : "0%"; bar.style.backgroundColor = success ? "#10b981" : "#ef4444";
         }
 
-        // --- Discipline Selection Logic ---
+        // --- Discipline Logic ---
         function extractDisciplines() {
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
+            const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
             
-            // Setup Autocomplete
-            const input = document.getElementById('disciplineSearch');
-            const suggestions = document.getElementById('disciplineSuggestions');
-            
-            input.addEventListener('focus', () => showSuggestions(disciplineList, input, suggestions, selectDiscipline));
+            input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, selectDiscipline));
             input.addEventListener('input', () => {
                 const val = input.value.toLowerCase();
-                const filtered = disciplineList.filter(d => d.toLowerCase().includes(val));
-                showSuggestions(filtered, input, suggestions, selectDiscipline);
+                showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(val)), input, sugg, selectDiscipline);
             });
-            document.addEventListener('click', (e) => {
-                if (!input.contains(e.target) && !suggestions.contains(e.target)) suggestions.classList.add('hidden');
-            });
+            document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
         }
 
         function selectDiscipline(name) {
             document.getElementById('disciplineSearch').value = name;
             currentDiscipline = name;
             
-            // 1. Filter Data
-            const disciplineRows = rawStudentData.filter(r => r.Discipline === name);
-            
-            // 2. Sort Logic: Group by Paper Name, then Order by RegNo
-            pooledStudents = disciplineRows.sort((a, b) => {
-                if (a.Paper === b.Paper) {
-                    return (a.RegNo || '').localeCompare(b.RegNo || '');
-                }
+            // Filter & Sort
+            const rows = rawStudentData.filter(r => r.Discipline === name);
+            pooledStudents = rows.sort((a, b) => {
+                if (a.Paper === b.Paper) return (a.RegNo || '').localeCompare(b.RegNo || '');
                 return (a.Paper || '').localeCompare(b.Paper || '');
             });
 
-            // 3. Calculate Stats
-            const uniquePapers = new Set(pooledStudents.map(s => s.Paper));
-            const presentCount = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
+            const papers = new Set(pooledStudents.map(s => s.Paper));
+            const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
 
-            // 4. Update UI
             document.getElementById('planningSection').classList.remove('hidden');
             document.getElementById('selectedDisciplineTitle').textContent = name;
-            document.getElementById('summaryPaperCount').textContent = uniquePapers.size;
-            document.getElementById('summaryScriptCount').textContent = presentCount;
+            document.getElementById('summaryPaperCount').textContent = papers.size;
+            document.getElementById('summaryScriptCount').textContent = present;
             document.getElementById('outputSection').classList.add('hidden');
             
             updateEstimates();
         }
 
         // --- Team Management Logic ---
-        // Additional Examiner Search
-        const addlInput = document.getElementById('addlInput');
-        const addlSugg = document.getElementById('addlSuggestions');
-        addlInput.addEventListener('input', () => {
-            const val = addlInput.value.toLowerCase();
-            if(val.length < 3) { addlSugg.classList.add('hidden'); return; }
-            const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 8);
-            
-            addlSugg.innerHTML = '';
-            matches.forEach(f => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `<div>${f.name}</div><div class="text-xs text-gray-500">${f.designation}</div>`;
-                div.onclick = () => { 
-                    addlInput.value = f.name; 
-                    addlInput.dataset.desig = f.designation; 
-                    addlSugg.classList.add('hidden'); 
-                };
-                addlSugg.appendChild(div);
-            });
-            addlSugg.classList.remove('hidden');
+        
+        // Autocomplete Setup
+        setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => document.getElementById('chiefInput').value = val);
+        setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => {
+            document.getElementById('addlInput').value = val;
+            document.getElementById('addlInput').dataset.desig = desig;
         });
 
-        // Chief Search
-        const chiefInput = document.getElementById('chiefInput');
-        const chiefSugg = document.getElementById('chiefSuggestions');
-        chiefInput.addEventListener('input', () => {
-             const val = chiefInput.value.toLowerCase();
-             if(val.length < 3) { chiefSugg.classList.add('hidden'); return; }
-             const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 5);
-             
-             chiefSugg.innerHTML = '';
-             matches.forEach(f => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.textContent = f.name;
-                div.onclick = () => { chiefInput.value = f.name; chiefSugg.classList.add('hidden'); };
-                chiefSugg.appendChild(div);
+        function setupAutocomplete(inputId, suggId, onSelect) {
+            const input = document.getElementById(inputId), sugg = document.getElementById(suggId);
+            input.addEventListener('input', () => {
+                const val = input.value.toLowerCase();
+                if(val.length < 3) { sugg.classList.add('hidden'); return; }
+                const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 6);
+                
+                sugg.innerHTML = '';
+                matches.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `<div>${f.name}</div><div class="text-[10px] text-gray-400">${f.designation}</div>`;
+                    div.onclick = () => { onSelect(f.name, f.designation); sugg.classList.add('hidden'); };
+                    sugg.appendChild(div);
+                });
+                sugg.classList.remove('hidden');
             });
-            chiefSugg.classList.remove('hidden');
-        });
+        }
 
-        function addExaminer() {
-            const name = addlInput.value.trim();
+        // Staging Logic
+        function addCurrentAdditional() {
+            const input = document.getElementById('addlInput');
+            const name = input.value.trim();
             if(!name) return;
-            const desig = addlInput.dataset.desig || '';
             
-            additionalExaminers.push({ name, designation: desig });
-            addlInput.value = ''; 
-            renderExaminerList();
+            currentStagingAdditionals.push({ name, designation: input.dataset.desig || '' });
+            input.value = '';
+            renderStaging();
+        }
+
+        function renderStaging() {
+            const area = document.getElementById('stagingArea');
+            const list = document.getElementById('stagingList');
+            area.classList.toggle('hidden', currentStagingAdditionals.length === 0);
+            
+            list.innerHTML = '';
+            currentStagingAdditionals.forEach((ex, idx) => {
+                const tag = document.createElement('span');
+                tag.className = "bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2";
+                tag.innerHTML = `${ex.name} <button onclick="removeFromStaging(${idx})" class="text-red-400 hover:text-red-600">×</button>`;
+                list.appendChild(tag);
+            });
+        }
+
+        function removeFromStaging(idx) {
+            currentStagingAdditionals.splice(idx, 1);
+            renderStaging();
+        }
+
+        // Save Team Logic
+        function saveTeam() {
+            const chiefName = document.getElementById('chiefInput').value.trim();
+            if(!chiefName) return alert("Please select a Chief Examiner");
+            if(currentStagingAdditionals.length === 0) return alert("Please add at least one Additional Examiner");
+
+            const newTeam = {
+                id: Date.now(),
+                chief: { name: chiefName, designation: '' }, // Designation fetch omitted for brevity/simplicity in this view
+                additionals: [...currentStagingAdditionals]
+            };
+
+            teams.push(newTeam);
+            
+            // Reset Form
+            document.getElementById('chiefInput').value = '';
+            currentStagingAdditionals = [];
+            renderStaging();
+            
+            renderActiveTeams();
             updateEstimates();
         }
 
-        function removeExaminer(idx) {
-            additionalExaminers.splice(idx, 1);
-            renderExaminerList();
+        function deleteTeam(id) {
+            teams = teams.filter(t => t.id !== id);
+            renderActiveTeams();
             updateEstimates();
         }
 
-        function renderExaminerList() {
-            const container = document.getElementById('examinerListContainer');
-            document.getElementById('teamSizeCount').textContent = additionalExaminers.length;
-            
+        function renderActiveTeams() {
+            const container = document.getElementById('activeTeamsList');
             container.innerHTML = '';
-            if(additionalExaminers.length === 0) {
-                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-gray-400"><i class="fas fa-user-plus text-2xl mb-2 opacity-30"></i><span class="text-xs">Add examiners to build your team</span></div>`;
+            
+            if(teams.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>`;
                 return;
             }
-            
-            additionalExaminers.forEach((ex, idx) => {
-                const div = document.createElement('div');
-                div.className = 'flex justify-between items-center bg-white p-3 mb-2 border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow';
-                div.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs">${idx+1}</div>
+
+            teams.forEach(team => {
+                const card = document.createElement('div');
+                card.className = "bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative";
+                
+                let addlHtml = team.additionals.map(a => `<span class="inline-block bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded mr-1 mb-1">${a.name}</span>`).join('');
+                
+                card.innerHTML = `
+                    <button onclick="deleteTeam(${team.id})" class="absolute top-3 right-3 text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                    <div class="flex items-start gap-3">
+                        <div class="bg-indigo-100 text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
                         <div>
-                            <div class="font-bold text-gray-800 text-sm">${ex.name}</div>
-                            <div class="text-xs text-gray-500">${ex.designation}</div>
+                            <div class="text-xs font-bold text-slate-400 uppercase">Chief Examiner</div>
+                            <div class="font-bold text-slate-800">${team.chief.name}</div>
+                            
+                            <div class="mt-3">
+                                <div class="text-xs font-bold text-slate-400 uppercase mb-1">Additional Examiners (${team.additionals.length})</div>
+                                <div class="flex flex-wrap">${addlHtml}</div>
+                            </div>
                         </div>
                     </div>
-                    <button onclick="removeExaminer(${idx})" class="text-gray-400 hover:text-red-500 transition-colors p-2">
-                        <i class="fas fa-trash-alt"></i>
-                    </button>
                 `;
-                container.appendChild(div);
+                container.appendChild(card);
             });
         }
 
-        // --- Calculation & Planning Logic ---
+        // --- Core Calculation ---
         function updateEstimates() {
             if(!currentDiscipline) return;
             
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
-            const teamSize = additionalExaminers.length;
+            
+            // Calculate Total Capacity across ALL teams
             const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const rule = RULES[ruleKey];
             const dailyQuotaPerExaminer = rule.FN + rule.AN;
-            const totalDailyCapacity = teamSize * dailyQuotaPerExaminer;
             
-            if (teamSize > 0) {
+            let totalExaminers = 0;
+            teams.forEach(t => totalExaminers += t.additionals.length);
+            
+            const totalDailyCapacity = totalExaminers * dailyQuotaPerExaminer;
+            
+            if (totalDailyCapacity > 0) {
                 const days = Math.ceil(totalPresent / totalDailyCapacity);
                 document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
-                document.getElementById('capacityDisplay').textContent = `Processing Capacity: ${totalDailyCapacity} scripts/day`;
+                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${totalDailyCapacity} scripts/day</strong> (${totalExaminers} examiners)`;
                 generateDateInputs(days);
             } else {
                 document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
-                document.getElementById('capacityDisplay').textContent = "Add examiners to calculate";
-                document.getElementById('dateMappingContainer').innerHTML = `<div class="text-center text-gray-400 text-sm py-12">Waiting for team setup...</div>`;
+                document.getElementById('capacityStatus').textContent = "Create teams to calculate.";
+                document.getElementById('dateMappingContainer').innerHTML = '';
             }
         }
 
@@ -479,173 +457,133 @@
             const container = document.getElementById('dateMappingContainer');
             container.innerHTML = '';
             for(let i=1; i<=numDays; i++) {
-                const div = document.createElement('div');
-                div.className = "flex items-center gap-3 bg-white p-3 rounded-lg border border-gray-200 shadow-sm";
-                div.innerHTML = `
-                    <div class="text-xs font-bold text-gray-400 uppercase w-12 text-center">Day ${i}</div>
-                    <input type="date" id="date_day_${i}" class="border border-gray-300 rounded px-3 py-1.5 text-sm flex-1 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-                `;
-                container.appendChild(div);
+                container.innerHTML += `
+                    <div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200">
+                        <span class="text-xs font-bold text-slate-500 w-12 text-center">Day ${i}</span>
+                        <input type="date" id="date_day_${i}" class="border border-slate-300 rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500">
+                    </div>`;
             }
         }
 
-        // --- Core Generator: Split Logic ---
+        // --- Generator Logic ---
         function generatePlan() {
-            if(additionalExaminers.length === 0) return alert("Please add at least one Additional Examiner.");
+            if(teams.length === 0) return alert("Please create at least one team.");
             
             const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
             const quota = RULES[ruleKey];
             const sessions = ['FN', 'AN'];
             
             generatedPlan = [];
-            let queueIndex = 0; // Pointer to pooledStudents
+            let queueIndex = 0;
             const totalStudents = pooledStudents.length;
             const daysCount = document.getElementById('dateMappingContainer').children.length;
-            
+
+            // Flatten the Examiner list for Round-Robin but keep Team context
+            // Structure: { name, chiefName, ... }
+            let allExaminers = [];
+            teams.forEach(t => {
+                t.additionals.forEach(a => {
+                    allExaminers.push({ name: a.name, chief: t.chief.name });
+                });
+            });
+
             for (let d = 1; d <= daysCount; d++) {
                 const dateInput = document.getElementById(`date_day_${d}`);
                 const dateStr = (dateInput && dateInput.value) ? formatDate(dateInput.value) : `Day ${d}`;
                 
                 sessions.forEach(sess => {
                     const sessionQuota = (sess === 'FN') ? quota.FN : quota.AN;
-                    
-                    additionalExaminers.forEach(examiner => {
+
+                    allExaminers.forEach(examiner => {
                         if (queueIndex >= totalStudents) return;
 
                         let remainingQuota = sessionQuota;
 
-                        // While we still have quota for this examiner in this session
                         while (remainingQuota > 0 && queueIndex < totalStudents) {
-                            
                             const currentStudent = pooledStudents[queueIndex];
                             const currentPaper = currentStudent.Paper;
                             
-                            // Initialize a sub-bundle for this specific paper
-                            let subBundle = {
-                                date: dateStr,
-                                session: sess,
+                            let bundle = {
+                                date: dateStr, session: sess,
+                                chief: examiner.chief,
                                 examiner: examiner.name,
                                 paper: currentPaper,
-                                startReg: null,
-                                endReg: null,
-                                count: 0
+                                startReg: null, endReg: null, count: 0
                             };
                             
-                            // Consume students of the SAME paper until quota is full OR paper changes
+                            // Consume scripts until quota met or paper changes
                             while (remainingQuota > 0 && queueIndex < totalStudents) {
                                 const s = pooledStudents[queueIndex];
+                                if (s.Paper !== currentPaper) break; // Break on paper change
                                 
-                                // Detect paper change
-                                if (s.Paper !== currentPaper) {
-                                    break; // Stop this sub-bundle, loop will continue with new paper
-                                }
+                                if (bundle.startReg === null) bundle.startReg = s.RegNo;
+                                bundle.endReg = s.RegNo;
                                 
-                                const isPresent = (s.Attendance || '').toUpperCase().includes('PRESENT');
-                                
-                                if (subBundle.startReg === null) subBundle.startReg = s.RegNo;
-                                subBundle.endReg = s.RegNo;
-                                
-                                if (isPresent) {
-                                    subBundle.count++;
+                                if ((s.Attendance || '').toUpperCase().includes('PRESENT')) {
+                                    bundle.count++;
                                     remainingQuota--;
                                 }
-                                
                                 queueIndex++;
                             }
                             
-                            // Only push if we actually assigned scripts or covered a range
-                            if (subBundle.count > 0 || subBundle.startReg) {
-                                generatedPlan.push(subBundle);
-                            }
+                            if (bundle.count > 0 || bundle.startReg) generatedPlan.push(bundle);
                         }
                     });
                 });
             }
-            
-            renderOutputTable();
+            renderTable();
         }
 
-        function renderOutputTable() {
+        function renderTable() {
             const tbody = document.querySelector('#distributionTable tbody');
             tbody.innerHTML = '';
             
-            generatedPlan.forEach(row => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-gray-50 border-b border-gray-100 transition-colors";
-                tr.innerHTML = `
-                    <td class="px-5 py-4 whitespace-nowrap">
-                        <div class="font-bold text-gray-800">${row.date}</div>
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${row.session}</span>
-                    </td>
-                    <td class="px-5 py-4 font-medium text-gray-700">${row.examiner}</td>
-                    <td class="px-5 py-4 text-xs font-mono text-indigo-600 bg-indigo-50 px-2 py-1 rounded inline-block max-w-[200px] truncate" title="${row.paper}">
-                        ${row.paper}
-                    </td>
-                    <td class="px-5 py-4 font-mono text-xs text-gray-600">${row.startReg} - ${row.endReg}</td>
-                    <td class="px-5 py-4 text-center">
-                        <span class="bg-green-100 text-green-800 font-bold px-3 py-1 rounded-full text-xs">${row.count}</span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
+            generatedPlan.forEach(r => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                        <td class="px-5 py-4 whitespace-nowrap"><div class="font-bold text-slate-800">${r.date}</div><span class="text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">${r.session}</span></td>
+                        <td class="px-5 py-4 font-medium text-indigo-700">${r.chief}</td>
+                        <td class="px-5 py-4 text-slate-600">${r.examiner}</td>
+                        <td class="px-5 py-4 text-xs font-mono text-slate-500 max-w-[150px] truncate" title="${r.paper}">${r.paper}</td>
+                        <td class="px-5 py-4 font-mono text-xs text-slate-500">${r.startReg} - ${r.endReg}</td>
+                        <td class="px-5 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">${r.count}</span></td>
+                    </tr>`;
             });
-            
             document.getElementById('outputSection').classList.remove('hidden');
-            document.getElementById('outputSection').scrollIntoView({behavior: 'smooth'});
+            document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
         }
 
-        // --- Helper Functions ---
+        // --- Utils ---
         function showSuggestions(list, input, container, callback) {
             container.innerHTML = '';
             if (list.length === 0) { container.classList.add('hidden'); return; }
-            
             list.forEach(item => {
                 const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.textContent = item;
-                div.onclick = () => {
-                    if(callback) callback(item);
-                    container.classList.add('hidden');
-                };
+                div.className = 'suggestion-item'; div.textContent = item;
+                div.onclick = () => { callback(item); container.classList.add('hidden'); };
                 container.appendChild(div);
             });
             container.classList.remove('hidden');
         }
 
-        function formatDate(dateStr) {
-            const d = new Date(dateStr);
-            return d.toLocaleDateString('en-GB'); // DD/MM/YYYY
-        }
+        function formatDate(str) { const d = new Date(str); return d.toLocaleDateString('en-GB'); }
 
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Header Color
-            doc.setFillColor(55, 65, 81); // gray-800
-            doc.rect(0, 0, 210, 25, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(18);
-            doc.text("Valuation Camp Plan", 14, 16);
-            
-            doc.setTextColor(0,0,0);
-            doc.setFontSize(10);
-            doc.text(`Board: ${currentDiscipline}`, 14, 35);
-            doc.text(`Chief Examiner: ${document.getElementById('chiefInput').value || 'TBA'}`, 14, 40);
-            
-            doc.autoTable({
-                html: '#distributionTable',
-                startY: 45,
-                theme: 'grid',
-                headStyles: { fillColor: [55, 65, 81] },
-                styles: { fontSize: 8, cellPadding: 2 },
-                columnStyles: { 
-                    2: { cellWidth: 50 }, // Paper column width
-                    4: { halign: 'center' } // Count align center
-                }
-            });
+            doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Distribution Plan", 14, 16);
+            doc.setFontSize(10); doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
 
-            doc.save(`${currentDiscipline}_Plan.pdf`);
+            doc.setTextColor(0,0,0);
+            doc.autoTable({
+                html: '#distributionTable', startY: 45, theme: 'grid',
+                headStyles: { fillColor: [30, 41, 59] },
+                styles: { fontSize: 8, cellPadding: 3 },
+                columnStyles: { 3: { cellWidth: 40 } }
+            });
+            doc.save(`${currentDiscipline}_BoardPlan.pdf`);
         }
     </script>
 </body>
