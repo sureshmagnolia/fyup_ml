@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V35 (Stable)</title>
+    <title>Valuation Board Manager V36 (Assignment Logic Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,14 +45,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-check-circle text-green-400"></i> Valuation Board Manager
+                    <i class="fas fa-check-double text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V35 (Stable & Optimized)</p>
+                <p class="text-indigo-200 text-sm mt-1">V36 (Assignment Logic Fixed)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V35</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V36</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -203,15 +203,15 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV35';
+        const STORAGE_KEY = 'valuationBoardV36'; // New Key for logic fix
 
-        // --- OPTIMIZED STATE ---
+        // --- STATE ---
         let rawStudentData = []; 
         let facultyData = [];
         let studentsByDiscipline = {}; 
         let studentsByQP = {}; 
         let allocations = []; 
-        let assignedRegs = new Set();
+        let assignedRegs = new Set(); // Stores composite key: "QPCODE_REGNO"
         let currentDiscipline = null;
         let saveTimeout = null;
 
@@ -266,10 +266,7 @@
         function selectDiscipline(name) {
             document.getElementById('disciplineSearch').value = name;
             currentDiscipline = name;
-            
-            // FIX: Show correct panel ID
             document.getElementById('allocationPanel').classList.remove('hidden');
-            
             updateDashboard();
             debounceSave();
         }
@@ -301,14 +298,19 @@
                 const qpFull = document.getElementById('allocQP').value;
                 const qp = qpFull.split(' ')[0];
                 if(!qp || !studentsByQP[qp]) return [];
-                return studentsByQP[qp].filter(s => !assignedRegs.has(s.regNo)).map(s => s.regNo);
+                // CRITICAL FIX: Check assignment using composite key
+                return studentsByQP[qp]
+                    .filter(s => !assignedRegs.has(`${qp}_${s.regNo}`))
+                    .map(s => s.regNo);
             };
             setupAutocomplete('allocStartReg', 'suggStartReg', getStartRegs);
         }
 
         function updateStartRegSuggestion(qp) {
             if(!studentsByQP[qp]) return;
-            const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(s.regNo));
+            // CRITICAL FIX: Check using composite key
+            const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(`${qp}_${s.regNo}`));
+            
             const input = document.getElementById('allocStartReg');
             if(unassigned) { input.value = unassigned.regNo; } 
             else { input.value = ''; input.placeholder = "All Assigned"; }
@@ -339,7 +341,8 @@
             
             while(currentCount < targetCount && i < students.length) {
                 const s = students[i];
-                if(assignedRegs.has(s.regNo)) { i++; continue; }
+                // CRITICAL FIX: Check composite key
+                if(assignedRegs.has(`${qp}_${s.regNo}`)) { i++; continue; } 
 
                 const isAbsent = !s.attendance.includes('PRESENT');
                 bundleList.push({ regNo: s.regNo, isAbsent: isAbsent, full: s.regNo }); 
@@ -356,7 +359,8 @@
             };
 
             allocations.push(newAlloc);
-            bundleList.forEach(b => assignedRegs.add(b.regNo));
+            // CRITICAL FIX: Add composite keys
+            bundleList.forEach(b => assignedRegs.add(`${qp}_${b.regNo}`));
             
             saveState(true);
             renderTable();
@@ -367,7 +371,9 @@
         function deleteAllocation(id) {
             const alloc = allocations.find(a => a.id === id);
             if(!alloc) return;
-            alloc.allRegs.forEach(b => assignedRegs.delete(b.regNo));
+            // CRITICAL FIX: Delete composite keys
+            alloc.allRegs.forEach(b => assignedRegs.delete(`${alloc.qp}_${b.regNo}`));
+            
             allocations = allocations.filter(a => a.id !== id);
             saveState(true);
             renderTable();
@@ -386,7 +392,8 @@
             studentsByDiscipline[currentDiscipline].forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName };
                 stats[s.qp].total++;
-                if(assignedRegs.has(s.regNo)) stats[s.qp].assigned++;
+                // CRITICAL FIX: Check composite key
+                if(assignedRegs.has(`${s.qp}_${s.regNo}`)) stats[s.qp].assigned++;
             });
 
             db.innerHTML = '';
@@ -428,6 +435,7 @@
                 complete: (res) => {
                     const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
                     if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n);
+                    setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
                 }
             });
         }
@@ -549,7 +557,8 @@
                 if(state.allocs) {
                     allocations = state.allocs;
                     assignedRegs = new Set();
-                    allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(b.regNo)));
+                    // REBUILD SET WITH COMPOSITE KEY
+                    allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(`${a.qp}_${b.regNo}`)));
                     renderTable();
                 }
                 updateDashboard(); 
