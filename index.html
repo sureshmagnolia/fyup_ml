@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V16 (Direct QP Code)</title>
+    <title>Mark Sheet Generator V17 (Header Fix)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -91,8 +91,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V16)</h1>
-                <p class="text-gray-600 mt-1">Integrated Absent Management & Direct QP Code Support</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V17)</h1>
+                <p class="text-gray-600 mt-1">Robust CSV Header Support</p>
             </div>
         </header>
         
@@ -219,7 +219,7 @@
         // --- Config & State ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const LOCAL_STORAGE_KEY = 'marksheetFormData_V16';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V17';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let dataLoadedCount = 0;
@@ -251,7 +251,7 @@
             loadFormData();
         });
 
-        // --- Data Loading ---
+        // --- Data Loading (ROBUST) ---
         function loadData(url, type) {
             Papa.parse(url, {
                 download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
@@ -264,26 +264,41 @@
         }
 
         function processStudents(data) {
+            if(!data || data.length === 0) return;
+            
+            // Dynamic Key Finding
+            const keys = Object.keys(data[0]);
+            const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g,'') === search.toUpperCase());
+            
+            const qpKey = findKey('QPCode') || 'QPCode';
+            const regKey = findKey('RegNo') || 'RegNo';
+            const paperKey = findKey('Paper') || 'Paper';
+            const nameKey = findKey('Name') || 'Name';
+            const attKey = findKey('Attendance') || 'Attendance';
+
             studentData = data.map(row => {
-                // UPDATE: Get QP Code directly from Column G ('QPCode')
-                const qp = row['QPCode'] || '';
                 return {
-                    regNo: row['RegNo'],
-                    name: row['Name'],
-                    paper: row['Paper'] || '',
-                    qpCode: qp,
-                    attendance: (row['Attendance'] || '').toUpperCase()
+                    regNo: row[regKey],
+                    name: row[nameKey],
+                    paper: row[paperKey] || '',
+                    qpCode: row[qpKey] || 'UNKNOWN',
+                    attendance: (row[attKey] || '').toUpperCase()
                 };
             }).filter(s => s.regNo && s.qpCode);
             
-            // Build unique list
             qpCodeList = [...new Set(studentData.map(s => s.qpCode))].sort();
         }
 
         function processFaculty(data) {
-            const nameKey = data[0] && Object.keys(data[0]).find(k => k.toUpperCase().includes('NAME')) || 'NAME';
-            const desigKey = data[0] && Object.keys(data[0]).find(k => k.toUpperCase().includes('DESIGNATION')) || 'Designation';
-            facultyData = data.map(row => ({ name: row[nameKey], designation: row[desigKey] || '' })).filter(f => f.name);
+            if(!data || data.length === 0) return;
+            const keys = Object.keys(data[0]);
+            const nameKey = keys.find(k => k.toUpperCase().includes('NAME')) || 'NAME';
+            const desigKey = keys.find(k => k.toUpperCase().includes('DESIGNATION')) || 'Designation';
+            
+            facultyData = data.map(row => ({ 
+                name: row[nameKey], 
+                designation: row[desigKey] || '' 
+            })).filter(f => f.name);
         }
 
         function checkLoad() {
