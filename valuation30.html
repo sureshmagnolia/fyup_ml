@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V31 (Restricted Access)</title>
+    <title>Valuation Board Manager V32 (Searchable Chairman)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -51,7 +51,7 @@
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V31</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V32</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -68,10 +68,12 @@
                     Board Setup (Required)
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
+                    <div class="autocomplete-container">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
-                        <input type="text" id="chairmanNameInput" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Enter Chairman Name..." oninput="checkVisibility()">
+                        <input type="text" id="chairmanNameInput" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Search Faculty..." oninput="checkVisibility()">
+                        <div id="suggChairman" class="suggestions hidden"></div>
                     </div>
+                    
                     <div class="autocomplete-container">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
                         <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
@@ -199,7 +201,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV31';
+        const STORAGE_KEY = 'valuationBoardV32';
 
         let rawStudentData = [], facultyData = [];
         let allocations = []; 
@@ -233,6 +235,8 @@
                 showSuggestions(matches, input, list, (sel) => {
                     input.value = sel;
                     if(onSelect) onSelect(sel);
+                    saveState(); // Auto save on selection
+                    checkVisibility(); // Re-check visibility logic
                 });
             };
             input.addEventListener('focus', handler);
@@ -245,7 +249,6 @@
             const chairman = document.getElementById('chairmanNameInput').value.trim();
             const section = document.getElementById('planningSection');
             
-            // Only show if Chairman AND Discipline are present
             if (chairman && currentDiscipline) {
                 section.classList.remove('hidden');
                 updateDashboard();
@@ -259,7 +262,7 @@
         function selectDiscipline(name) {
             document.getElementById('disciplineSearch').value = name;
             currentDiscipline = name;
-            checkVisibility(); // Trigger check
+            checkVisibility(); 
         }
 
         // --- DATA LOADING ---
@@ -304,7 +307,6 @@
             document.getElementById('connectionStatus').textContent = "Connected";
             document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
             
-            // Setup Discipline Search
             const disciplines = [...new Set(rawStudentData.map(s => s.discipline))].sort();
             document.getElementById('disciplineSearch').disabled = false;
             document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
@@ -312,15 +314,16 @@
 
             restoreState();
             setupForm();
-            // Don't call updateDashboard() here, let checkVisibility handle it
         }
 
         // --- FORM SETUP ---
         function setupForm() {
+            // Updated: Setup Autocomplete for Chairman
+            setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
+            
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
-            // QP Autocomplete - Dependent on Discipline
             const getQPs = () => {
                 if(!currentDiscipline) return [];
                 return [...new Set(rawStudentData
@@ -426,7 +429,6 @@
             if(!currentDiscipline) return;
 
             const stats = {};
-            // Filter by discipline
             rawStudentData.filter(s => s.discipline === currentDiscipline).forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0 };
                 stats[s.qp].total++;
@@ -506,6 +508,7 @@
         function renderTable() {
             const tbody = document.getElementById('allocationBody');
             tbody.innerHTML = '';
+            
             const sorted = [...allocations].sort((a,b) => {
                 if(a.date !== b.date) return a.date.localeCompare(b.date);
                 return a.session.localeCompare(b.session);
@@ -516,12 +519,22 @@
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
-                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div>
+                        <span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span>
+                    </td>
+                    <td class="px-4 py-3 text-xs">
+                        <div class="font-bold text-slate-700">${alloc.chief}</div>
+                        <div class="text-slate-500">${alloc.additional}</div>
+                    </td>
                     <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
-                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
+                    <td class="px-4 py-3 bg-slate-50 text-xs">
+                        <div class="reg-list">${listHtml}</div>
+                    </td>
                     <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
-                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -586,7 +599,6 @@
             const indicator = document.getElementById('saveStatus');
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
             
-            // Check visibility after save
             checkVisibility();
         }
 
@@ -606,7 +618,7 @@
                     allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(b.regNo)));
                 }
                 
-                checkVisibility(); // Restore visibility state
+                checkVisibility();
             } catch(e) {}
         }
 
@@ -635,7 +647,6 @@
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Allocation", 14, 16);
             doc.setFontSize(10); 
-            doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
             doc.text(`Chairman: ${chairman}`, 14, 40);
 
             doc.setTextColor(0,0,0);
