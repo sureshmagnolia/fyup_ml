@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V34 (Performance Fix)</title>
+    <title>Valuation Board Manager V35 (Stable)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -45,14 +45,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-bolt text-yellow-400"></i> Valuation Board Manager
+                    <i class="fas fa-check-circle text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V34 (High Performance & Crash Fix)</p>
+                <p class="text-indigo-200 text-sm mt-1">V35 (Stable & Optimized)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V34</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V35</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -84,7 +84,12 @@
                     <div class="mb-3">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
                         <div class="autocomplete-container">
-                            <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                            <div class="relative">
+                                <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2 text-slate-400 hover:text-red-500" title="Clear">
+                                    <i class="fas fa-times-circle"></i>
+                                </button>
+                            </div>
                             <div id="disciplineSuggestions" class="suggestions hidden"></div>
                         </div>
                     </div>
@@ -198,13 +203,13 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV34';
+        const STORAGE_KEY = 'valuationBoardV35';
 
         // --- OPTIMIZED STATE ---
-        let rawStudentData = []; // Full Data
+        let rawStudentData = []; 
         let facultyData = [];
-        let studentsByDiscipline = {}; // Index: Discipline -> Array of Students
-        let studentsByQP = {}; // Index: QP -> Array of Students (Sorted)
+        let studentsByDiscipline = {}; 
+        let studentsByQP = {}; 
         let allocations = []; 
         let assignedRegs = new Set();
         let currentDiscipline = null;
@@ -215,103 +220,13 @@
             loadStudentData();
         });
 
-        // --- DATA LOADING & INDEXING ---
-        function loadFacultyData() {
-            Papa.parse(facultyCsvUrl, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: (res) => {
-                    const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
-                    if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n);
-                    setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData); // Setup Chairman Auto
-                }
-            });
-        }
-
-        function loadStudentData() {
-            Papa.parse(studentCsvUrl, {
-                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
-                complete: (res) => {
-                    if (!res.data || res.data.length === 0) return;
-                    const keys = Object.keys(res.data[0]);
-                    const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
-                    
-                    const k = {
-                        qp: findKey('QPCODE') || 'QPCode',
-                        reg: findKey('REGNO') || 'RegNo',
-                        att: findKey('ATTENDANCE') || 'Attendance',
-                        paper: findKey('PAPER') || 'Paper',
-                        disc: findKey('DISCIPLINE') || 'Discipline'
-                    };
-
-                    // 1. Parse & Index in one pass
-                    rawStudentData = [];
-                    studentsByDiscipline = {};
-                    studentsByQP = {};
-
-                    res.data.forEach(row => {
-                        const s = {
-                            regNo: row[k.reg],
-                            qp: row[k.qp] || 'UNKNOWN',
-                            paperName: row[k.paper] || '',
-                            discipline: row[k.disc] || 'Unknown',
-                            attendance: (row[k.att] || '').toUpperCase()
-                        };
-                        
-                        if(s.regNo && s.qp) {
-                            rawStudentData.push(s);
-                            
-                            // Index by Discipline
-                            if(!studentsByDiscipline[s.discipline]) studentsByDiscipline[s.discipline] = [];
-                            studentsByDiscipline[s.discipline].push(s);
-
-                            // Index by QP
-                            if(!studentsByQP[s.qp]) studentsByQP[s.qp] = [];
-                            studentsByQP[s.qp].push(s);
-                        }
-                    });
-
-                    // 2. Sort QP Arrays once
-                    Object.values(studentsByQP).forEach(list => list.sort((a,b) => a.regNo.localeCompare(b.regNo)));
-
-                    initApp();
-                },
-                error: () => document.getElementById('connectionStatus').textContent = "Error Loading Data"
-            });
-        }
-
-        function initApp() {
-            document.getElementById('connectionStatus').textContent = "Connected";
-            document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
-            
-            // Setup Discipline Search
-            const disciplines = Object.keys(studentsByDiscipline).sort();
-            const discInput = document.getElementById('disciplineSearch');
-            discInput.disabled = false;
-            discInput.placeholder = "Search Discipline...";
-            setupAutocomplete('disciplineSearch', 'disciplineSuggestions', () => disciplines, selectDiscipline);
-
-            // Restore
-            restoreState();
-            
-            // Setup Form Search (Dependent on selection)
-            setupForm();
-        }
-
-        // --- AUTOCOMPLETE UTILS (DEBOUNCED & OPTIMIZED) ---
+        // --- UTILS ---
         function showSuggestions(list, input, container, callback) {
             container.innerHTML = ''; 
             if (!list || list.length === 0) { container.classList.add('hidden'); return; }
-            
-            // Limit render to 20 items for speed
             list.slice(0, 20).forEach(item => {
-                const div = document.createElement('div'); 
-                div.className = 'suggestion-item'; 
-                div.textContent = item;
-                div.onmousedown = (e) => { 
-                    e.preventDefault(); 
-                    callback(item); 
-                    container.classList.add('hidden'); 
-                }; 
+                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
+                div.onmousedown = (e) => { e.preventDefault(); callback(item); container.classList.add('hidden'); }; 
                 container.appendChild(div);
             });
             container.classList.remove('hidden');
@@ -326,15 +241,14 @@
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     const val = input.value.toLowerCase();
-                    if(val.length < 2 && inputId !== 'disciplineSearch') { list.classList.add('hidden'); return; } // Min chars optimization
-                    
-                    const data = dataFn(); // Get pre-calculated array
+                    if(val.length < 2 && inputId !== 'disciplineSearch') { list.classList.add('hidden'); return; }
+                    const data = dataFn();
                     const matches = data.filter(d => d.toLowerCase().includes(val));
                     showSuggestions(matches, input, list, (sel) => {
                         input.value = sel;
                         if(onSelect) onSelect(sel);
                     });
-                }, 200); // 200ms debounce
+                }, 200);
             };
 
             input.addEventListener('focus', () => { 
@@ -353,40 +267,41 @@
             document.getElementById('disciplineSearch').value = name;
             currentDiscipline = name;
             
-            // Show Panel
-            document.getElementById('planningPanel').classList.remove('hidden');
+            // FIX: Show correct panel ID
+            document.getElementById('allocationPanel').classList.remove('hidden');
             
-            // Update QP List source for Form
             updateDashboard();
             debounceSave();
         }
 
+        function clearDisciplineSearch() {
+            document.getElementById('disciplineSearch').value = '';
+            document.getElementById('disciplineSearch').focus();
+            currentDiscipline = null;
+            document.getElementById('allocationPanel').classList.add('hidden');
+            debounceSave();
+        }
+
         function setupForm() {
+            setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
             setupAutocomplete('allocChief', 'suggChief', () => facultyData);
             setupAutocomplete('allocAdditional', 'suggAdditional', () => facultyData);
             
-            // QP Autocomplete - Use Pre-indexed Data
             const getQPs = () => {
                 if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) return [];
-                // Return unique QPs in this discipline
                 const qps = new Set(studentsByDiscipline[currentDiscipline].map(s => `${s.qp} (${s.paperName.substring(0,25)}...)`));
                 return [...qps].sort();
             };
             
             setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => {
-                // Auto-suggest next start reg
                 updateStartRegSuggestion(val.split(' ')[0]); 
             });
 
-            // Start Reg Autocomplete
             const getStartRegs = () => {
                 const qpFull = document.getElementById('allocQP').value;
                 const qp = qpFull.split(' ')[0];
                 if(!qp || !studentsByQP[qp]) return [];
-                // Filter only unassigned
-                return studentsByQP[qp]
-                    .filter(s => !assignedRegs.has(s.regNo))
-                    .map(s => s.regNo);
+                return studentsByQP[qp].filter(s => !assignedRegs.has(s.regNo)).map(s => s.regNo);
             };
             setupAutocomplete('allocStartReg', 'suggStartReg', getStartRegs);
         }
@@ -394,14 +309,9 @@
         function updateStartRegSuggestion(qp) {
             if(!studentsByQP[qp]) return;
             const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(s.regNo));
-            
             const input = document.getElementById('allocStartReg');
-            if(unassigned) {
-                input.value = unassigned.regNo;
-            } else {
-                input.value = '';
-                input.placeholder = "All Assigned";
-            }
+            if(unassigned) { input.value = unassigned.regNo; } 
+            else { input.value = ''; input.placeholder = "All Assigned"; }
         }
 
         // --- ALLOCATION ---
@@ -417,8 +327,7 @@
             if(!date || !chief || !additional || !qpFull || !startReg) return alert("Please fill all fields");
 
             const qp = qpFull.split(' ')[0];
-            const students = studentsByQP[qp]; // Use index!
-            
+            const students = studentsByQP[qp]; 
             if(!students) return alert("Invalid QP Code");
 
             const startIndex = students.findIndex(s => s.regNo === startReg);
@@ -430,11 +339,10 @@
             
             while(currentCount < targetCount && i < students.length) {
                 const s = students[i];
-                if(assignedRegs.has(s.regNo)) { i++; continue; } // Skip assigned
+                if(assignedRegs.has(s.regNo)) { i++; continue; }
 
                 const isAbsent = !s.attendance.includes('PRESENT');
                 bundleList.push({ regNo: s.regNo, isAbsent: isAbsent, full: s.regNo }); 
-                
                 if(!isAbsent) currentCount++;
                 i++;
             }
@@ -450,7 +358,7 @@
             allocations.push(newAlloc);
             bundleList.forEach(b => assignedRegs.add(b.regNo));
             
-            saveState(true); // Force save
+            saveState(true);
             renderTable();
             updateDashboard();
             updateStartRegSuggestion(qp);
@@ -469,14 +377,11 @@
         // --- DASHBOARD ---
         function updateDashboard() {
             const db = document.getElementById('statusDashboard');
-            const totalCountEl = document.getElementById('totalPapersCount');
-            
             if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) {
                 db.innerHTML = `<div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>`;
                 return;
             }
 
-            // Calc Stats
             const stats = {};
             studentsByDiscipline[currentDiscipline].forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName };
@@ -484,7 +389,6 @@
                 if(assignedRegs.has(s.regNo)) stats[s.qp].assigned++;
             });
 
-            // Render
             db.innerHTML = '';
             let qpCount = 0;
             Object.keys(stats).sort().forEach(qp => {
@@ -514,37 +418,67 @@
                 `;
                 db.appendChild(item);
             });
-            totalCountEl.textContent = `${qpCount} QP Codes`;
+            document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
         }
 
-        // --- RENDER TABLE ---
-        function renderTable() {
-            const tbody = document.getElementById('allocationBody');
-            tbody.innerHTML = '';
-            
-            // Reverse chronological display (newest on top) or Sorted
-            const sorted = [...allocations].sort((a,b) => {
-                if(a.date !== b.date) return a.date.localeCompare(b.date);
-                return a.session.localeCompare(b.session);
+        // --- DATA ---
+        function loadFacultyData() {
+            Papa.parse(facultyCsvUrl, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: (res) => {
+                    const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
+                    if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n);
+                }
             });
+        }
 
-            sorted.forEach(alloc => {
-                const listHtml = generateSmartList(alloc.allRegs);
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
-                tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
-                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
-                    <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
-                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
-                    <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
-                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
-                `;
-                tbody.appendChild(tr);
+        function loadStudentData() {
+            Papa.parse(studentCsvUrl, {
+                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
+                complete: (res) => {
+                    if (!res.data || res.data.length === 0) return;
+                    const keys = Object.keys(res.data[0]);
+                    const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
+                    
+                    const k = { qp: findKey('QPCODE') || 'QPCode', reg: findKey('REGNO') || 'RegNo', att: findKey('ATTENDANCE') || 'Attendance', paper: findKey('PAPER') || 'Paper', disc: findKey('DISCIPLINE') || 'Discipline' };
+
+                    rawStudentData = []; studentsByDiscipline = {}; studentsByQP = {};
+                    res.data.forEach(row => {
+                        const s = {
+                            regNo: row[k.reg], qp: row[k.qp] || 'UNKNOWN', paperName: row[k.paper] || '',
+                            discipline: row[k.disc] || 'Unknown', attendance: (row[k.att] || '').toUpperCase()
+                        };
+                        if(s.regNo && s.qp) {
+                            rawStudentData.push(s);
+                            if(!studentsByDiscipline[s.discipline]) studentsByDiscipline[s.discipline] = [];
+                            studentsByDiscipline[s.discipline].push(s);
+                            if(!studentsByQP[s.qp]) studentsByQP[s.qp] = [];
+                            studentsByQP[s.qp].push(s);
+                        }
+                    });
+                    Object.values(studentsByQP).forEach(list => list.sort((a,b) => a.regNo.localeCompare(b.regNo)));
+                    initApp();
+                }, error: () => document.getElementById('connectionStatus').textContent = "Error Loading Data"
             });
+        }
+
+        function initApp() {
+            document.getElementById('connectionStatus').textContent = "Connected";
+            document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+            const disciplines = Object.keys(studentsByDiscipline).sort();
+            document.getElementById('disciplineSearch').disabled = false;
+            document.getElementById('disciplineSearch').placeholder = "Search Discipline...";
+            setupAutocomplete('disciplineSearch', 'disciplineSuggestions', () => disciplines, selectDiscipline);
+            restoreState();
+            setupForm();
         }
 
         // --- HELPERS ---
+        function formatDate(d) {
+            if(!d) return '';
+            const dt = new Date(d);
+            return `${dt.getDate()}/${dt.getMonth()+1}`;
+        }
         function generateSmartList(regsArray) {
             if(!regsArray) return '';
             const groups = [];
@@ -552,7 +486,6 @@
             regsArray.forEach(item => {
                 const match = item.regNo.match(regex);
                 const prefix = match ? match[1] : 'OTHER';
-                const number = match ? match[2] : item.regNo;
                 if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
                 else groups.push({ prefix, items: [item] });
             });
@@ -567,7 +500,6 @@
                 return `<div>${nums}</div>`;
             }).join('');
         }
-
         function generateSmartListText(regsArray) {
              const groups = [];
              const regex = /^([A-Z]+)(\d+)$/;
@@ -588,18 +520,11 @@
             }).join('\n');
         }
 
-        function formatDate(d) {
-            if(!d) return '';
-            const dt = new Date(d);
-            return `${dt.getDate()}/${dt.getMonth()+1}`;
-        }
-
-        // --- PERSISTENCE ---
+        // --- STATE ---
         function debounceSave() {
             clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveState, 500);
+            saveTimeout = setTimeout(() => saveState(), 500);
         }
-
         function saveState(immediate = false) {
             const state = {
                 chairman: document.getElementById('chairmanNameInput').value,
@@ -607,11 +532,9 @@
                 allocs: allocations
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            
             const indicator = document.getElementById('saveStatus');
             indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
         }
-
         function restoreState() {
             const saved = localStorage.getItem(STORAGE_KEY);
             if(!saved) return;
@@ -625,15 +548,13 @@
                 }
                 if(state.allocs) {
                     allocations = state.allocs;
-                    // Rebuild assigned Set
                     assignedRegs = new Set();
                     allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(b.regNo)));
                     renderTable();
                 }
-                updateDashboard(); // Initial dash
+                updateDashboard(); 
             } catch(e) {}
         }
-
         function clearSession() {
             if(confirm("Delete all allocations?")) {
                 localStorage.removeItem(STORAGE_KEY);
@@ -641,31 +562,22 @@
             }
         }
 
-        // --- ROSTER MODAL ---
+        // --- ROSTER ---
         function viewRoster(qp) {
             const modal = document.getElementById('rosterModal');
             const title = document.getElementById('rosterModalTitle');
             const tbody = document.querySelector('#rosterTable tbody');
             const students = studentsByQP[qp]; 
-            
             title.textContent = `QP Code: ${qp}`;
             tbody.innerHTML = '';
             let serial = 0;
-            
             students.forEach(s => {
                 const isAbsent = !s.attendance.includes('PRESENT');
                 if(!isAbsent) serial++;
                 const slNo = isAbsent ? '' : serial;
                 const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>';
-                const regClass = isAbsent ? 'text-red-500 line-through' : 'font-mono font-bold';
                 const rowClass = isAbsent ? 'bg-red-50' : '';
-
-                tbody.innerHTML += `
-                    <tr class="border-b border-slate-100 ${rowClass}">
-                        <td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td>
-                        <td class="border-r border-slate-300 px-4 py-2 ${regClass}">${s.regNo}</td>
-                        <td class="px-4 py-2 text-xs">${status}</td>
-                    </tr>`;
+                tbody.innerHTML += `<tr class="border-b border-slate-100 ${rowClass}"><td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td><td class="border-r border-slate-300 px-4 py-2 font-mono font-bold">${s.regNo}</td><td class="px-4 py-2 text-xs">${status}</td></tr>`;
             });
             modal.classList.remove('hidden');
         }
@@ -678,36 +590,49 @@
             win.document.close(); win.print();
         }
 
+        // --- RENDER TABLE ---
+        function renderTable() {
+            const tbody = document.getElementById('allocationBody');
+            tbody.innerHTML = '';
+            const sorted = [...allocations].sort((a,b) => {
+                if(a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.session.localeCompare(b.session);
+            });
+            sorted.forEach(alloc => {
+                const listHtml = generateSmartList(alloc.allRegs);
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
+                    <td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">${alloc.chief}</div><div class="text-slate-500">${alloc.additional}</div></td>
+                    <td class="px-4 py-3 text-xs font-mono font-bold text-indigo-600">${alloc.qp}</td>
+                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
+                    <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
+                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
         // --- PDF ---
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             const chairman = document.getElementById('chairmanNameInput').value || 'TBA';
-            
-            const tableData = allocations.map(r => [
-                r.date + '\n' + r.session,
-                r.chief,
-                r.additional,
-                r.qp,
-                generateSmartListText(r.allRegs),
-                r.count
-            ]);
+            const tableData = allocations.map(r => [r.date + '\n' + r.session, r.chief + '\n' + r.additional, r.qp, generateSmartListText(r.allRegs), r.count]);
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
             doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Allocation", 14, 16);
-            doc.setFontSize(10); 
-            doc.text(`Chairman: ${chairman}`, 14, 40);
-
+            doc.setFontSize(10); doc.text(`Chairman: ${chairman}`, 14, 40);
             doc.setTextColor(0,0,0);
+            
             doc.autoTable({
-                head: [['Date/Session', 'Chief', 'Additional', 'QP Code', 'Register Nos', 'Count']],
+                head: [['Date/Session', 'Team', 'QP Code', 'Register Nos', 'Count']],
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
-                columnStyles: { 
-                    4: { cellWidth: 80 }
-                }
+                columnStyles: { 3: { cellWidth: 80 } }
             });
             doc.save(`Valuation_Plan.pdf`);
         }
