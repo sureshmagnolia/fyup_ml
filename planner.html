@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V6</title>
+    <title>Valuation Board Manager V7 (With Absent Tracking)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -25,7 +25,6 @@
         .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
         .hidden { display: none; }
         
-        /* Loaders */
         .loader-bar { height: 4px; width: 100%; background-color: #e5e7eb; border-radius: 2px; overflow: hidden; }
         .loader-progress { height: 100%; background-color: #4f46e5; width: 0%; transition: width 0.5s ease; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
@@ -41,10 +40,10 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-layer-group text-indigo-300"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Distribution</p>
+                <p class="text-indigo-200 text-sm mt-1">Multi-Chief Team Management & Absentee Tracking</p>
             </div>
             <div class="text-right flex flex-col items-end">
-                <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V6</span>
+                <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">CHAIRMAN MODULE V7</span>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
                     <span id="connectionStatus">Connecting...</span>
@@ -104,7 +103,7 @@
                         <h2 class="text-xl font-bold text-indigo-900" id="selectedDisciplineTitle">Discipline Name</h2>
                         <div class="text-sm text-indigo-600 mt-1 flex gap-4">
                             <span><i class="fas fa-copy mr-1"></i> Papers: <span id="summaryPaperCount" class="font-bold">0</span></span>
-                            <span><i class="fas fa-file-signature mr-1"></i> Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
+                            <span><i class="fas fa-file-signature mr-1"></i> Present Scripts: <span id="summaryScriptCount" class="font-bold text-lg">0</span></span>
                         </div>
                     </div>
                     <div class="text-right">
@@ -116,12 +115,10 @@
                 <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
                     
                     <div class="xl:col-span-2 space-y-6">
-                        
                         <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl p-6 hover:border-indigo-400 transition-colors">
                             <h4 class="font-bold text-slate-700 mb-4 flex items-center">
                                 <i class="fas fa-user-plus text-indigo-500 mr-2"></i> Create Valuation Team
                             </h4>
-                            
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-500 mb-1">CHIEF EXAMINER</label>
@@ -143,23 +140,18 @@
                                     </div>
                                 </div>
                             </div>
-
                             <div id="stagingArea" class="bg-slate-50 rounded-lg p-3 mb-4 hidden border border-slate-200">
                                 <div class="text-xs font-bold text-slate-400 mb-2 uppercase">Team Members Staging</div>
                                 <div id="stagingList" class="flex flex-wrap gap-2"></div>
                             </div>
-
                             <button onclick="saveTeam()" id="saveTeamBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg font-bold text-sm shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed">
                                 Save Team to Board
                             </button>
                         </div>
-
                         <div>
                             <h4 class="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Active Teams on Board</h4>
                             <div id="activeTeamsList" class="space-y-3">
-                                <div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
-                                    No teams created yet.
-                                </div>
+                                <div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>
                             </div>
                         </div>
                     </div>
@@ -168,13 +160,10 @@
                         <h4 class="font-bold text-slate-800 border-b pb-3 mb-4 flex items-center">
                             <i class="far fa-calendar-alt text-yellow-500 mr-2"></i> Session Calendar
                         </h4>
-                        
                         <div class="bg-yellow-50 p-3 rounded-lg text-xs text-yellow-800 mb-4 border border-yellow-100">
                             <strong>Status:</strong> <span id="capacityStatus">Waiting for teams...</span>
                         </div>
-
                         <div id="dateMappingContainer" class="max-h-[500px] overflow-y-auto space-y-2 pr-2 custom-scrollbar"></div>
-
                         <button onclick="generatePlan()" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2">
                             <i class="fas fa-table"></i> Generate Distribution
                         </button>
@@ -198,8 +187,8 @@
                                 <th class="px-5 py-4">Reporting Chief</th>
                                 <th class="px-5 py-4">Additional Examiner</th>
                                 <th class="px-5 py-4">Paper Code</th>
-                                <th class="px-5 py-4">RegNo Range</th>
-                                <th class="px-5 py-4 text-center">Count</th>
+                                <th class="px-5 py-4">RegNo Range (From - To)</th>
+                                <th class="px-5 py-4 text-center">Present Count</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-100 text-slate-700"></tbody>
@@ -211,21 +200,13 @@
     </div>
 
     <script>
-        // --- Configuration ---
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        
         const RULES = { ARTS: { FN: 20, AN: 15 }, SCIENCE: { FN: 18, AN: 12 } };
 
-        // --- State ---
         let rawStudentData = [], facultyData = [], disciplineList = [];
         let currentDiscipline = null, pooledStudents = [];
-        
-        // Multi-Team Data Structure
-        // teams = [ { id: 1, chief: {name, desig}, additionals: [ {name, desig}, ... ] }, ... ]
-        let teams = [];
-        let currentStagingAdditionals = []; // For the team currently being built
-        let generatedPlan = [];
+        let teams = [], currentStagingAdditionals = [], generatedPlan = [];
 
         document.addEventListener('DOMContentLoaded', () => { loadFacultyData(); loadStudentData(); });
 
@@ -243,13 +224,11 @@
                 }, error: () => updateStatus('faculty', false, "Error")
             });
         }
-
         function loadStudentData() {
             Papa.parse(studentCsvUrl, {
                 download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
                 complete: (res) => {
-                    rawStudentData = res.data;
-                    extractDisciplines();
+                    rawStudentData = res.data; extractDisciplines();
                     updateStatus('student', true, `Ready (${rawStudentData.length})`);
                     document.getElementById('connectionStatus').textContent = "Connected";
                     document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
@@ -258,7 +237,6 @@
                 }, error: () => updateStatus('student', false, "Error")
             });
         }
-
         function updateStatus(type, success, msg) {
             const el = document.getElementById(`${type}LoadStatus`), bar = document.getElementById(`${type}Loader`);
             el.textContent = msg; el.className = success ? "font-bold text-green-600" : "font-bold text-red-600";
@@ -270,58 +248,42 @@
             const unique = new Set(rawStudentData.map(r => r.Discipline).filter(Boolean));
             disciplineList = Array.from(unique).sort();
             const input = document.getElementById('disciplineSearch'), sugg = document.getElementById('disciplineSuggestions');
-            
             input.addEventListener('focus', () => showSuggestions(disciplineList, input, sugg, selectDiscipline));
             input.addEventListener('input', () => {
-                const val = input.value.toLowerCase();
-                showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(val)), input, sugg, selectDiscipline);
+                showSuggestions(disciplineList.filter(d => d.toLowerCase().includes(input.value.toLowerCase())), input, sugg, selectDiscipline);
             });
             document.addEventListener('click', e => { if (!input.contains(e.target) && !sugg.contains(e.target)) sugg.classList.add('hidden'); });
         }
-
         function selectDiscipline(name) {
-            document.getElementById('disciplineSearch').value = name;
-            currentDiscipline = name;
-            
-            // Filter & Sort
-            const rows = rawStudentData.filter(r => r.Discipline === name);
-            pooledStudents = rows.sort((a, b) => {
+            document.getElementById('disciplineSearch').value = name; currentDiscipline = name;
+            pooledStudents = rawStudentData.filter(r => r.Discipline === name).sort((a, b) => {
                 if (a.Paper === b.Paper) return (a.RegNo || '').localeCompare(b.RegNo || '');
                 return (a.Paper || '').localeCompare(b.Paper || '');
             });
-
             const papers = new Set(pooledStudents.map(s => s.Paper));
             const present = pooledStudents.filter(s => (s.Attendance || '').toUpperCase().includes('PRESENT')).length;
-
             document.getElementById('planningSection').classList.remove('hidden');
             document.getElementById('selectedDisciplineTitle').textContent = name;
             document.getElementById('summaryPaperCount').textContent = papers.size;
             document.getElementById('summaryScriptCount').textContent = present;
             document.getElementById('outputSection').classList.add('hidden');
-            
             updateEstimates();
         }
 
-        // --- Team Management Logic ---
-        
-        // Autocomplete Setup
+        // --- Team Management ---
         setupAutocomplete('chiefInput', 'chiefSuggestions', (val) => document.getElementById('chiefInput').value = val);
         setupAutocomplete('addlInput', 'addlSuggestions', (val, desig) => {
-            document.getElementById('addlInput').value = val;
-            document.getElementById('addlInput').dataset.desig = desig;
+            document.getElementById('addlInput').value = val; document.getElementById('addlInput').dataset.desig = desig;
         });
-
         function setupAutocomplete(inputId, suggId, onSelect) {
             const input = document.getElementById(inputId), sugg = document.getElementById(suggId);
             input.addEventListener('input', () => {
                 const val = input.value.toLowerCase();
                 if(val.length < 3) { sugg.classList.add('hidden'); return; }
                 const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 6);
-                
                 sugg.innerHTML = '';
                 matches.forEach(f => {
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
+                    const div = document.createElement('div'); div.className = 'suggestion-item';
                     div.innerHTML = `<div>${f.name}</div><div class="text-[10px] text-gray-400">${f.designation}</div>`;
                     div.onclick = () => { onSelect(f.name, f.designation); sugg.classList.add('hidden'); };
                     sugg.appendChild(div);
@@ -329,203 +291,104 @@
                 sugg.classList.remove('hidden');
             });
         }
-
-        // Staging Logic
         function addCurrentAdditional() {
-            const input = document.getElementById('addlInput');
-            const name = input.value.trim();
+            const input = document.getElementById('addlInput'); const name = input.value.trim();
             if(!name) return;
-            
             currentStagingAdditionals.push({ name, designation: input.dataset.desig || '' });
-            input.value = '';
-            renderStaging();
+            input.value = ''; renderStaging();
         }
-
         function renderStaging() {
-            const area = document.getElementById('stagingArea');
-            const list = document.getElementById('stagingList');
+            const area = document.getElementById('stagingArea'); const list = document.getElementById('stagingList');
             area.classList.toggle('hidden', currentStagingAdditionals.length === 0);
-            
             list.innerHTML = '';
             currentStagingAdditionals.forEach((ex, idx) => {
-                const tag = document.createElement('span');
-                tag.className = "bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2";
-                tag.innerHTML = `${ex.name} <button onclick="removeFromStaging(${idx})" class="text-red-400 hover:text-red-600">×</button>`;
-                list.appendChild(tag);
+                list.innerHTML += `<span class="bg-white border border-slate-200 text-slate-700 text-xs px-2 py-1 rounded-md flex items-center gap-2">${ex.name} <button onclick="currentStagingAdditionals.splice(${idx}, 1); renderStaging()" class="text-red-400 hover:text-red-600">×</button></span>`;
             });
         }
-
-        function removeFromStaging(idx) {
-            currentStagingAdditionals.splice(idx, 1);
-            renderStaging();
-        }
-
-        // Save Team Logic
         function saveTeam() {
             const chiefName = document.getElementById('chiefInput').value.trim();
-            if(!chiefName) return alert("Please select a Chief Examiner");
-            if(currentStagingAdditionals.length === 0) return alert("Please add at least one Additional Examiner");
-
-            const newTeam = {
-                id: Date.now(),
-                chief: { name: chiefName, designation: '' }, // Designation fetch omitted for brevity/simplicity in this view
-                additionals: [...currentStagingAdditionals]
-            };
-
-            teams.push(newTeam);
-            
-            // Reset Form
-            document.getElementById('chiefInput').value = '';
-            currentStagingAdditionals = [];
-            renderStaging();
-            
-            renderActiveTeams();
-            updateEstimates();
+            if(!chiefName || currentStagingAdditionals.length === 0) return alert("Select Chief and at least one Additional");
+            teams.push({ id: Date.now(), chief: { name: chiefName, designation: '' }, additionals: [...currentStagingAdditionals] });
+            document.getElementById('chiefInput').value = ''; currentStagingAdditionals = []; renderStaging(); renderActiveTeams(); updateEstimates();
         }
-
-        function deleteTeam(id) {
-            teams = teams.filter(t => t.id !== id);
-            renderActiveTeams();
-            updateEstimates();
-        }
-
+        function deleteTeam(id) { teams = teams.filter(t => t.id !== id); renderActiveTeams(); updateEstimates(); }
         function renderActiveTeams() {
-            const container = document.getElementById('activeTeamsList');
-            container.innerHTML = '';
-            
-            if(teams.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>`;
-                return;
-            }
-
+            const container = document.getElementById('activeTeamsList'); container.innerHTML = '';
+            if(teams.length === 0) { container.innerHTML = `<div class="text-center py-8 text-slate-400 bg-slate-50 rounded-xl border border-slate-200">No teams created yet.</div>`; return; }
             teams.forEach(team => {
-                const card = document.createElement('div');
-                card.className = "bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative";
-                
                 let addlHtml = team.additionals.map(a => `<span class="inline-block bg-slate-100 text-slate-600 text-[10px] px-2 py-1 rounded mr-1 mb-1">${a.name}</span>`).join('');
-                
-                card.innerHTML = `
-                    <button onclick="deleteTeam(${team.id})" class="absolute top-3 right-3 text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button>
-                    <div class="flex items-start gap-3">
-                        <div class="bg-indigo-100 text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold">
-                            <i class="fas fa-user-tie"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs font-bold text-slate-400 uppercase">Chief Examiner</div>
-                            <div class="font-bold text-slate-800">${team.chief.name}</div>
-                            
-                            <div class="mt-3">
-                                <div class="text-xs font-bold text-slate-400 uppercase mb-1">Additional Examiners (${team.additionals.length})</div>
-                                <div class="flex flex-wrap">${addlHtml}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
+                container.innerHTML += `<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm relative"><button onclick="deleteTeam(${team.id})" class="absolute top-3 right-3 text-slate-400 hover:text-red-500"><i class="fas fa-trash"></i></button><div class="flex items-start gap-3"><div class="bg-indigo-100 text-indigo-700 w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"><i class="fas fa-user-tie"></i></div><div><div class="text-xs font-bold text-slate-400 uppercase">Chief Examiner</div><div class="font-bold text-slate-800">${team.chief.name}</div><div class="mt-3"><div class="text-xs font-bold text-slate-400 uppercase mb-1">Additional Examiners (${team.additionals.length})</div><div class="flex flex-wrap">${addlHtml}</div></div></div></div></div>`;
             });
         }
 
-        // --- Core Calculation ---
+        // --- Calculation ---
         function updateEstimates() {
             if(!currentDiscipline) return;
-            
             const totalPresent = parseInt(document.getElementById('summaryScriptCount').textContent);
-            
-            // Calculate Total Capacity across ALL teams
-            const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
-            const rule = RULES[ruleKey];
-            const dailyQuotaPerExaminer = rule.FN + rule.AN;
-            
-            let totalExaminers = 0;
-            teams.forEach(t => totalExaminers += t.additionals.length);
-            
-            const totalDailyCapacity = totalExaminers * dailyQuotaPerExaminer;
-            
-            if (totalDailyCapacity > 0) {
-                const days = Math.ceil(totalPresent / totalDailyCapacity);
+            const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
+            let totalExaminers = 0; teams.forEach(t => totalExaminers += t.additionals.length);
+            const capacity = totalExaminers * (rule.FN + rule.AN);
+            if (capacity > 0) {
+                const days = Math.ceil(totalPresent / capacity);
                 document.getElementById('estimatedDaysDisplay').textContent = days + " Days";
-                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${totalDailyCapacity} scripts/day</strong> (${totalExaminers} examiners)`;
+                document.getElementById('capacityStatus').innerHTML = `Total Capacity: <strong>${capacity} scripts/day</strong>`;
                 generateDateInputs(days);
             } else {
                 document.getElementById('estimatedDaysDisplay').textContent = "0 Days";
-                document.getElementById('capacityStatus').textContent = "Create teams to calculate.";
                 document.getElementById('dateMappingContainer').innerHTML = '';
             }
         }
-
         function generateDateInputs(numDays) {
-            const container = document.getElementById('dateMappingContainer');
-            container.innerHTML = '';
+            const container = document.getElementById('dateMappingContainer'); container.innerHTML = '';
             for(let i=1; i<=numDays; i++) {
-                container.innerHTML += `
-                    <div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200">
-                        <span class="text-xs font-bold text-slate-500 w-12 text-center">Day ${i}</span>
-                        <input type="date" id="date_day_${i}" class="border border-slate-300 rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500">
-                    </div>`;
+                container.innerHTML += `<div class="flex items-center gap-3 bg-slate-50 p-2 rounded border border-slate-200"><span class="text-xs font-bold text-slate-500 w-12 text-center">Day ${i}</span><input type="date" id="date_day_${i}" class="border border-slate-300 rounded px-2 py-1 text-sm flex-1 outline-none focus:border-indigo-500"></div>`;
             }
         }
 
-        // --- Generator Logic ---
+        // --- Generator Logic (Absent Tracking) ---
         function generatePlan() {
-            if(teams.length === 0) return alert("Please create at least one team.");
-            
-            const ruleKey = document.querySelector('input[name="quotaRule"]:checked').value;
-            const quota = RULES[ruleKey];
-            const sessions = ['FN', 'AN'];
-            
+            if(teams.length === 0) return alert("Create at least one team.");
+            const rule = RULES[document.querySelector('input[name="quotaRule"]:checked').value];
             generatedPlan = [];
             let queueIndex = 0;
-            const totalStudents = pooledStudents.length;
             const daysCount = document.getElementById('dateMappingContainer').children.length;
-
-            // Flatten the Examiner list for Round-Robin but keep Team context
-            // Structure: { name, chiefName, ... }
+            
+            // Flatten examiners
             let allExaminers = [];
-            teams.forEach(t => {
-                t.additionals.forEach(a => {
-                    allExaminers.push({ name: a.name, chief: t.chief.name });
-                });
-            });
+            teams.forEach(t => t.additionals.forEach(a => allExaminers.push({ name: a.name, chief: t.chief.name })));
 
             for (let d = 1; d <= daysCount; d++) {
-                const dateInput = document.getElementById(`date_day_${d}`);
-                const dateStr = (dateInput && dateInput.value) ? formatDate(dateInput.value) : `Day ${d}`;
+                const dateVal = document.getElementById(`date_day_${d}`).value;
+                const dateStr = dateVal ? new Date(dateVal).toLocaleDateString('en-GB') : `Day ${d}`;
                 
-                sessions.forEach(sess => {
-                    const sessionQuota = (sess === 'FN') ? quota.FN : quota.AN;
-
+                ['FN', 'AN'].forEach(sess => {
+                    const sessionQuota = rule[sess];
                     allExaminers.forEach(examiner => {
-                        if (queueIndex >= totalStudents) return;
-
+                        if (queueIndex >= pooledStudents.length) return;
                         let remainingQuota = sessionQuota;
 
-                        while (remainingQuota > 0 && queueIndex < totalStudents) {
+                        while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                             const currentStudent = pooledStudents[queueIndex];
                             const currentPaper = currentStudent.Paper;
-                            
                             let bundle = {
-                                date: dateStr, session: sess,
-                                chief: examiner.chief,
-                                examiner: examiner.name,
-                                paper: currentPaper,
-                                startReg: null, endReg: null, count: 0
+                                date: dateStr, session: sess, chief: examiner.chief, examiner: examiner.name,
+                                paper: currentPaper, startReg: null, endReg: null, count: 0, absents: []
                             };
-                            
-                            // Consume scripts until quota met or paper changes
-                            while (remainingQuota > 0 && queueIndex < totalStudents) {
+
+                            while (remainingQuota > 0 && queueIndex < pooledStudents.length) {
                                 const s = pooledStudents[queueIndex];
-                                if (s.Paper !== currentPaper) break; // Break on paper change
+                                if (s.Paper !== currentPaper) break;
                                 
                                 if (bundle.startReg === null) bundle.startReg = s.RegNo;
                                 bundle.endReg = s.RegNo;
                                 
                                 if ((s.Attendance || '').toUpperCase().includes('PRESENT')) {
-                                    bundle.count++;
-                                    remainingQuota--;
+                                    bundle.count++; remainingQuota--;
+                                } else {
+                                    bundle.absents.push(s.RegNo);
                                 }
                                 queueIndex++;
                             }
-                            
                             if (bundle.count > 0 || bundle.startReg) generatedPlan.push(bundle);
                         }
                     });
@@ -535,17 +398,16 @@
         }
 
         function renderTable() {
-            const tbody = document.querySelector('#distributionTable tbody');
-            tbody.innerHTML = '';
-            
+            const tbody = document.querySelector('#distributionTable tbody'); tbody.innerHTML = '';
             generatedPlan.forEach(r => {
+                const absentText = r.absents.length > 0 ? `<div class="text-[10px] text-red-500 font-bold mt-1">Absent: ${r.absents.join(', ')}</div>` : '';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
                         <td class="px-5 py-4 whitespace-nowrap"><div class="font-bold text-slate-800">${r.date}</div><span class="text-xs bg-slate-200 px-2 py-0.5 rounded text-slate-600">${r.session}</span></td>
                         <td class="px-5 py-4 font-medium text-indigo-700">${r.chief}</td>
                         <td class="px-5 py-4 text-slate-600">${r.examiner}</td>
                         <td class="px-5 py-4 text-xs font-mono text-slate-500 max-w-[150px] truncate" title="${r.paper}">${r.paper}</td>
-                        <td class="px-5 py-4 font-mono text-xs text-slate-500">${r.startReg} - ${r.endReg}</td>
+                        <td class="px-5 py-4 font-mono text-xs text-slate-500"><div>${r.startReg} - ${r.endReg}</div>${absentText}</td>
                         <td class="px-5 py-4 text-center"><span class="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">${r.count}</span></td>
                     </tr>`;
             });
@@ -553,32 +415,36 @@
             document.getElementById('outputSection').scrollIntoView({behavior:'smooth'});
         }
 
-        // --- Utils ---
         function showSuggestions(list, input, container, callback) {
-            container.innerHTML = '';
-            if (list.length === 0) { container.classList.add('hidden'); return; }
+            container.innerHTML = ''; if (list.length === 0) { container.classList.add('hidden'); return; }
             list.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item'; div.textContent = item;
+                const div = document.createElement('div'); div.className = 'suggestion-item'; div.textContent = item;
                 div.onclick = () => { callback(item); container.classList.add('hidden'); };
                 container.appendChild(div);
             });
             container.classList.remove('hidden');
         }
 
-        function formatDate(str) { const d = new Date(str); return d.toLocaleDateString('en-GB'); }
-
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            const tableData = generatedPlan.map(r => [
+                r.date + ' ' + r.session,
+                r.chief,
+                r.examiner,
+                r.paper,
+                `${r.startReg} - ${r.endReg}\n${r.absents.length ? 'Absent: ' + r.absents.join(', ') : ''}`,
+                r.count
+            ]);
             
             doc.setFillColor(30, 41, 59); doc.rect(0, 0, 210, 25, 'F');
-            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Distribution Plan", 14, 16);
+            doc.setTextColor(255, 255, 255); doc.setFontSize(16); doc.text("Valuation Board Plan", 14, 16);
             doc.setFontSize(10); doc.text(`Discipline: ${currentDiscipline}`, 14, 35);
 
-            doc.setTextColor(0,0,0);
             doc.autoTable({
-                html: '#distributionTable', startY: 45, theme: 'grid',
+                head: [['Date/Session', 'Chief', 'Examiner', 'Paper', 'Range (Absent)', 'Count']],
+                body: tableData,
+                startY: 40, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3 },
                 columnStyles: { 3: { cellWidth: 40 } }
