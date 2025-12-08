@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valuation Camp Manager - Chairman's Module</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Autocomplete Styles */
+        .autocomplete-container { position: relative; }
+        .suggestions {
+            position: absolute; z-index: 50; width: 100%; max-height: 200px;
+            overflow-y: auto; background: white; border: 1px solid #ccc;
+            border-radius: 0 0 4px 4px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 0.9rem; }
+        .suggestion-item:hover { background-color: #f3f4f6; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen p-6">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-indigo-700 p-6 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Valuation Camp Planner</h1>
+                <p class="text-indigo-200 text-sm mt-1">Paper Distribution & Session Management System</p>
+            </div>
+            <div class="text-right">
+                <span class="bg-indigo-600 px-3 py-1 rounded text-xs font-mono">CHAIRMAN MODULE</span>
+            </div>
+        </div>
+
+        <div class="p-6 space-y-8">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 border-b border-gray-200 pb-6">
+                <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                    <h3 class="font-semibold text-gray-700 mb-3">1. Select Discipline Rule</h3>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="discipline" value="ARTS" class="form-radio text-indigo-600 h-5 w-5" checked onchange="updateQuotas()">
+                            <div>
+                                <span class="font-medium text-gray-800">Arts Discipline</span>
+                                <p class="text-xs text-gray-500">FN: 20 Scripts | AN: 15 Scripts</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center space-x-3 cursor-pointer">
+                            <input type="radio" name="discipline" value="SCIENCE" class="form-radio text-indigo-600 h-5 w-5" onchange="updateQuotas()">
+                            <div>
+                                <span class="font-medium text-gray-800">Science Discipline</span>
+                                <p class="text-xs text-gray-500">FN: 18 Scripts | AN: 12 Scripts</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 col-span-2">
+                    <h3 class="font-semibold text-gray-700 mb-3">2. Load Student Data (CSV)</h3>
+                    <div class="flex items-center gap-4">
+                        <input type="file" id="csvFileInput" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-all"/>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-2">Required Columns: Sl No, RegNo, Name, Paper, Attendance, Discipline</p>
+                    <div id="fileStatus" class="text-xs font-bold mt-2 text-gray-400">Waiting for file...</div>
+                </div>
+            </div>
+
+            <div id="paperSection" class="hidden">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">3. Available Papers (Click to Plan)</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm text-left text-gray-500 border border-gray-200">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-3">Paper Name</th>
+                                <th class="px-4 py-3 text-center">Total Scripts</th>
+                                <th class="px-4 py-3 text-center text-green-600">Present</th>
+                                <th class="px-4 py-3 text-center text-red-600">Absent</th>
+                                <th class="px-4 py-3 text-center">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paperTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="planningInterface" class="hidden bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div class="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-lg text-indigo-700" id="selectedPaperTitle">Paper Name</h3>
+                        <p class="text-xs text-gray-500">Planning Mode: <span id="currentRuleDisplay">ARTS</span></p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-sm font-bold">Total Present: <span id="totalPresentCount">0</span></div>
+                        <div class="text-xs text-gray-500">Est. Days: <span id="estimatedDays">0</span></div>
+                    </div>
+                </div>
+
+                <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    
+                    <div class="space-y-4">
+                        <h4 class="font-semibold text-gray-700 border-b pb-2">Assign Examiners</h4>
+                        
+                        <div class="form-group relative">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Chief Examiner</label>
+                            <input type="text" id="chiefInput" placeholder="Search Faculty..." class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div id="chiefSuggestions" class="suggestions hidden"></div>
+                            <input type="text" id="chiefDesig" readonly class="w-full mt-1 bg-gray-50 border-0 text-xs text-gray-500 italic" placeholder="Designation">
+                        </div>
+
+                        <div class="form-group relative">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Additional Examiner</label>
+                            <input type="text" id="addlInput" placeholder="Search Faculty..." class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <div id="addlSuggestions" class="suggestions hidden"></div>
+                            <input type="text" id="addlDesig" readonly class="w-full mt-1 bg-gray-50 border-0 text-xs text-gray-500 italic" placeholder="Designation">
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="font-semibold text-gray-700 border-b pb-2">Map Dates to Days</h4>
+                        <div class="bg-yellow-50 p-3 rounded text-xs text-yellow-800 mb-2">
+                            System uses "Day 1, Day 2" logic. Assign actual dates below.
+                        </div>
+                        <div id="dateMappingContainer" class="max-h-60 overflow-y-auto space-y-2 pr-2">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-gray-50 border-t border-gray-200 flex justify-end gap-3">
+                    <button onclick="generatePlan()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded font-medium text-sm transition-colors shadow-sm">
+                        Generate Distribution Table
+                    </button>
+                    <button onclick="downloadPDF()" id="pdfBtn" disabled class="bg-gray-400 text-white px-6 py-2 rounded font-medium text-sm transition-colors shadow-sm cursor-not-allowed">
+                        Download PDF
+                    </button>
+                </div>
+            </div>
+
+            <div id="outputSection" class="hidden mt-6">
+                <h3 class="font-semibold text-gray-800 mb-3">Distribution Plan</h3>
+                <div class="overflow-x-auto border rounded-lg shadow-sm">
+                    <table class="min-w-full text-sm text-left" id="distributionTable">
+                        <thead class="bg-gray-800 text-white text-xs uppercase">
+                            <tr>
+                                <th class="px-4 py-3">Date / Session</th>
+                                <th class="px-4 py-3">Chief Examiner</th>
+                                <th class="px-4 py-3">Addl. Examiner</th>
+                                <th class="px-4 py-3">RegNo From</th>
+                                <th class="px-4 py-3">RegNo To</th>
+                                <th class="px-4 py-3 text-center">Present</th>
+                                <th class="px-4 py-3 text-center">Absent</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200 text-gray-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Constants & State ---
+        const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
+        
+        let rawStudentData = [];
+        let groupedPapers = {};
+        let facultyData = [];
+        let currentSelectedPaper = null;
+        let generatedBundles = []; // Store the logic bundles
+        
+        // Quota Rules
+        const RULES = {
+            ARTS: { FN: 20, AN: 15 },
+            SCIENCE: { FN: 18, AN: 12 }
+        };
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFacultyData();
+            document.getElementById('csvFileInput').addEventListener('change', handleFileUpload);
+        });
+
+        // --- 1. Load Faculty Data (Remote) ---
+        function loadFacultyData() {
+            Papa.parse(facultyCsvUrl, {
+                download: true, header: true, skipEmptyLines: true,
+                complete: (results) => {
+                    // Normalize keys (handle potential case mismatch)
+                    const nameKey = results.meta.fields.find(f => f.toUpperCase().includes('NAME'));
+                    const desigKey = results.meta.fields.find(f => f.toUpperCase().includes('DESIGNATION'));
+                    
+                    if (nameKey) {
+                        facultyData = results.data.map(row => ({
+                            name: row[nameKey],
+                            designation: row[desigKey] || ''
+                        })).filter(f => f.name);
+                        console.log(`Loaded ${facultyData.length} faculty members.`);
+                    }
+                }
+            });
+        }
+
+        // --- 2. Handle Local Student CSV Upload ---
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileStatus').textContent = "Processing...";
+            
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: h => h.trim(), // Remove whitespace from headers
+                complete: (results) => {
+                    rawStudentData = results.data;
+                    processStudentData();
+                    document.getElementById('fileStatus').textContent = `Loaded ${rawStudentData.length} records.`;
+                    document.getElementById('fileStatus').className = "text-xs font-bold mt-2 text-green-600";
+                },
+                error: (err) => {
+                    alert("Error parsing CSV: " + err.message);
+                }
+            });
+        }
+
+        // --- 3. Process & Group Data ---
+        function processStudentData() {
+            groupedPapers = {};
+
+            // Group by 'Paper' column
+            rawStudentData.forEach(row => {
+                const paperName = row['Paper'];
+                if (!paperName) return;
+
+                if (!groupedPapers[paperName]) {
+                    groupedPapers[paperName] = {
+                        name: paperName,
+                        students: [],
+                        present: 0,
+                        absent: 0
+                    };
+                }
+
+                // Add student
+                groupedPapers[paperName].students.push(row);
+
+                // Count attendance
+                const status = (row['Attendance'] || '').toUpperCase();
+                if (status.includes('PRESENT')) {
+                    groupedPapers[paperName].present++;
+                } else {
+                    groupedPapers[paperName].absent++;
+                }
+            });
+
+            renderPaperList();
+        }
+
+        function renderPaperList() {
+            const tbody = document.getElementById('paperTableBody');
+            tbody.innerHTML = '';
+            const section = document.getElementById('paperSection');
+            section.classList.remove('hidden');
+
+            Object.values(groupedPapers).forEach(paper => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 border-b transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900">${paper.name}</td>
+                    <td class="px-4 py-3 text-center">${paper.students.length}</td>
+                    <td class="px-4 py-3 text-center font-bold text-green-600 bg-green-50 rounded">${paper.present}</td>
+                    <td class="px-4 py-3 text-center font-bold text-red-600 bg-red-50 rounded">${paper.absent}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="selectPaper('${paper.name.replace(/'/g, "\\'")}')" class="text-indigo-600 hover:text-indigo-900 font-medium underline">Select</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- 4. Selection & Bundle Calculation Logic ---
+        function updateQuotas() {
+            const rule = document.querySelector('input[name="discipline"]:checked').value;
+            document.getElementById('currentRuleDisplay').textContent = rule;
+            // If a paper is already selected, recalculate estimates
+            if (currentSelectedPaper) selectPaper(currentSelectedPaper);
+        }
+
+        function selectPaper(paperName) {
+            currentSelectedPaper = paperName;
+            const paperData = groupedPapers[paperName];
+            const ruleType = document.querySelector('input[name="discipline"]:checked').value;
+            const quota = RULES[ruleType];
+
+            // UI Updates
+            document.getElementById('planningInterface').classList.remove('hidden');
+            document.getElementById('selectedPaperTitle').textContent = paperName;
+            document.getElementById('totalPresentCount').textContent = paperData.present;
+            document.getElementById('outputSection').classList.add('hidden'); // Hide old results
+
+            // Sort students by RegNo for correct range calculation
+            paperData.students.sort((a, b) => (a.RegNo || '').localeCompare(b.RegNo || ''));
+
+            // Calculate Bundles (The Core Logic)
+            calculateBundles(paperData.students, quota);
+        }
+
+        function calculateBundles(students, quota) {
+            generatedBundles = [];
+            let currentBundle = {
+                dayIdx: 1,
+                session: 'FN',
+                quota: quota.FN,
+                presentCount: 0,
+                absentCount: 0,
+                startReg: null,
+                endReg: null
+            };
+
+            students.forEach((student, index) => {
+                const isPresent = (student.Attendance || '').toUpperCase().includes('PRESENT');
+
+                // Start of a new bundle?
+                if (currentBundle.startReg === null) {
+                    currentBundle.startReg = student.RegNo;
+                }
+                
+                // Add to current bundle counts
+                if (isPresent) {
+                    currentBundle.presentCount++;
+                } else {
+                    currentBundle.absentCount++;
+                }
+                
+                // Track end reg
+                currentBundle.endReg = student.RegNo;
+
+                // Check if bundle is full (based on PRESENT count)
+                if (currentBundle.presentCount >= currentBundle.quota) {
+                    // Push complete bundle
+                    generatedBundles.push({...currentBundle});
+
+                    // Prepare next bundle
+                    const nextSession = currentBundle.session === 'FN' ? 'AN' : 'FN';
+                    const nextDay = currentBundle.session === 'AN' ? currentBundle.dayIdx + 1 : currentBundle.dayIdx;
+                    
+                    currentBundle = {
+                        dayIdx: nextDay,
+                        session: nextSession,
+                        quota: (nextSession === 'FN' ? quota.FN : quota.AN),
+                        presentCount: 0,
+                        absentCount: 0,
+                        startReg: null,
+                        endReg: null
+                    };
+                }
+            });
+
+            // Push the last partial bundle if it has students
+            if (currentBundle.presentCount > 0 || currentBundle.absentCount > 0) {
+                generatedBundles.push({...currentBundle});
+            }
+
+            // Estimate Days needed
+            const maxDay = generatedBundles.length > 0 ? generatedBundles[generatedBundles.length - 1].dayIdx : 0;
+            document.getElementById('estimatedDays').textContent = maxDay;
+
+            generateDateInputs(maxDay);
+        }
+
+        // --- 5. Date Mapping Inputs ---
+        function generateDateInputs(numDays) {
+            const container = document.getElementById('dateMappingContainer');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= numDays; i++) {
+                const div = document.createElement('div');
+                div.className = "flex items-center gap-2 bg-gray-50 p-2 rounded border";
+                div.innerHTML = `
+                    <span class="text-sm font-bold text-gray-600 w-16">Day ${i}:</span>
+                    <input type="date" id="date_day_${i}" class="border rounded px-2 py-1 text-sm flex-1">
+                `;
+                container.appendChild(div);
+            }
+        }
+
+        // --- 6. Staff Autocomplete ---
+        function setupAutocomplete(inputId, desigId, suggestionsId) {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            const desigField = document.getElementById(desigId);
+
+            input.addEventListener('input', () => {
+                const val = input.value.toLowerCase();
+                if (val.length < 3) { suggestions.classList.add('hidden'); return; }
+
+                const matches = facultyData.filter(f => f.name.toLowerCase().includes(val)).slice(0, 8);
+                
+                suggestions.innerHTML = '';
+                if (matches.length > 0) {
+                    suggestions.classList.remove('hidden');
+                    matches.forEach(f => {
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.textContent = f.name;
+                        div.onclick = () => {
+                            input.value = f.name;
+                            desigField.value = f.designation;
+                            suggestions.classList.add('hidden');
+                        };
+                        suggestions.appendChild(div);
+                    });
+                } else {
+                    suggestions.classList.add('hidden');
+                }
+            });
+
+            // Close on click outside
+            document.addEventListener('click', (e) => {
+                if (!input.contains(e.target) && !suggestions.contains(e.target)) {
+                    suggestions.classList.add('hidden');
+                }
+            });
+        }
+
+        setupAutocomplete('chiefInput', 'chiefDesig', 'chiefSuggestions');
+        setupAutocomplete('addlInput', 'addlDesig', 'addlSuggestions');
+
+        // --- 7. Generate Final Plan ---
+        function generatePlan() {
+            const tbody = document.querySelector('#distributionTable tbody');
+            tbody.innerHTML = '';
+            
+            const chiefName = document.getElementById('chiefInput').value || 'TBA';
+            const addlName = document.getElementById('addlInput').value || 'TBA';
+
+            generatedBundles.forEach(bundle => {
+                const dateInput = document.getElementById(`date_day_${bundle.dayIdx}`);
+                let dateStr = dateInput && dateInput.value ? formatDate(dateInput.value) : `Day ${bundle.dayIdx}`;
+                const sessionStr = `${dateStr} ${bundle.session}`;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium">${sessionStr}</td>
+                    <td class="px-4 py-3">${chiefName}</td>
+                    <td class="px-4 py-3">${addlName}</td>
+                    <td class="px-4 py-3 font-mono text-xs">${bundle.startReg}</td>
+                    <td class="px-4 py-3 font-mono text-xs">${bundle.endReg}</td>
+                    <td class="px-4 py-3 text-center font-bold text-green-600">${bundle.presentCount}</td>
+                    <td class="px-4 py-3 text-center text-red-500">${bundle.absentCount}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('outputSection').classList.remove('hidden');
+            document.getElementById('pdfBtn').disabled = false;
+            document.getElementById('pdfBtn').classList.remove('bg-gray-400', 'cursor-not-allowed');
+            document.getElementById('pdfBtn').classList.add('bg-green-600', 'hover:bg-green-700');
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+        }
+
+        // --- 8. PDF Export ---
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const paperName = document.getElementById('selectedPaperTitle').textContent;
+            
+            // Header
+            doc.setFontSize(16);
+            doc.text("Valuation Camp Distribution Plan", 14, 20);
+            doc.setFontSize(11);
+            doc.text(`Paper: ${paperName}`, 14, 30);
+            
+            // Table
+            doc.autoTable({
+                html: '#distributionTable',
+                startY: 40,
+                theme: 'grid',
+                headStyles: { fillColor: [55, 65, 81] }
+            });
+
+            doc.save(`${paperName}_Plan.pdf`);
+        }
+
+    </script>
+</body>
+</html>
