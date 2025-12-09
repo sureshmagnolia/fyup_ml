@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V29 (Zero Padding)</title>
+    <title>Mark Sheet Generator V30 (Black Print Lines)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -48,6 +48,11 @@
         .mark-sheet-half:first-child {
             border-right: 1px dashed #999;
         }
+
+        /* --- TABLE STYLING (Screen) --- */
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { border: 1px solid #000; padding: 4px; text-align: left; }
+        th { background-color: #f3f4f6; }
         
         /* --- SIGNATURES (Left Aligned, Vertical) --- */
         .signature-section {
@@ -88,7 +93,20 @@
             height: 1px;
         }
         
-        /* Dropdowns */
+        /* --- DYNAMIC SIZING CLASSES --- */
+        /* Medium Density */
+        .sheet-compact table { font-size: 0.65rem; }
+        .sheet-compact th, .sheet-compact td { padding: 2px 3px; }
+        .sheet-compact .signature-section { margin-top: 1.5rem; gap: 1rem; }
+        
+        /* High Density */
+        .sheet-dense table { font-size: 0.55rem; }
+        .sheet-dense th, .sheet-dense td { padding: 1px 2px; }
+        .sheet-dense .signature-section { margin-top: 1rem; gap: 0.8rem; padding-top: 0.5rem; }
+        .sheet-dense .signature-title { font-size: 0.6rem; margin-bottom: 1px; }
+        .sheet-dense .sig-line { margin-top: 0.2rem; }
+
+        /* --- UTILS --- */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px; overflow-y: auto;
@@ -106,27 +124,33 @@
         #marksEntryArea thead th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; }
         #marksTableContainer { max-height: 60vh; overflow-y: auto; border: 1px solid #e5e7eb; }
         
-        /* --- DYNAMIC PRINT STYLES --- */
-        /* Medium Density */
-        .sheet-compact table { font-size: 0.65rem; }
-        .sheet-compact th, .sheet-compact td { padding: 2px 3px; }
-        .sheet-compact .signature-section { margin-top: 1.5rem; gap: 1rem; }
-        
-        /* High Density */
-        .sheet-dense table { font-size: 0.55rem; }
-        .sheet-dense th, .sheet-dense td { padding: 1px 2px; }
-        .sheet-dense .signature-section { margin-top: 1rem; gap: 0.8rem; padding-top: 0.5rem; }
-        .sheet-dense .signature-title { font-size: 0.6rem; margin-bottom: 1px; }
-        .sheet-dense .sig-line { margin-top: 0.2rem; }
-
+        /* --- PRINT STYLES (STRICT BLACK LINES) --- */
         @media print {
             @page { size: A4; margin: 0; }
             body { background-color: white !important; margin: 0 !important; padding: 0 !important; }
             .no-print { display: none !important; }
-            .container-wrapper, #outputArea { box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important; }
-            .page { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 10mm !important; width: 210mm !important; height: 297mm !important; overflow: hidden; }
+            
+            .container-wrapper, #outputArea {
+                box-shadow: none !important; border: none !important; margin: 0 !important; padding: 0 !important; width: 100% !important;
+            }
+            
+            .page { 
+                border: none !important; box-shadow: none !important; margin: 0 !important; 
+                padding: 10mm !important; width: 210mm !important; height: 297mm !important; 
+                overflow: hidden; 
+            }
             .mark-sheet-half { border-right: none !important; }
             .mark-sheet-half:first-child { border-right: 1px dashed #000 !important; }
+            
+            /* FORCE BLACK TABLE LINES */
+            table, th, td {
+                border: 1px solid #000 !important;
+                border-color: #000 !important;
+            }
+            
+            /* FORCE BLACK TEXT & LINES */
+            * { color: #000 !important; }
+            .sig-line { border-bottom: 1px dotted #000 !important; }
         }
     </style>
 </head>
@@ -138,8 +162,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V29)</h1>
-                <p class="text-gray-600 mt-1">Single Digit Zero Padding Added</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V30)</h1>
+                <p class="text-gray-600 mt-1">Black Print Lines & Zero Padding</p>
             </div>
         </header>
         
@@ -258,7 +282,7 @@
         // --- CONSTANTS ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const LOCAL_STORAGE_KEY = 'marksheetFormData_V29';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V30';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let dataLoadedCount = 0;
@@ -455,14 +479,13 @@
 
             // --- DYNAMIC PDF SETTINGS ---
             const count = tableData.length;
-            let fSize = 8; // Back to 8 (Standard)
-            let cPad = 2; // Compact
+            let fSize = 10;
+            let cPad = 3;
             
             if (count > 40) { fSize = 6; cPad = 0.8; }
             else if (count > 30) { fSize = 7; cPad = 1.2; }
-            
-            // Allow slightly larger if very few
-            if (count < 20) { fSize = 9; cPad = 3; }
+            else if (count > 20) { fSize = 8; cPad = 1.5; }
+            else { fSize = 9; cPad = 3; }
 
             const drawSheet = (xOffset, type) => {
                 const width = 90; 
@@ -486,13 +509,11 @@
                     tableWidth: width,
                     theme: 'grid',
                     headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1, lineColor: 0 },
-                    // DYNAMIC STYLES APPLIED HERE
                     styles: { fontSize: fSize, cellPadding: cPad, lineWidth: 0.1, lineColor: 0, valign: 'middle' },
                     columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 15, halign: 'center' } }
                 });
 
                 let finalY = doc.lastAutoTable.finalY + 10;
-                // Safety page break
                 if(finalY > 265) { doc.addPage(); finalY = 10; }
                 
                 const drawBlock = (title, name, desig, yPos) => {
