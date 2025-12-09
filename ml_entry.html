@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V27 (Dynamic Fit)</title>
+    <title>Mark Sheet Generator V28 (Dynamic Print)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -48,8 +48,13 @@
         .mark-sheet-half:first-child {
             border-right: 1px dashed #999;
         }
+
+        /* --- TABLE STYLING (Base) --- */
+        table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+        th, td { border: 1px solid #000; padding: 4px; text-align: left; }
+        th { background-color: #f3f4f6; }
         
-        /* --- SIGNATURES (Left Aligned, Vertical) --- */
+        /* --- SIGNATURES (Base) --- */
         .signature-section {
             margin-top: 2rem; 
             padding-top: 1rem;
@@ -59,36 +64,29 @@
             align-items: flex-start;
             padding-left: 0.5rem;
         }
-        .signature-block {
-            width: 160px;
-            text-align: left; 
-        }
-        .signature-title { 
-            font-weight: 700; 
-            font-size: 0.7rem; 
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-        .examiner-name { 
-            font-weight: 600; 
-            font-size: 0.8rem; 
-            text-transform: uppercase;
-            line-height: 1.1; 
-        }
-        .examiner-desig { 
-            font-size: 0.6rem; 
-            color: #444; 
-            font-style: italic; 
-            line-height: 1.1; 
-        }
-        .sig-line { 
-            border-bottom: 1px dotted #000; 
-            width: 100%; 
-            margin-top: 0.5rem; 
-            height: 1px;
-        }
+        .signature-block { width: 160px; text-align: left; }
+        .signature-title { font-weight: 700; font-size: 0.7rem; text-transform: uppercase; margin-bottom: 2px; }
+        .examiner-name { font-weight: 600; font-size: 0.8rem; text-transform: uppercase; line-height: 1.1; }
+        .examiner-desig { font-size: 0.6rem; color: #444; font-style: italic; line-height: 1.1; }
+        .sig-line { border-bottom: 1px dotted #000; width: 100%; margin-top: 0.5rem; height: 1px; }
+
+        /* --- DYNAMIC SIZING CLASSES (For HTML/Print) --- */
         
-        /* Dropdowns */
+        /* Medium Density (20-35 students) */
+        .sheet-compact table { font-size: 0.65rem; }
+        .sheet-compact th, .sheet-compact td { padding: 2px 3px; }
+        .sheet-compact .signature-section { margin-top: 1.5rem; gap: 1rem; }
+        .sheet-compact .examiner-name { font-size: 0.75rem; }
+        
+        /* High Density (> 35 students) */
+        .sheet-dense table { font-size: 0.55rem; }
+        .sheet-dense th, .sheet-dense td { padding: 1px 2px; }
+        .sheet-dense .signature-section { margin-top: 1rem; gap: 0.8rem; padding-top: 0.5rem; }
+        .sheet-dense .examiner-name { font-size: 0.7rem; }
+        .sheet-dense .signature-title { font-size: 0.6rem; margin-bottom: 1px; }
+        .sheet-dense .sig-line { margin-top: 0.2rem; }
+
+        /* --- UTILS --- */
         .autocomplete-container { position: relative; }
         .suggestions {
             position: absolute; z-index: 50; width: 100%; max-height: 200px; overflow-y: auto;
@@ -99,9 +97,8 @@
         .suggestion-item:hover { background-color: #f0f0f0; }
         .hidden { display: none; }
 
-        /* Entry Table */
-        #marksEntryArea table { width: 100%; border-collapse: collapse; }
-        #marksEntryArea th, #marksEntryArea td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        #marksEntryArea table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+        #marksEntryArea th, #marksEntryArea td { border: 1px solid #ddd; padding: 8px; }
         #marksEntryArea input { width: 100%; padding: 4px; border: 1px solid #ccc; border-radius: 3px; }
         #marksEntryArea thead th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; }
         #marksTableContainer { max-height: 60vh; overflow-y: auto; border: 1px solid #e5e7eb; }
@@ -134,8 +131,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V27)</h1>
-                <p class="text-gray-600 mt-1">Dynamic Sizing & One-Page Fit</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V28)</h1>
+                <p class="text-gray-600 mt-1">Dynamic Sizing for Print & PDF</p>
             </div>
         </header>
         
@@ -254,7 +251,7 @@
         // --- CONSTANTS ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const LOCAL_STORAGE_KEY = 'marksheetFormData_V27';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V28';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let dataLoadedCount = 0;
@@ -382,14 +379,20 @@
             let rows = currentNominalRoll.map(s => {
                 const mark = document.querySelector(`input[data-reg="${s.regNo}"]`).value;
                 const words = (mark.toUpperCase() === 'ABSENT') ? 'Absent' : numberToWords(mark);
-                return `<tr><td class="border px-2 py-1">${s.regNo}</td><td class="border px-2 py-1 text-center">${mark}</td><td class="border px-2 py-1 text-xs">${words}</td></tr>`;
+                return `<tr><td>${s.regNo}</td><td>${mark}</td><td>${words}</td></tr>`;
             }).join('');
 
+            // --- DYNAMIC CLASS SELECTION ---
+            let densityClass = '';
+            if (currentNominalRoll.length > 35) densityClass = 'sheet-dense';
+            else if (currentNominalRoll.length > 20) densityClass = 'sheet-compact';
+
             const sheetHtml = (type) => `
-                <div class="mark-sheet-half">
+                <div class="mark-sheet-half ${densityClass}">
                     <div class="flex justify-between text-xs font-bold mb-2"><span>${els.qpCode.value}</span><span>${type}</span></div>
                     <div class="text-center mb-2"><h4 class="font-bold text-sm">UNIVERSITY OF CALICUT</h4><div class="text-xs">${els.course.value}</div></div>
-                    <table class="w-full border-collapse border text-xs"><thead><tr class="bg-gray-100"><th class="border px-2">Reg No</th><th class="border px-2">Marks</th><th class="border px-2">In Words</th></tr></thead><tbody>${rows}</tbody></table>
+                    
+                    <table><thead><tr class="bg-gray-100"><th>Reg No</th><th>Marks</th><th>In Words</th></tr></thead><tbody>${rows}</tbody></table>
                     
                     <div class="signature-section">
                         <div class="signature-block">
@@ -422,7 +425,7 @@
             els.preview.scrollIntoView({behavior: 'smooth'});
         });
 
-        // --- PDF GENERATION (DYNAMIC FIT) ---
+        // --- PDF GENERATION (DYNAMIC) ---
         document.getElementById('downloadPdfButton').addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4'); 
@@ -433,7 +436,7 @@
                 return [s.regNo, mark, words];
             });
 
-            // --- DYNAMIC SIZING LOGIC ---
+            // --- DYNAMIC PDF SETTINGS ---
             const count = tableData.length;
             let fSize = 10;
             let cPad = 3;
@@ -465,31 +468,24 @@
                     tableWidth: width,
                     theme: 'grid',
                     headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1, lineColor: 0 },
-                    // DYNAMIC STYLES APPLIED HERE
                     styles: { fontSize: fSize, cellPadding: cPad, lineWidth: 0.1, lineColor: 0, valign: 'middle' },
                     columnStyles: { 0: { cellWidth: 30 }, 1: { cellWidth: 15, halign: 'center' } }
                 });
 
                 let finalY = doc.lastAutoTable.finalY + 10;
-                // Safety page break (rare with dynamic sizing)
                 if(finalY > 265) { doc.addPage(); finalY = 10; }
                 
-                // Helper to draw block (Vertical, Left Aligned)
                 const drawBlock = (title, name, desig, yPos) => {
                     doc.setFontSize(7); doc.setFont("helvetica", "bold");
                     doc.text(title, xOffset, yPos);
-                    
                     doc.setFontSize(8); doc.setFont("helvetica", "bold");
                     doc.text(name, xOffset, yPos + 4);
-                    
                     doc.setFontSize(6); doc.setFont("helvetica", "italic"); doc.setTextColor(80);
                     doc.text(desig, xOffset, yPos + 7);
                     doc.setTextColor(0);
-                    
                     doc.setLineWidth(0.1); doc.setLineDash([1, 1], 0);
                     doc.line(xOffset, yPos + 9, xOffset + width, yPos + 9);
                     doc.setLineDash([]);
-                    
                     return yPos + 15;
                 };
 
