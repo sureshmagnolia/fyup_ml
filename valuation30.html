@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V38 (Z-Index Fix)</title>
+    <title>Valuation Board Manager V39 (Range Added)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -14,23 +14,16 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* --- Z-INDEX FIX START --- */
-        /* Default state */
+        /* Z-Index Fix */
         .autocomplete-container { position: relative; }
-        
-        /* Critical Fix: When user clicks/types in this container, lift it to the highest layer */
         .autocomplete-container:focus-within { z-index: 1000 !important; }
         
-        /* Dropdown Styling */
         .suggestions {
-            position: absolute; top: 100%; left: 0; 
-            z-index: 2000; /* Always higher than container */
+            position: absolute; top: 100%; left: 0; z-index: 2000; 
             width: 100%; max-height: 250px; overflow-y: auto; 
             background: white; border: 1px solid #cbd5e1;
             border-radius: 0 0 8px 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
-        /* --- Z-INDEX FIX END --- */
-
         .suggestion-item { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; color: #334155; }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background-color: #f0f9ff; color: #0284c7; }
@@ -57,12 +50,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-tasks text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V38 (UI Z-Index Fix)</p>
+                <p class="text-indigo-200 text-sm mt-1">V39 (Range & Absent Column Added)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V38</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V39</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -170,7 +163,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden z-0">
+                    <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                         <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
                             <h4 class="font-bold text-slate-700">Allocation Table</h4>
                             <button onclick="downloadPDF()" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900">Download PDF</button>
@@ -181,8 +174,8 @@
                                     <tr>
                                         <th class="px-4 py-3">Date/Session</th>
                                         <th class="px-4 py-3">Team</th>
-                                        <th class="px-4 py-3">QP Code</th>
-                                        <th class="px-4 py-3 w-1/3">Register Nos</th>
+                                        <th class="px-4 py-3 w-1/4">Paper</th>
+                                        <th class="px-4 py-3">Range (Absent)</th> <th class="px-4 py-3 w-1/4">Register Nos</th>
                                         <th class="px-4 py-3 text-center">Count</th>
                                         <th class="px-4 py-3 text-center">Action</th>
                                     </tr>
@@ -213,16 +206,10 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV38';
+        const STORAGE_KEY = 'valuationBoardV39';
 
-        // --- STATE ---
-        let rawStudentData = [], facultyData = [];
-        let studentsByDiscipline = {}; 
-        let studentsByQP = {}; 
-        let allocations = []; 
-        let assignedRegs = new Set();
-        let currentDiscipline = null;
-        let saveTimeout = null;
+        let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
+        let rawStudentData = [], studentsByDiscipline = {}, studentsByQP = {}, allocations = [], assignedRegs = new Set(), currentDiscipline = null, saveTimeout = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadFacultyData();
@@ -245,7 +232,6 @@
             const input = document.getElementById(inputId);
             const list = document.getElementById(listId);
             let debounceTimer;
-
             const handler = () => {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
@@ -253,20 +239,10 @@
                     if(val.length < 2 && inputId !== 'disciplineSearch') { list.classList.add('hidden'); return; }
                     const data = dataFn();
                     const matches = data.filter(d => d.toLowerCase().includes(val));
-                    showSuggestions(matches, input, list, (sel) => {
-                        input.value = sel;
-                        if(onSelect) onSelect(sel);
-                    });
+                    showSuggestions(matches, input, list, (sel) => { input.value = sel; if(onSelect) onSelect(sel); });
                 }, 200);
             };
-
-            input.addEventListener('focus', () => { 
-                const data = dataFn();
-                showSuggestions(data, input, list, (sel) => {
-                    input.value = sel;
-                    if(onSelect) onSelect(sel);
-                });
-            });
+            input.addEventListener('focus', () => { const data = dataFn(); showSuggestions(data, input, list, (sel) => { input.value = sel; if(onSelect) onSelect(sel); }); });
             input.addEventListener('input', handler);
             input.addEventListener('blur', () => setTimeout(() => list.classList.add('hidden'), 200));
         }
@@ -295,8 +271,6 @@
             
             const getQPs = () => {
                 if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) return [];
-                
-                // Only show Pending QPs
                 const pendingQPs = [];
                 const groups = {};
                 studentsByDiscipline[currentDiscipline].forEach(s => {
@@ -304,26 +278,19 @@
                     groups[s.qp].total++;
                     if(assignedRegs.has(`${s.qp}_${s.regNo}`)) groups[s.qp].assigned++;
                 });
-
                 Object.keys(groups).forEach(qp => {
-                    if(groups[qp].assigned < groups[qp].total) {
-                        pendingQPs.push(`${qp} (${groups[qp].name.substring(0,30)}...)`);
-                    }
+                    if(groups[qp].assigned < groups[qp].total) pendingQPs.push(`${qp} (${groups[qp].name.substring(0,30)}...)`);
                 });
                 return pendingQPs.sort();
             };
             
-            setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => {
-                updateStartRegSuggestion(val.split(' ')[0]); 
-            });
+            setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => { updateStartRegSuggestion(val.split(' ')[0]); });
 
             const getStartRegs = () => {
                 const qpFull = document.getElementById('allocQP').value;
                 const qp = qpFull.split(' ')[0];
                 if(!qp || !studentsByQP[qp]) return [];
-                return studentsByQP[qp]
-                    .filter(s => !assignedRegs.has(`${qp}_${s.regNo}`))
-                    .map(s => s.regNo);
+                return studentsByQP[qp].filter(s => !assignedRegs.has(`${qp}_${s.regNo}`)).map(s => s.regNo);
             };
             setupAutocomplete('allocStartReg', 'suggStartReg', getStartRegs);
         }
@@ -331,10 +298,8 @@
         function updateStartRegSuggestion(qp) {
             if(!studentsByQP[qp]) return;
             const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(`${qp}_${s.regNo}`));
-            
             const input = document.getElementById('allocStartReg');
-            if(unassigned) { input.value = unassigned.regNo; } 
-            else { input.value = ''; input.placeholder = "All Assigned"; }
+            if(unassigned) { input.value = unassigned.regNo; } else { input.value = ''; input.placeholder = "All Assigned"; }
         }
 
         // --- ALLOCATION ---
@@ -355,18 +320,13 @@
             const students = studentsByQP[qp]; 
 
             if(!students) return alert("Invalid QP Code");
-
             const startIndex = students.findIndex(s => s.regNo === startReg);
             if(startIndex === -1) return alert("Start Reg not found in this QP");
 
-            let currentCount = 0;
-            let bundleList = [];
-            let i = startIndex;
-            
+            let currentCount = 0, bundleList = [], i = startIndex;
             while(currentCount < targetCount && i < students.length) {
                 const s = students[i];
                 if(assignedRegs.has(`${qp}_${s.regNo}`)) { i++; continue; } 
-
                 const isAbsent = !s.attendance.includes('PRESENT');
                 bundleList.push({ regNo: s.regNo, isAbsent: isAbsent, full: s.regNo }); 
                 if(!isAbsent) currentCount++;
@@ -376,21 +336,15 @@
             if(bundleList.length === 0) return alert("No valid students found.");
 
             const newAlloc = {
-                id: Date.now(), date, session, chief, additional, 
-                qp, paperName: fullPaperName,
+                id: Date.now(), date, session, chief, additional, qp, paperName: fullPaperName,
                 startReg: bundleList[0].regNo, endReg: bundleList[bundleList.length - 1].regNo,
                 count: currentCount, allRegs: bundleList
             };
 
             allocations.push(newAlloc);
             bundleList.forEach(b => assignedRegs.add(`${qp}_${b.regNo}`));
-            
-            saveState(true);
-            renderTable();
-            updateDashboard();
-            updateStartRegSuggestion(qp);
-            document.getElementById('allocQP').value = ''; 
-            document.getElementById('allocStartReg').value = '';
+            saveState(true); renderTable(); updateDashboard(); updateStartRegSuggestion(qp);
+            document.getElementById('allocQP').value = ''; document.getElementById('allocStartReg').value = '';
         }
 
         function deleteAllocation(id) {
@@ -398,26 +352,22 @@
             if(!alloc) return;
             alloc.allRegs.forEach(b => assignedRegs.delete(`${alloc.qp}_${b.regNo}`));
             allocations = allocations.filter(a => a.id !== id);
-            saveState(true);
-            renderTable();
-            updateDashboard();
+            saveState(true); renderTable(); updateDashboard();
         }
 
-        // --- DASHBOARD ---
+        // --- DASHBOARD & TABLE ---
         function updateDashboard() {
             const db = document.getElementById('statusDashboard');
             if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) {
                 db.innerHTML = `<div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>`;
                 return;
             }
-
             const stats = {};
             studentsByDiscipline[currentDiscipline].forEach(s => {
                 if(!stats[s.qp]) stats[s.qp] = { total: 0, assigned: 0, name: s.paperName };
                 stats[s.qp].total++;
                 if(assignedRegs.has(`${s.qp}_${s.regNo}`)) stats[s.qp].assigned++;
             });
-
             db.innerHTML = '';
             let qpCount = 0;
             Object.keys(stats).sort().forEach(qp => {
@@ -427,72 +377,57 @@
                 const percent = s.total > 0 ? Math.round((s.assigned / s.total) * 100) : 0;
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
                 const opacity = remaining === 0 ? 'opacity-60' : 'opacity-100'; 
-                
                 const item = document.createElement('div');
                 item.className = `bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors ${opacity}`;
-                item.innerHTML = `
-                    <div class="flex justify-between font-bold ${color} items-start">
-                        <div class="flex flex-col overflow-hidden">
-                            <span>${qp}</span>
-                            <span class="text-[10px] font-normal text-slate-500 truncate w-40" title="${s.name}">${s.name}</span>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <span>${remaining} Left</span>
-                            <button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button>
-                        </div>
-                    </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2">
-                        <div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${percent}%"></div>
-                    </div>
-                    <div class="text-[10px] text-slate-400 mt-1 text-right">${s.assigned} / ${s.total} Assigned</div>
-                `;
+                item.innerHTML = `<div class="flex justify-between font-bold ${color} items-start"><div class="flex flex-col overflow-hidden"><span>${qp}</span><span class="text-[10px] font-normal text-slate-500 truncate w-40" title="${s.name}">${s.name}</span></div><div class="flex items-center gap-2 flex-shrink-0"><span>${remaining} Left</span><button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button></div></div><div class="w-full bg-slate-100 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${percent}%"></div></div><div class="text-[10px] text-slate-400 mt-1 text-right">${s.assigned} / ${s.total} Assigned</div>`;
                 db.appendChild(item);
             });
             document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
         }
 
+        function renderTable() {
+            const tbody = document.getElementById('allocationBody');
+            tbody.innerHTML = '';
+            const sorted = [...allocations].sort((a,b) => {
+                if(a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.session.localeCompare(b.session);
+            });
+            sorted.forEach(alloc => {
+                const listHtml = generateSmartList(alloc.allRegs);
+                const rangeStr = getSmartRange(alloc.startReg, alloc.endReg);
+                const absentCount = alloc.allRegs.filter(r => r.isAbsent).length;
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
+                tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td><td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">C: ${alloc.chief}</div><div class="text-slate-500">A: ${alloc.additional}</div></td><td class="px-4 py-3 text-xs w-1/4"><div class="font-mono font-bold text-indigo-600">${alloc.qp}</div><div class="text-[10px] text-slate-400 leading-tight">${alloc.paperName}</div></td><td class="px-4 py-3 font-mono text-xs text-slate-600"><div>${rangeStr}</div><div class="text-[10px] text-red-500 font-bold">(${absentCount} Absent)</div></td><td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td><td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td><td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
         // --- DATA ---
         function loadFacultyData() {
-            Papa.parse(facultyCsvUrl, {
-                download: true, header: true, skipEmptyLines: true,
-                complete: (res) => {
-                    const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME'));
-                    if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n);
-                    setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData);
-                }
-            });
+            Papa.parse(facultyCsvUrl, { download: true, header: true, skipEmptyLines: true, complete: (res) => { const nameKey = res.meta.fields.find(k => k.toUpperCase().includes('NAME')); if(nameKey) facultyData = res.data.map(r => r[nameKey]).filter(n => n); setupAutocomplete('chairmanNameInput', 'suggChairman', () => facultyData); } });
         }
-
         function loadStudentData() {
-            Papa.parse(studentCsvUrl, {
-                download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(),
-                complete: (res) => {
-                    if (!res.data || res.data.length === 0) return;
-                    const keys = Object.keys(res.data[0]);
-                    const findKey = (search) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === search.toUpperCase());
-                    
-                    const k = { qp: findKey('QPCODE') || 'QPCode', reg: findKey('REGNO') || 'RegNo', att: findKey('ATTENDANCE') || 'Attendance', paper: findKey('PAPER') || 'Paper', disc: findKey('DISCIPLINE') || 'Discipline' };
-
-                    rawStudentData = []; studentsByDiscipline = {}; studentsByQP = {};
-                    res.data.forEach(row => {
-                        const s = {
-                            regNo: row[k.reg], qp: row[k.qp] || 'UNKNOWN', paperName: row[k.paper] || '',
-                            discipline: row[k.disc] || 'Unknown', attendance: (row[k.att] || '').toUpperCase()
-                        };
-                        if(s.regNo && s.qp) {
-                            rawStudentData.push(s);
-                            if(!studentsByDiscipline[s.discipline]) studentsByDiscipline[s.discipline] = [];
-                            studentsByDiscipline[s.discipline].push(s);
-                            if(!studentsByQP[s.qp]) studentsByQP[s.qp] = [];
-                            studentsByQP[s.qp].push(s);
-                        }
-                    });
-                    Object.values(studentsByQP).forEach(list => list.sort((a,b) => a.regNo.localeCompare(b.regNo)));
-                    initApp();
-                }, error: () => document.getElementById('connectionStatus').textContent = "Error Loading Data"
-            });
+            Papa.parse(studentCsvUrl, { download: true, header: true, skipEmptyLines: true, transformHeader: h => h.trim(), complete: (res) => {
+                if (!res.data || res.data.length === 0) return;
+                const keys = Object.keys(res.data[0]);
+                const findKey = (s) => keys.find(k => k.toUpperCase().replace(/\s/g, '') === s.toUpperCase());
+                const k = { qp: findKey('QPCODE') || 'QPCode', reg: findKey('REGNO') || 'RegNo', att: findKey('ATTENDANCE') || 'Attendance', paper: findKey('PAPER') || 'Paper', disc: findKey('DISCIPLINE') || 'Discipline' };
+                rawStudentData = []; studentsByDiscipline = {}; studentsByQP = {};
+                res.data.forEach(row => {
+                    const s = { regNo: row[k.reg], qp: row[k.qp] || 'UNKNOWN', paperName: row[k.paper] || '', discipline: row[k.disc] || 'Unknown', attendance: (row[k.att] || '').toUpperCase() };
+                    if(s.regNo && s.qp) {
+                        rawStudentData.push(s);
+                        if(!studentsByDiscipline[s.discipline]) studentsByDiscipline[s.discipline] = [];
+                        studentsByDiscipline[s.discipline].push(s);
+                        if(!studentsByQP[s.qp]) studentsByQP[s.qp] = [];
+                        studentsByQP[s.qp].push(s);
+                    }
+                });
+                Object.values(studentsByQP).forEach(list => list.sort((a,b) => a.regNo.localeCompare(b.regNo)));
+                initApp();
+            }, error: () => document.getElementById('connectionStatus').textContent = "Error Loading Data" });
         }
-
         function initApp() {
             document.getElementById('connectionStatus').textContent = "Connected";
             document.getElementById('connectionDot').className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
@@ -505,151 +440,17 @@
         }
 
         // --- HELPERS ---
-        function formatDate(d) {
-            if(!d) return '';
-            const dt = new Date(d);
-            return `${dt.getDate()}/${dt.getMonth()+1}`;
-        }
-        function generateSmartList(regsArray) {
-            if(!regsArray) return '';
-            const groups = [];
-            const regex = /^([A-Z]+)(\d+)$/;
-            regsArray.forEach(item => {
-                const match = item.regNo.match(regex);
-                const prefix = match ? match[1] : 'OTHER';
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
-                else groups.push({ prefix, items: [item] });
-            });
-            return groups.map(group => {
-                const nums = group.items.map((it, idx) => {
-                    const match = it.regNo.match(regex);
-                    let val = match ? match[2] : it.regNo;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + val;
-                    if (it.isAbsent) return `<span class="absent">${val}(A)</span>`;
-                    return val;
-                }).join(', ');
-                return `<div>${nums}</div>`;
-            }).join('');
-        }
-        function generateSmartListText(regsArray) {
-             const groups = [];
-             const regex = /^([A-Z]+)(\d+)$/;
-             regsArray.forEach(item => {
-                const match = item.regNo.match(regex);
-                const prefix = match ? match[1] : 'OTHER';
-                if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item);
-                else groups.push({ prefix, items: [item] });
-            });
-            return groups.map(group => {
-                return group.items.map((it, idx) => {
-                    const match = it.regNo.match(regex);
-                    let val = match ? match[2] : it.regNo;
-                    if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + val;
-                    if (it.isAbsent) return `${val}(A)`;
-                    return val;
-                }).join(', ');
-            }).join('\n');
-        }
-
-        // --- STATE ---
-        function debounceSave() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(() => saveState(), 500);
-        }
-        function saveState(immediate = false) {
-            const state = {
-                chairman: document.getElementById('chairmanNameInput').value,
-                discipline: currentDiscipline,
-                allocs: allocations
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            const indicator = document.getElementById('saveStatus');
-            indicator.style.opacity = '1'; setTimeout(() => indicator.style.opacity = '0', 1000);
-        }
-        function restoreState() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if(!saved) return;
-            try {
-                const state = JSON.parse(saved);
-                if(state.chairman) document.getElementById('chairmanNameInput').value = state.chairman;
-                if(state.discipline) {
-                    currentDiscipline = state.discipline;
-                    document.getElementById('disciplineSearch').value = state.discipline;
-                    document.getElementById('allocationPanel').classList.remove('hidden');
-                }
-                if(state.allocs) {
-                    allocations = state.allocs;
-                    assignedRegs = new Set();
-                    allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(`${a.qp}_${b.regNo}`)));
-                    renderTable();
-                }
-                updateDashboard(); 
-            } catch(e) {}
-        }
-        function clearSession() {
-            if(confirm("Delete all allocations?")) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
-            }
-        }
-
-        // --- ROSTER ---
-        function viewRoster(qp) {
-            const modal = document.getElementById('rosterModal');
-            const title = document.getElementById('rosterModalTitle');
-            const tbody = document.querySelector('#rosterTable tbody');
-            const students = studentsByQP[qp]; 
-            title.textContent = `QP Code: ${qp}`;
-            tbody.innerHTML = '';
-            let serial = 0;
-            students.forEach(s => {
-                const isAbsent = !s.attendance.includes('PRESENT');
-                if(!isAbsent) serial++;
-                const slNo = isAbsent ? '' : serial;
-                const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>';
-                const rowClass = isAbsent ? 'bg-red-50' : '';
-                tbody.innerHTML += `<tr class="border-b border-slate-100 ${rowClass}"><td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td><td class="border-r border-slate-300 px-4 py-2 font-mono font-bold">${s.regNo}</td><td class="px-4 py-2 text-xs">${status}</td></tr>`;
-            });
-            modal.classList.remove('hidden');
-        }
+        function formatDate(d) { if(!d) return ''; const dt = new Date(d); return `${dt.getDate()}/${dt.getMonth()+1}`; }
+        function getSmartRange(start, end) { if (!start || !end) return ''; if (start === end) return start; const regex = /^([A-Z]+)(\d+)$/; const startMatch = start.match(regex); const endMatch = end.match(regex); if (startMatch && endMatch && startMatch[1] === endMatch[1]) return `${startMatch[1]} ${startMatch[2]} - ${endMatch[2]}`; return `${start} - ${end}`; }
+        function generateSmartList(regsArray) { if(!regsArray) return ''; const groups = []; const regex = /^([A-Z]+)(\d+)$/; regsArray.forEach(item => { const match = item.regNo.match(regex); const prefix = match ? match[1] : 'OTHER'; if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item); else groups.push({ prefix, items: [item] }); }); return groups.map(group => { const nums = group.items.map((it, idx) => { const match = it.regNo.match(regex); let val = match ? match[2] : it.regNo; if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + val; if (it.isAbsent) return `<span class="absent">${val}(A)</span>`; return val; }).join(', '); return `<div>${nums}</div>`; }).join(''); }
+        function generateSmartListText(regsArray) { const groups = []; const regex = /^([A-Z]+)(\d+)$/; regsArray.forEach(item => { const match = item.regNo.match(regex); const prefix = match ? match[1] : 'OTHER'; if (groups.length > 0 && groups[groups.length - 1].prefix === prefix) groups[groups.length - 1].items.push(item); else groups.push({ prefix, items: [item] }); }); return groups.map(group => { return group.items.map((it, idx) => { const match = it.regNo.match(regex); let val = match ? match[2] : it.regNo; if (idx === 0 && group.prefix !== 'OTHER') val = group.prefix + val; if (it.isAbsent) return `${val}(A)`; return val; }).join(', '); }).join('\n'); }
+        function debounceSave() { clearTimeout(saveTimeout); saveTimeout = setTimeout(() => saveState(), 500); }
+        function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ chairman: document.getElementById('chairmanNameInput').value, discipline: currentDiscipline, allocs: allocations })); document.getElementById('saveStatus').style.opacity = '1'; setTimeout(() => document.getElementById('saveStatus').style.opacity = '0', 1000); }
+        function restoreState() { try { const state = JSON.parse(localStorage.getItem(STORAGE_KEY)); if(!state) return; if(state.chairman) document.getElementById('chairmanNameInput').value = state.chairman; if(state.discipline) { currentDiscipline = state.discipline; document.getElementById('disciplineSearch').value = state.discipline; document.getElementById('allocationPanel').classList.remove('hidden'); } if(state.allocs) { allocations = state.allocs; assignedRegs = new Set(); allocations.forEach(a => a.allRegs.forEach(b => assignedRegs.add(`${a.qp}_${b.regNo}`))); renderTable(); } updateDashboard(); } catch(e) {} }
+        function clearSession() { if(confirm("Delete all allocations?")) { localStorage.removeItem(STORAGE_KEY); location.reload(); } }
+        function viewRoster(qp) { const modal = document.getElementById('rosterModal'); const title = document.getElementById('rosterModalTitle'); const tbody = document.querySelector('#rosterTable tbody'); const students = studentsByQP[qp]; title.textContent = `QP Code: ${qp}`; tbody.innerHTML = ''; let serial = 0; students.forEach(s => { const isAbsent = !s.attendance.includes('PRESENT'); if(!isAbsent) serial++; const slNo = isAbsent ? '' : serial; const status = isAbsent ? '<span class="text-red-600 font-bold">ABSENT</span>' : '<span class="text-green-600">Present</span>'; const rowClass = isAbsent ? 'bg-red-50' : ''; tbody.innerHTML += `<tr class="border-b border-slate-100 ${rowClass}"><td class="border-r border-slate-300 px-4 py-2 text-center text-slate-500">${slNo}</td><td class="border-r border-slate-300 px-4 py-2 font-mono font-bold">${s.regNo}</td><td class="px-4 py-2 text-xs">${status}</td></tr>`; }); modal.classList.remove('hidden'); }
         function closeRosterModal() { document.getElementById('rosterModal').classList.add('hidden'); }
-        function printRoster() {
-            const content = document.getElementById('rosterTable').outerHTML;
-            const title = document.getElementById('rosterModalTitle').textContent;
-            const win = window.open('', '', 'width=800,height=600');
-            win.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:left;}.text-red-600{color:red;font-weight:bold;}.line-through{text-decoration:line-through;}</style></head><body><h2>${title} - Master List</h2>${content}</body></html>`);
-            win.document.close(); win.print();
-        }
-
-        // --- RENDER TABLE ---
-        function renderTable() {
-            const tbody = document.getElementById('allocationBody');
-            tbody.innerHTML = '';
-            const sorted = [...allocations].sort((a,b) => {
-                if(a.date !== b.date) return a.date.localeCompare(b.date);
-                return a.session.localeCompare(b.session);
-            });
-            sorted.forEach(alloc => {
-                const listHtml = generateSmartList(alloc.allRegs);
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
-                tr.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td>
-                    <td class="px-4 py-3 text-xs">
-                        <div class="font-bold text-slate-700">C: ${alloc.chief}</div>
-                        <div class="text-slate-500">A: ${alloc.additional}</div>
-                    </td>
-                    <td class="px-4 py-3 text-xs w-1/4">
-                        <div class="font-mono font-bold text-indigo-600">${alloc.qp}</div>
-                        <div class="text-[10px] text-slate-400 leading-tight">${alloc.paperName}</div>
-                    </td>
-                    <td class="px-4 py-3 bg-slate-50 text-xs"><div class="reg-list">${listHtml}</div></td>
-                    <td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td>
-                    <td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        function printRoster() { const content = document.getElementById('rosterTable').outerHTML; const title = document.getElementById('rosterModalTitle').textContent; const win = window.open('', '', 'width=800,height=600'); win.document.write(`<html><head><title>${title}</title><style>body{font-family:sans-serif;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #000;padding:8px;text-align:left;}.text-red-600{color:red;font-weight:bold;}.line-through{text-decoration:line-through;}</style></head><body><h2>${title} - Master List</h2>${content}</body></html>`); win.document.close(); win.print(); }
 
         // --- PDF ---
         function downloadPDF() {
@@ -660,6 +461,7 @@
                 r.date + '\n' + r.session,
                 `C: ${r.chief}\nA: ${r.additional}`,
                 `${r.qp}\n${r.paperName}`,
+                `${getSmartRange(r.startReg, r.endReg)}\n(${r.allRegs.filter(x=>x.isAbsent).length} Absent)`, // Added Range Col
                 generateSmartListText(r.allRegs),
                 r.count
             ]);
@@ -670,14 +472,15 @@
             doc.setTextColor(0,0,0);
             
             doc.autoTable({
-                head: [['Date/Session', 'Examiners', 'Paper', 'Register Nos', 'Count']],
+                head: [['Date/Session', 'Examiners', 'Paper', 'Range (Absent)', 'Register Nos', 'Count']],
                 body: tableData,
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
                 columnStyles: { 
                     2: { cellWidth: 40 },
-                    3: { cellWidth: 70 }
+                    3: { cellWidth: 25 },
+                    4: { cellWidth: 50 }
                 }
             });
             doc.save(`Valuation_Plan.pdf`);
