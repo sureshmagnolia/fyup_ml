@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V21 (Vertical Signatures)</title>
+    <title>Mark Sheet Generator V22 (Vertical Signatures)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -31,48 +31,52 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: flex; justify-content: space-between;
         }
-        .mark-sheet-half { width: 48%; padding: 5mm; border-right: 1px dashed #ccc; display: flex; flex-direction: column; }
+        .mark-sheet-half { 
+            width: 48%; 
+            padding: 5mm; 
+            border-right: 1px dashed #ccc; 
+            display: flex; 
+            flex-direction: column; 
+        }
         .mark-sheet-half:last-child { border-right: none; }
         
-        /* Vertical Signatures CSS */
+        /* --- VERTICAL SIGNATURE STYLING --- */
         .signature-section {
-            margin-top: auto; /* Push to bottom */
-            padding-top: 2rem;
+            margin-top: auto; /* Push to bottom of page */
+            padding-top: 1rem;
             display: flex;
-            flex-direction: column; /* Vertical Stack */
-            align-items: flex-end; /* Align Right */
-            gap: 1.5rem;
-            padding-right: 1rem;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between blocks */
         }
         .signature-block {
-            width: 140px; /* Fixed width for dotted lines */
-            text-align: center;
+            width: 100%;
+            text-align: left; /* Strict Left Align */
         }
         .signature-title { 
             font-weight: 700; 
-            margin-bottom: 1.5rem; /* Space for signature */
-            text-transform: uppercase; 
-            font-size: 0.65rem;
-            text-align: left;
+            font-size: 0.7rem; 
+            text-transform: uppercase;
+            margin-bottom: 2px;
         }
         .examiner-name { 
             font-weight: 600; 
-            font-size: 0.75rem; 
+            font-size: 0.8rem; 
+            text-transform: uppercase;
             line-height: 1.1; 
         }
         .examiner-desig { 
-            font-size: 0.6rem; 
-            color: #555; 
+            font-size: 0.65rem; 
+            color: #444; 
             font-style: italic; 
             line-height: 1.1; 
-            margin-top: 2px;
         }
         .sig-line { 
             border-bottom: 1px dotted #000; 
-            margin-top: 0.2rem;
-            margin-bottom: 0.2rem; 
+            width: 100%; 
+            margin-top: 0.5rem; 
+            height: 1px;
         }
-
+        
         /* Dropdowns */
         .autocomplete-container { position: relative; }
         .suggestions {
@@ -107,8 +111,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V21)</h1>
-                <p class="text-gray-600 mt-1">Vertical Signatures Layout</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V22)</h1>
+                <p class="text-gray-600 mt-1">Vertical Signatures & Vector PDF</p>
             </div>
         </header>
         
@@ -227,7 +231,7 @@
         // --- CONSTANTS ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const LOCAL_STORAGE_KEY = 'marksheetFormData_V21';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V22';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let dataLoadedCount = 0;
@@ -346,7 +350,7 @@
             if (parseInt(input.value) > 100) { input.value = ''; showMsg("Max mark is 100", 'error'); }
         };
 
-        // --- PREVIEW ---
+        // --- PREVIEW (Visual) ---
         document.getElementById('generateButton').addEventListener('click', () => {
             let valid = true;
             document.querySelectorAll('.marks-input').forEach(inp => { if(!inp.value.trim()) valid = false; });
@@ -390,10 +394,12 @@
 
             els.preview.innerHTML = `<div class="page">${sheetHtml('ORIGINAL')}${sheetHtml('DUPLICATE')}</div>`;
             els.output.classList.remove('hidden');
+            document.getElementById('printButton').style.display = 'inline-flex';
+            document.getElementById('printPageButton').style.display = 'inline-flex';
             els.preview.scrollIntoView({behavior: 'smooth'});
         });
 
-        // --- PDF GENERATION ---
+        // --- PDF GENERATION (VECTOR) ---
         document.getElementById('downloadPdfButton').addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4'); 
@@ -434,50 +440,36 @@
 
                 // Footer (Vertical Stack Layout)
                 let finalY = doc.lastAutoTable.finalY + 15;
-                if(finalY > 250) { doc.addPage(); finalY = 20; }
+                if(finalY > 240) { doc.addPage(); finalY = 20; }
                 
-                const colW = width / 3 - 5; // Reduced width for fitting if needed, but we are doing vertical stack now?
-                // Wait, previous request "Addl. Examiner Name On next line then Designation on next line Very close to name... Then Dotteed line to sign"
-                // AND "Then same for Chief Examiner and Chairman too" - this implies horizontal blocks or vertical?
-                // The HTML CSS I wrote above does horizontal blocks: Addl | Chief | Chairman
-                // But the *content* inside is vertical: Title -> Name -> Desig -> Line.
-                
-                // Let's implement that structure: 3 Horizontal blocks
-                const sigY = finalY;
-                
-                // Block 1: Addl (Left)
-                drawSignatureBlock(doc, "Addl. Examiner", els.addl.value, els.addlDesig.value, xOffset + 5, sigY);
-                
-                // Block 2: Chief (Center)
-                drawSignatureBlock(doc, "Chief Examiner", els.chief.value, els.chiefDesig.value, xOffset + (width/2) - 15, sigY);
-                
-                // Block 3: Chair (Right)
-                drawSignatureBlock(doc, "Chairman", els.chair.value, els.chairDesig.value, xOffset + width - 35, sigY);
+                // Helper to draw block
+                const drawBlock = (title, name, desig, yPos) => {
+                    doc.setFontSize(7); doc.setFont("helvetica", "bold");
+                    doc.text(title, xOffset, yPos);
+                    
+                    doc.setFontSize(7); doc.setFont("helvetica", "bold");
+                    doc.text(name, xOffset, yPos + 4);
+                    
+                    doc.setFontSize(6); doc.setFont("helvetica", "italic"); doc.setTextColor(80);
+                    doc.text(desig, xOffset, yPos + 7);
+                    doc.setTextColor(0);
+                    
+                    doc.setLineWidth(0.1); doc.setLineDash([1, 1], 0);
+                    doc.line(xOffset, yPos + 9, xOffset + width, yPos + 9);
+                    doc.setLineDash([]);
+                    
+                    return yPos + 15; // Return next Y
+                };
+
+                // Stack them
+                let currentY = finalY;
+                currentY = drawBlock("Addl. Examiner", els.addl.value, els.addlDesig.value, currentY);
+                currentY = drawBlock("Chief Examiner", els.chief.value, els.chiefDesig.value, currentY);
+                currentY = drawBlock("Chairman", els.chair.value, els.chairDesig.value, currentY);
 
                 // Date
                 doc.setFontSize(8); doc.setFont("helvetica", "normal");
-                doc.text(`Date: ${formatDate(els.date.value)} ${els.session.value}`, xOffset + width, sigY + 30, { align: 'right' });
-            };
-            
-            // Helper for Signature Block
-            const drawSignatureBlock = (doc, title, name, desig, x, y) => {
-                doc.setFontSize(7); doc.setFont("helvetica", "bold");
-                doc.text(title, x, y);
-                
-                doc.setFontSize(7); doc.setFont("helvetica", "bold");
-                const splitName = doc.splitTextToSize(name, 35);
-                doc.text(splitName, x, y + 8); // Name below title (gap)
-                
-                const desigY = y + 8 + (splitName.length * 3);
-                doc.setFontSize(6); doc.setFont("helvetica", "normal"); doc.setTextColor(80);
-                const splitDesig = doc.splitTextToSize(desig, 35);
-                doc.text(splitDesig, x, desigY); 
-                doc.setTextColor(0);
-                
-                const lineY = desigY + (splitDesig.length * 3) + 2;
-                doc.setLineWidth(0.1); doc.setLineDash([1, 1], 0);
-                doc.line(x, lineY, x + 30, lineY); // Dotted line
-                doc.setLineDash([]);
+                doc.text(`Date: ${formatDate(els.date.value)} ${els.session.value}`, xOffset + width, currentY + 5, { align: 'right' });
             };
 
             drawSheet(10, 'ORIGINAL');
