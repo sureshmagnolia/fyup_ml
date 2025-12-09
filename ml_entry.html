@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mark Sheet Generator V22 (Vertical Signatures)</title>
+    <title>Mark Sheet Generator V23 (Clean Print)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -42,15 +42,16 @@
         
         /* --- VERTICAL SIGNATURE STYLING --- */
         .signature-section {
-            margin-top: auto; /* Push to bottom of page */
+            /* CHANGED: Removed margin-top: auto to stop pushing to bottom */
+            margin-top: 2rem; 
             padding-top: 1rem;
             display: flex;
             flex-direction: column;
-            gap: 1.5rem; /* Space between blocks */
+            gap: 1.5rem; 
         }
         .signature-block {
             width: 100%;
-            text-align: left; /* Strict Left Align */
+            text-align: left; 
         }
         .signature-title { 
             font-weight: 700; 
@@ -95,11 +96,40 @@
         #marksEntryArea thead th { position: sticky; top: 0; background-color: #f9fafb; z-index: 10; }
         #marksTableContainer { max-height: 60vh; overflow-y: auto; border: 1px solid #e5e7eb; }
         
+        /* --- PRINT STYLES (CLEAN) --- */
         @media print {
+            body { 
+                background-color: white !important; 
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             .no-print { display: none !important; }
-            .page { border: none; box-shadow: none; margin: 0; padding: 0; width: 100%; }
-            body { background: white; }
-            .container-wrapper { box-shadow: none; }
+            
+            /* Remove shadows and borders from containers */
+            .container-wrapper, #outputArea {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+            }
+            
+            /* Page specific cleanups */
+            .page { 
+                border: none !important; 
+                box-shadow: none !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                width: 100% !important; 
+                height: auto !important;
+            }
+
+            /* Ensure half-page logic holds */
+            .mark-sheet-half {
+                padding: 0 5mm !important;
+                border-right: 1px dashed #000 !important; 
+            }
+            .mark-sheet-half:last-child { border-right: none !important; }
         }
     </style>
 </head>
@@ -111,8 +141,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
             </svg>
             <div>
-                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V22)</h1>
-                <p class="text-gray-600 mt-1">Vertical Signatures & Vector PDF</p>
+                <h1 class="text-3xl font-bold text-indigo-700">Mark Sheet Generator (V23)</h1>
+                <p class="text-gray-600 mt-1">Clean Print & Fixed Signature Position</p>
             </div>
         </header>
         
@@ -231,7 +261,7 @@
         // --- CONSTANTS ---
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
-        const LOCAL_STORAGE_KEY = 'marksheetFormData_V22';
+        const LOCAL_STORAGE_KEY = 'marksheetFormData_V23';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let dataLoadedCount = 0;
@@ -350,7 +380,7 @@
             if (parseInt(input.value) > 100) { input.value = ''; showMsg("Max mark is 100", 'error'); }
         };
 
-        // --- PREVIEW (Visual) ---
+        // --- PREVIEW ---
         document.getElementById('generateButton').addEventListener('click', () => {
             let valid = true;
             document.querySelectorAll('.marks-input').forEach(inp => { if(!inp.value.trim()) valid = false; });
@@ -399,7 +429,7 @@
             els.preview.scrollIntoView({behavior: 'smooth'});
         });
 
-        // --- PDF GENERATION (VECTOR) ---
+        // --- PDF GENERATION ---
         document.getElementById('downloadPdfButton').addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4'); 
@@ -414,7 +444,6 @@
                 const width = 90; 
                 const startY = 10;
 
-                // Header
                 doc.setFontSize(9); doc.setFont("helvetica", "bold");
                 doc.text(els.qpCode.value, xOffset, startY);
                 doc.text(type, xOffset + width, startY, { align: 'right' });
@@ -425,7 +454,6 @@
                 const splitTitle = doc.splitTextToSize(els.course.value, width);
                 doc.text(splitTitle, xOffset + width/2, startY + 11, { align: 'center' });
 
-                // Table
                 doc.autoTable({
                     head: [['Reg No', 'Marks', 'In Words']],
                     body: tableData,
@@ -438,7 +466,6 @@
                     columnStyles: { 0: { cellWidth: 25 }, 1: { cellWidth: 15, halign: 'center' } }
                 });
 
-                // Footer (Vertical Stack Layout)
                 let finalY = doc.lastAutoTable.finalY + 15;
                 if(finalY > 240) { doc.addPage(); finalY = 20; }
                 
@@ -458,16 +485,14 @@
                     doc.line(xOffset, yPos + 9, xOffset + width, yPos + 9);
                     doc.setLineDash([]);
                     
-                    return yPos + 15; // Return next Y
+                    return yPos + 15;
                 };
 
-                // Stack them
                 let currentY = finalY;
                 currentY = drawBlock("Addl. Examiner", els.addl.value, els.addlDesig.value, currentY);
                 currentY = drawBlock("Chief Examiner", els.chief.value, els.chiefDesig.value, currentY);
                 currentY = drawBlock("Chairman", els.chair.value, els.chairDesig.value, currentY);
 
-                // Date
                 doc.setFontSize(8); doc.setFont("helvetica", "normal");
                 doc.text(`Date: ${formatDate(els.date.value)} ${els.session.value}`, xOffset + width, currentY + 5, { align: 'right' });
             };
