@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V39 (Range Added)</title>
+    <title>Valuation Board Manager V40 (Examiner Workload)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -34,7 +34,7 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .dashboard-list { max-height: 400px; overflow-y: auto; }
+        .dashboard-list { max-height: 300px; overflow-y: auto; }
         td { vertical-align: top; }
         .reg-list { font-family: 'Courier New', monospace; font-size: 0.7rem; line-height: 1.4; }
         .reg-list span.absent { color: #dc2626; text-decoration: line-through; font-weight: bold; }
@@ -48,14 +48,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-tasks text-green-400"></i> Valuation Board Manager
+                    <i class="fas fa-chart-pie text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V39 (Range & Absent Column Added)</p>
+                <p class="text-indigo-200 text-sm mt-1">V40 (Detailed Examiner Workload)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V39</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V40</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -78,28 +78,39 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 
-                <div class="lg:col-span-1 bg-slate-50 rounded-xl border border-slate-200 p-5 h-fit shadow-inner">
-                    <h3 class="font-bold text-slate-700 mb-4 flex items-center justify-between">
-                        <span>Paper Status</span>
-                        <span class="text-xs bg-slate-200 px-2 py-1 rounded text-slate-600" id="totalPapersCount">0 Papers</span>
-                    </h3>
+                <div class="lg:col-span-1 space-y-6">
                     
-                    <div class="mb-3">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
-                        <div class="autocomplete-container">
-                            <div class="relative">
-                                <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
-                                <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2 text-slate-400 hover:text-red-500" title="Clear">
-                                    <i class="fas fa-times-circle"></i>
-                                </button>
+                    <div class="bg-slate-50 rounded-xl border border-slate-200 p-5 shadow-inner">
+                        <h3 class="font-bold text-slate-700 mb-4 flex items-center justify-between">
+                            <span>Paper Status</span>
+                            <span class="text-xs bg-slate-200 px-2 py-1 rounded text-slate-600" id="totalPapersCount">0 Papers</span>
+                        </h3>
+                        <div class="mb-3">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
+                            <div class="autocomplete-container">
+                                <div class="relative">
+                                    <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                                    <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2 text-slate-400 hover:text-red-500" title="Clear">
+                                        <i class="fas fa-times-circle"></i>
+                                    </button>
+                                </div>
+                                <div id="disciplineSuggestions" class="suggestions hidden"></div>
                             </div>
-                            <div id="disciplineSuggestions" class="suggestions hidden"></div>
+                        </div>
+                        <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
+                            <div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>
                         </div>
                     </div>
 
-                    <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
-                        <div class="text-center text-slate-400 text-xs py-10">Select Discipline to View Status</div>
+                    <div class="bg-blue-50 rounded-xl border border-blue-100 p-5 shadow-inner">
+                        <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
+                            <i class="fas fa-user-clock"></i> Examiner Workload
+                        </h3>
+                        <div id="examinerDashboard" class="dashboard-list space-y-2 custom-scrollbar">
+                            <div class="text-center text-blue-300 text-xs py-4">No assignments yet</div>
+                        </div>
                     </div>
+
                 </div>
 
                 <div id="allocationPanel" class="lg:col-span-2 space-y-8 hidden">
@@ -175,7 +186,8 @@
                                         <th class="px-4 py-3">Date/Session</th>
                                         <th class="px-4 py-3">Team</th>
                                         <th class="px-4 py-3 w-1/4">Paper</th>
-                                        <th class="px-4 py-3">Range (Absent)</th> <th class="px-4 py-3 w-1/4">Register Nos</th>
+                                        <th class="px-4 py-3">Range (Absent)</th>
+                                        <th class="px-4 py-3 w-1/4">Register Nos</th>
                                         <th class="px-4 py-3 text-center">Count</th>
                                         <th class="px-4 py-3 text-center">Action</th>
                                     </tr>
@@ -206,7 +218,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV39';
+        const STORAGE_KEY = 'valuationBoardV40';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let rawStudentData = [], studentsByDiscipline = {}, studentsByQP = {}, allocations = [], assignedRegs = new Set(), currentDiscipline = null, saveTimeout = null;
@@ -283,7 +295,6 @@
                 });
                 return pendingQPs.sort();
             };
-            
             setupAutocomplete('allocQP', 'suggQP', getQPs, (val) => { updateStartRegSuggestion(val.split(' ')[0]); });
 
             const getStartRegs = () => {
@@ -355,8 +366,9 @@
             saveState(true); renderTable(); updateDashboard();
         }
 
-        // --- DASHBOARD & TABLE ---
+        // --- DASHBOARDS ---
         function updateDashboard() {
+            // 1. PAPER STATUS
             const db = document.getElementById('statusDashboard');
             if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) {
                 db.innerHTML = `<div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>`;
@@ -377,12 +389,36 @@
                 const percent = s.total > 0 ? Math.round((s.assigned / s.total) * 100) : 0;
                 const color = remaining === 0 ? 'text-green-600' : 'text-slate-700';
                 const opacity = remaining === 0 ? 'opacity-60' : 'opacity-100'; 
-                const item = document.createElement('div');
-                item.className = `bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors ${opacity}`;
-                item.innerHTML = `<div class="flex justify-between font-bold ${color} items-start"><div class="flex flex-col overflow-hidden"><span>${qp}</span><span class="text-[10px] font-normal text-slate-500 truncate w-40" title="${s.name}">${s.name}</span></div><div class="flex items-center gap-2 flex-shrink-0"><span>${remaining} Left</span><button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button></div></div><div class="w-full bg-slate-100 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${percent}%"></div></div><div class="text-[10px] text-slate-400 mt-1 text-right">${s.assigned} / ${s.total} Assigned</div>`;
-                db.appendChild(item);
+                db.innerHTML += `<div class="bg-white p-3 rounded border border-slate-200 text-xs hover:border-indigo-300 transition-colors ${opacity}"><div class="flex justify-between font-bold ${color} items-start"><div class="flex flex-col overflow-hidden"><span>${qp}</span><span class="text-[10px] font-normal text-slate-500 truncate w-40" title="${s.name}">${s.name}</span></div><div class="flex items-center gap-2 flex-shrink-0"><span>${remaining} Left</span><button onclick="viewRoster('${qp}')" class="text-indigo-500 hover:text-indigo-700 p-1" title="View Full Roster"><i class="fas fa-eye"></i></button></div></div><div class="w-full bg-slate-100 rounded-full h-1.5 mt-2"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: ${percent}%"></div></div><div class="text-[10px] text-slate-400 mt-1 text-right">${s.assigned} / ${s.total} Assigned</div></div>`;
             });
             document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
+
+            // 2. EXAMINER WORKLOAD (NEW)
+            const exDb = document.getElementById('examinerDashboard');
+            exDb.innerHTML = '';
+            const exStats = {};
+            allocations.forEach(a => {
+                const name = a.additional;
+                if(!exStats[name]) exStats[name] = { count: 0, sessions: 0 };
+                exStats[name].count += a.count;
+                exStats[name].sessions++;
+            });
+            
+            if(Object.keys(exStats).length === 0) {
+                exDb.innerHTML = `<div class="text-center text-blue-300 text-xs py-4">No assignments yet</div>`;
+            } else {
+                Object.keys(exStats).sort().forEach(name => {
+                    const s = exStats[name];
+                    exDb.innerHTML += `
+                        <div class="bg-white p-2.5 rounded border border-blue-100 text-xs flex justify-between items-center">
+                            <span class="font-bold text-slate-700 truncate w-1/2" title="${name}">${name}</span>
+                            <div class="text-right">
+                                <div class="font-bold text-blue-600">${s.count} Scripts</div>
+                                <div class="text-[10px] text-slate-400">${s.sessions} Sessions</div>
+                            </div>
+                        </div>`;
+                });
+            }
         }
 
         function renderTable() {
@@ -461,7 +497,7 @@
                 r.date + '\n' + r.session,
                 `C: ${r.chief}\nA: ${r.additional}`,
                 `${r.qp}\n${r.paperName}`,
-                `${getSmartRange(r.startReg, r.endReg)}\n(${r.allRegs.filter(x=>x.isAbsent).length} Absent)`, // Added Range Col
+                `${getSmartRange(r.startReg, r.endReg)}\n(${r.allRegs.filter(x=>x.isAbsent).length} Absent)`,
                 generateSmartListText(r.allRegs),
                 r.count
             ]);
@@ -477,11 +513,7 @@
                 startY: 45, theme: 'grid',
                 headStyles: { fillColor: [30, 41, 59] },
                 styles: { fontSize: 8, cellPadding: 3, overflow: 'linebreak', valign: 'top' },
-                columnStyles: { 
-                    2: { cellWidth: 40 },
-                    3: { cellWidth: 25 },
-                    4: { cellWidth: 50 }
-                }
+                columnStyles: { 2: { cellWidth: 40 }, 3: { cellWidth: 25 }, 4: { cellWidth: 50 } }
             });
             doc.save(`Valuation_Plan.pdf`);
         }
