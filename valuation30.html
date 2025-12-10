@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V40 (Examiner Workload)</title>
+    <title>Valuation Board Manager V41 (Detailed Workload)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -50,12 +50,12 @@
                 <h1 class="text-2xl font-bold flex items-center gap-3">
                     <i class="fas fa-chart-pie text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V40 (Detailed Examiner Workload)</p>
+                <p class="text-indigo-200 text-sm mt-1">V41 (Detailed Workload Tracking)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V40</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V41</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -218,7 +218,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV40';
+        const STORAGE_KEY = 'valuationBoardV41';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let rawStudentData = [], studentsByDiscipline = {}, studentsByQP = {}, allocations = [], assignedRegs = new Set(), currentDiscipline = null, saveTimeout = null;
@@ -393,15 +393,26 @@
             });
             document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
 
-            // 2. EXAMINER WORKLOAD (NEW)
+            // 2. EXAMINER WORKLOAD (FIXED)
             const exDb = document.getElementById('examinerDashboard');
             exDb.innerHTML = '';
             const exStats = {};
-            allocations.forEach(a => {
+            
+            // Sort by Date then Session for consistent ordering
+            const sortedAllocs = [...allocations].sort((a,b) => {
+                if(a.date !== b.date) return a.date.localeCompare(b.date);
+                return a.session.localeCompare(b.session);
+            });
+
+            sortedAllocs.forEach(a => {
                 const name = a.additional;
-                if(!exStats[name]) exStats[name] = { count: 0, sessions: 0 };
+                if(!exStats[name]) exStats[name] = { count: 0, sessionDetails: [] };
+                
                 exStats[name].count += a.count;
-                exStats[name].sessions++;
+                // Format: 10/12 FN
+                const d = new Date(a.date);
+                const dateStr = `${d.getDate()}/${d.getMonth()+1}`;
+                exStats[name].sessionDetails.push(`${dateStr} ${a.session}`);
             });
             
             if(Object.keys(exStats).length === 0) {
@@ -409,12 +420,17 @@
             } else {
                 Object.keys(exStats).sort().forEach(name => {
                     const s = exStats[name];
+                    // Join unique sessions
+                    const uniqueSessions = [...new Set(s.sessionDetails)].join(', ');
+                    
                     exDb.innerHTML += `
-                        <div class="bg-white p-2.5 rounded border border-blue-100 text-xs flex justify-between items-center">
-                            <span class="font-bold text-slate-700 truncate w-1/2" title="${name}">${name}</span>
-                            <div class="text-right">
-                                <div class="font-bold text-blue-600">${s.count} Scripts</div>
-                                <div class="text-[10px] text-slate-400">${s.sessions} Sessions</div>
+                        <div class="bg-white p-2.5 rounded border border-blue-100 text-xs">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-bold text-slate-700 truncate w-2/3" title="${name}">${name}</span>
+                                <span class="font-bold text-blue-600">${s.count} Scripts</span>
+                            </div>
+                            <div class="text-[10px] text-slate-500 leading-tight">
+                                ${uniqueSessions}
                             </div>
                         </div>`;
                 });
