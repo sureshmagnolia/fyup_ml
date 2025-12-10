@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V42 (Session Breakdown)</title>
+    <title>Valuation Board Manager V43 (Session-Wise Workload)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -48,14 +48,14 @@
         <div class="bg-indigo-900 p-6 text-white flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
             <div>
                 <h1 class="text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-chart-bar text-green-400"></i> Valuation Board Manager
+                    <i class="fas fa-calendar-alt text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-sm mt-1">V42 (Session-Wise Counts)</p>
+                <p class="text-indigo-200 text-sm mt-1">V43 (Session-Based Examiner View)</p>
             </div>
             <div class="text-right flex flex-col items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V42</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V43</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -104,7 +104,7 @@
 
                     <div class="bg-blue-50 rounded-xl border border-blue-100 p-5 shadow-inner">
                         <h3 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
-                            <i class="fas fa-user-clock"></i> Examiner Workload
+                            <i class="fas fa-clock"></i> Session Assignment
                         </h3>
                         <div id="examinerDashboard" class="dashboard-list space-y-3 custom-scrollbar">
                             <div class="text-center text-blue-300 text-xs py-4">No assignments yet</div>
@@ -218,7 +218,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV42';
+        const STORAGE_KEY = 'valuationBoardV43';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let rawStudentData = [], studentsByDiscipline = {}, studentsByQP = {}, allocations = [], assignedRegs = new Set(), currentDiscipline = null, saveTimeout = null;
@@ -366,7 +366,7 @@
             saveState(true); renderTable(); updateDashboard();
         }
 
-        // --- DASHBOARDS (V42 UPDATE) ---
+        // --- DASHBOARDS ---
         function updateDashboard() {
             // 1. PAPER STATUS
             const db = document.getElementById('statusDashboard');
@@ -393,48 +393,57 @@
             });
             document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
 
-            // 2. EXAMINER WORKLOAD (V42 DETAILED)
+            // 2. EXAMINER WORKLOAD (V43 UPDATE: Group by Session)
             const exDb = document.getElementById('examinerDashboard');
             exDb.innerHTML = '';
-            const exStats = {};
             
-            // Collect Data
+            // Map: { "2025-12-09_FN": [ { name, count }, ... ] }
+            const sessionMap = {};
+            
             allocations.forEach(a => {
-                const name = a.additional;
-                if(!exStats[name]) exStats[name] = { total: 0, sessions: {} };
-                
-                // Key for unique session tracking: Date + Session
-                const d = new Date(a.date);
-                const sessKey = `${d.getDate()}/${d.getMonth()+1} ${a.session}`;
-                
-                if(!exStats[name].sessions[sessKey]) exStats[name].sessions[sessKey] = 0;
-                exStats[name].sessions[sessKey] += a.count;
-                exStats[name].total += a.count;
+                const key = `${a.date}_${a.session}`;
+                if (!sessionMap[key]) sessionMap[key] = [];
+                // Check if examiner already in this session (aggregate)
+                const existing = sessionMap[key].find(x => x.name === a.additional);
+                if (existing) {
+                    existing.count += a.count;
+                } else {
+                    sessionMap[key].push({ name: a.additional, count: a.count });
+                }
             });
-            
-            if(Object.keys(exStats).length === 0) {
+
+            const sortedKeys = Object.keys(sessionMap).sort((a,b) => {
+                const [d1, s1] = a.split('_');
+                const [d2, s2] = b.split('_');
+                if (d1 !== d2) return d1.localeCompare(d2);
+                return s1 === 'FN' ? -1 : 1;
+            });
+
+            if(sortedKeys.length === 0) {
                 exDb.innerHTML = `<div class="text-center text-blue-300 text-xs py-4">No assignments yet</div>`;
             } else {
-                Object.keys(exStats).sort().forEach(name => {
-                    const s = exStats[name];
-                    // Build Session Lines
-                    let sessionHtml = '';
-                    // Sort session keys naturally (by date roughly works)
-                    Object.keys(s.sessions).sort().forEach(sk => {
-                        sessionHtml += `<div class="flex justify-between text-[10px] text-slate-500 mt-0.5"><span class="ml-2">• ${sk}</span><span class="font-semibold text-slate-700">${s.sessions[sk]}</span></div>`;
-                    });
+                sortedKeys.forEach(key => {
+                    const [dateStr, sess] = key.split('_');
+                    const d = new Date(dateStr);
+                    const formattedDate = `${d.getDate()}/${d.getMonth()+1}`;
+                    const items = sessionMap[key];
+                    const totalSessionScripts = items.reduce((sum, i) => sum + i.count, 0);
+
+                    // Sort examiners alphabetically for tidiness
+                    items.sort((a,b) => a.name.localeCompare(b.name));
+
+                    const listHtml = items.map(i => 
+                        `<span class="inline-block bg-blue-50 text-blue-800 px-1.5 py-0.5 rounded mr-1 mb-1 border border-blue-100 truncate max-w-[150px]">${i.name} <strong>${i.count}</strong></span>`
+                    ).join('');
 
                     exDb.innerHTML += `
-                        <div class="bg-white p-3 rounded border border-blue-100 text-xs shadow-sm">
-                            <div class="flex justify-between items-center mb-1 pb-1 border-b border-blue-50">
-                                <span class="font-bold text-slate-800 truncate w-2/3" title="${name}">${name}</span>
-                                <div class="text-right">
-                                    <span class="block font-bold text-blue-600 text-sm">${s.total}</span>
-                                    <span class="text-[9px] text-slate-400 uppercase">Total</span>
-                                </div>
+                        <div class="bg-white p-2.5 rounded border border-blue-100 text-xs shadow-sm">
+                            <div class="flex justify-between items-center border-b border-blue-50 pb-1 mb-1">
+                                <span class="font-bold text-slate-700">${formattedDate} <span class="text-blue-600">${sess}</span></span>
+                                <span class="text-[9px] text-slate-400 uppercase font-bold">Total: ${totalSessionScripts}</span>
                             </div>
-                            <div class="mt-1">
-                                ${sessionHtml}
+                            <div class="flex flex-wrap leading-tight">
+                                ${listHtml}
                             </div>
                         </div>`;
                 });
