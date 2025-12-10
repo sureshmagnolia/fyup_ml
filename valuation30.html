@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valuation Board Manager V45 (Mobile Friendly)</title>
+    <title>Valuation Board Manager V46 (Ordered Layout)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.6.0/jspdf.plugin.autotable.min.js"></script>
@@ -48,14 +48,14 @@
         <div class="bg-indigo-900 p-4 md:p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-xl md:text-2xl font-bold flex items-center gap-3">
-                    <i class="fas fa-mobile-alt text-green-400"></i> Valuation Board Manager
+                    <i class="fas fa-layer-group text-green-400"></i> Valuation Board Manager
                 </h1>
-                <p class="text-indigo-200 text-xs md:text-sm mt-1">V45 (Mobile Optimized & Workload Fix)</p>
+                <p class="text-indigo-200 text-xs md:text-sm mt-1">V46 (Ordered Flow)</p>
             </div>
             <div class="w-full md:w-auto text-left md:text-right flex flex-row md:flex-col justify-between md:justify-start items-center md:items-end">
                 <div class="flex items-center gap-2">
                     <span id="saveStatus" class="text-[10px] uppercase font-bold text-indigo-300 opacity-0 transition-opacity">Saved</span>
-                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V45</span>
+                    <span class="bg-indigo-700 px-3 py-1 rounded-full text-xs font-mono border border-indigo-500 shadow-sm">V46</span>
                 </div>
                 <div class="text-xs text-indigo-300 mt-0 md:mt-2 flex items-center gap-2">
                     <span id="connectionDot" class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -65,31 +65,33 @@
         </div>
 
         <div class="p-4 md:p-6 space-y-6 md:space-y-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
                 <div class="w-full md:w-1/3">
                     <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Chairman Name</label>
                     <div class="autocomplete-container">
-                        <input type="text" id="chairmanNameInput" class="border border-slate-300 rounded px-2 py-2 text-sm w-full" placeholder="Search Faculty..." oninput="debounceSave()">
+                        <input type="text" id="chairmanNameInput" class="border border-slate-300 rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm" placeholder="Search Faculty..." oninput="debounceSave()">
                         <div id="suggChairman" class="suggestions hidden"></div>
                     </div>
                 </div>
-                <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline self-end">Reset Entire Session</button>
+                <button onclick="clearSession()" class="text-xs text-red-400 hover:text-red-600 underline self-end md:self-center">Reset Entire Session</button>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
                 
-                <div class="lg:col-span-1 space-y-6 order-2 lg:order-1">
+                <div class="lg:col-span-1 space-y-6">
                     
                     <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 md:p-5 shadow-inner">
                         <h3 class="font-bold text-slate-700 mb-4 flex items-center justify-between">
                             <span>Paper Status</span>
                             <span class="text-xs bg-slate-200 px-2 py-1 rounded text-slate-600" id="totalPapersCount">0 Papers</span>
                         </h3>
-                        <div class="mb-3">
+                        
+                        <div class="mb-4">
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Select Discipline</label>
                             <div class="autocomplete-container">
                                 <div class="relative">
-                                    <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" disabled>
+                                    <input type="text" id="disciplineSearch" placeholder="Loading..." class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white" disabled>
                                     <button onclick="clearDisciplineSearch()" class="absolute right-2 top-2 text-slate-400 hover:text-red-500" title="Clear">
                                         <i class="fas fa-times-circle"></i>
                                     </button>
@@ -97,8 +99,9 @@
                                 <div id="disciplineSuggestions" class="suggestions hidden"></div>
                             </div>
                         </div>
+
                         <div id="statusDashboard" class="dashboard-list space-y-3 custom-scrollbar">
-                            <div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>
+                            <div class="text-center text-slate-400 text-xs py-10">Select Discipline to View Status</div>
                         </div>
                     </div>
 
@@ -113,11 +116,11 @@
 
                 </div>
 
-                <div id="allocationPanel" class="lg:col-span-2 space-y-8 hidden order-1 lg:order-2">
+                <div id="allocationPanel" class="lg:col-span-2 space-y-8 hidden">
                     
-                    <div class="bg-white border-2 border-indigo-100 rounded-xl p-4 md:p-6 shadow-sm relative z-0">
+                    <div class="bg-white border-2 border-indigo-100 rounded-xl p-4 md:p-6 shadow-sm">
                         <h4 class="font-bold text-indigo-800 mb-6 border-b pb-2 flex items-center gap-2">
-                            <span class="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+                            <span class="bg-indigo-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">A</span>
                             Assign Bundle
                         </h4>
 
@@ -158,17 +161,15 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">Target Count</label>
-                                <div class="flex gap-2">
-                                    <input type="number" id="allocCount" value="20" class="w-24 border border-slate-300 rounded-lg p-2 text-sm font-bold text-center">
-                                    <div class="text-xs text-slate-400 flex items-center">
-                                        Includes absents automatically.
-                                    </div>
+                                <div class="flex flex-col gap-1">
+                                    <input type="number" id="allocCount" value="20" class="w-full md:w-24 border border-slate-300 rounded-lg p-2 text-sm font-bold text-center">
+                                    <div id="allocCountHelper" class="text-[10px] text-slate-400">Max available appears here</div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="flex justify-end pt-4 border-t border-slate-100">
-                            <button onclick="addAllocation()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
+                            <button onclick="addAllocation()" class="w-full md:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2">
                                 <i class="fas fa-plus-circle"></i> Add Allocation
                             </button>
                         </div>
@@ -176,8 +177,13 @@
 
                     <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                         <div class="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                            <h4 class="font-bold text-slate-700">Allocation Table</h4>
-                            <button onclick="downloadPDF()" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900">Download PDF</button>
+                            <h4 class="font-bold text-slate-700 flex items-center gap-2">
+                                <span class="bg-slate-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">B</span>
+                                Allocation Table
+                            </h4>
+                            <button onclick="downloadPDF()" class="text-xs bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-900 flex items-center gap-2">
+                                <i class="fas fa-file-pdf"></i> PDF
+                            </button>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-sm text-left" id="allocationTable">
@@ -218,7 +224,7 @@
     <script>
         const facultyCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSQjBd_gzaBj1rb1CkdZFQxmMF6bWZDPqliMBwP78y09tsn30K5RpSOkTTDrwX-MXTccHVw4SUp2IND/pub?gid=0&single=true&output=csv';
         const studentCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTZxWYeEtMHPaZdXLsccXu8igfnfVprxGK2IGzo7B9iEhMvDwWWZ9bxWfwQE3PIyuKZ203WTy84yh76/pub?gid=113708481&single=true&output=csv';
-        const STORAGE_KEY = 'valuationBoardV45';
+        const STORAGE_KEY = 'valuationBoardV46';
 
         let studentData = [], facultyData = [], qpCodeList = [], currentNominalRoll = [];
         let rawStudentData = [], studentsByDiscipline = {}, studentsByQP = {}, allocations = [], assignedRegs = new Set(), currentDiscipline = null, saveTimeout = null;
@@ -308,9 +314,24 @@
 
         function updateStartRegSuggestion(qp) {
             if(!studentsByQP[qp]) return;
-            const unassigned = studentsByQP[qp].find(s => !assignedRegs.has(`${qp}_${s.regNo}`));
+            
+            const unassignedList = studentsByQP[qp].filter(s => !assignedRegs.has(`${qp}_${s.regNo}`));
             const input = document.getElementById('allocStartReg');
-            if(unassigned) { input.value = unassigned.regNo; } else { input.value = ''; input.placeholder = "All Assigned"; }
+            const countInput = document.getElementById('allocCount');
+            const helper = document.getElementById('allocCountHelper');
+
+            if(unassignedList.length > 0) {
+                input.value = unassignedList[0].regNo;
+                const remainingPresent = unassignedList.filter(s => !s.attendance.includes('ABSENT')).length;
+                countInput.max = remainingPresent;
+                if(parseInt(countInput.value) > remainingPresent) countInput.value = remainingPresent;
+                helper.innerHTML = `Max <strong>${remainingPresent}</strong> present scripts available.`;
+                helper.className = "text-[10px] text-green-600 font-bold";
+            } else {
+                input.value = ''; input.placeholder = "All Assigned";
+                countInput.max = 0; helper.textContent = "No scripts remaining.";
+                helper.className = "text-[10px] text-red-500 font-bold";
+            }
         }
 
         // --- ALLOCATION ---
@@ -356,6 +377,7 @@
             bundleList.forEach(b => assignedRegs.add(`${qp}_${b.regNo}`));
             saveState(true); renderTable(); updateDashboard(); updateStartRegSuggestion(qp);
             document.getElementById('allocQP').value = ''; document.getElementById('allocStartReg').value = '';
+            document.getElementById('allocCountHelper').textContent = "Select Paper to see limits";
         }
 
         function deleteAllocation(id) {
@@ -368,6 +390,7 @@
 
         // --- DASHBOARDS ---
         function updateDashboard() {
+            // 1. PAPER STATUS
             const db = document.getElementById('statusDashboard');
             if(!currentDiscipline || !studentsByDiscipline[currentDiscipline]) {
                 db.innerHTML = `<div class="text-center text-slate-400 text-xs py-10">Select Discipline</div>`;
@@ -392,23 +415,20 @@
             });
             document.getElementById('totalPapersCount').textContent = `${qpCount} QP Codes`;
 
-            // EXAMINER WORKLOAD (V45 FLEX FIX)
+            // 2. EXAMINER WORKLOAD (PILL LAYOUT)
             const exDb = document.getElementById('examinerDashboard');
             exDb.innerHTML = '';
             const sessionMap = {};
-            
             allocations.forEach(a => {
                 const key = `${a.date}_${a.session}`;
                 if (!sessionMap[key]) sessionMap[key] = [];
                 const existing = sessionMap[key].find(x => x.name === a.additional);
                 if (existing) existing.count += a.count; else sessionMap[key].push({ name: a.additional, count: a.count });
             });
-
             const sortedKeys = Object.keys(sessionMap).sort((a,b) => {
                 const [d1, s1] = a.split('_'); const [d2, s2] = b.split('_');
                 if (d1 !== d2) return d1.localeCompare(d2); return s1 === 'FN' ? -1 : 1;
             });
-
             if(sortedKeys.length === 0) exDb.innerHTML = `<div class="text-center text-blue-300 text-xs py-4">No assignments yet</div>`;
             else {
                 sortedKeys.forEach(key => {
@@ -419,11 +439,10 @@
                     const totalSessionScripts = items.reduce((sum, i) => sum + i.count, 0);
                     items.sort((a,b) => a.name.localeCompare(b.name));
                     
-                    // FIXED PILL STRUCTURE
                     const listHtml = items.map(i => 
                         `<div class="inline-flex items-center bg-blue-50 text-blue-800 px-2 py-1 rounded mr-1 mb-1 border border-blue-100 text-xs max-w-[100%] overflow-hidden">
                             <span class="truncate mr-1.5 flex-1">${i.name}</span>
-                            <span class="flex-none font-bold bg-white px-1.5 rounded shadow-sm text-[10px]">${i.count}</span>
+                            <span class="flex-none font-bold bg-white px-1.5 rounded shadow-sm text-[10px] text-blue-900">${i.count}</span>
                         </div>`
                     ).join('');
 
@@ -445,7 +464,7 @@
                 const absentCount = alloc.allRegs.filter(r => r.isAbsent).length;
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 border-b border-slate-100 transition-colors";
-                tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td><td class="px-4 py-3 text-xs"><div class="font-bold text-slate-700">C: ${alloc.chief}</div><div class="text-slate-500">A: ${alloc.additional}</div></td><td class="px-4 py-3 text-xs w-1/4 min-w-[150px]"><div class="font-mono font-bold text-indigo-600">${alloc.qp}</div><div class="text-[10px] text-slate-400 leading-tight">${alloc.paperName}</div></td><td class="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap"><div>${rangeStr}</div><div class="text-[10px] text-red-500 font-bold">(${absentCount} Absent)</div></td><td class="px-4 py-3 bg-slate-50 text-xs w-1/4 min-w-[200px]"><div class="reg-list">${listHtml}</div></td><td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td><td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>`;
+                tr.innerHTML = `<td class="px-4 py-3 whitespace-nowrap"><div class="font-bold text-slate-800 text-xs">${formatDate(alloc.date)}</div><span class="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded">${alloc.session}</span></td><td class="px-4 py-3 text-xs whitespace-nowrap"><div class="font-bold text-slate-700">C: ${alloc.chief}</div><div class="text-slate-500">A: ${alloc.additional}</div></td><td class="px-4 py-3 text-xs w-1/4 min-w-[150px]"><div class="font-mono font-bold text-indigo-600">${alloc.qp}</div><div class="text-[10px] text-slate-400 leading-tight">${alloc.paperName}</div></td><td class="px-4 py-3 font-mono text-xs text-slate-600 whitespace-nowrap"><div>${rangeStr}</div><div class="text-[10px] text-red-500 font-bold">(${absentCount} Absent)</div></td><td class="px-4 py-3 bg-slate-50 text-xs w-1/4 min-w-[200px]"><div class="reg-list">${listHtml}</div></td><td class="px-4 py-3 text-center font-bold text-green-600">${alloc.count}</td><td class="px-4 py-3 text-center"><button onclick="deleteAllocation(${alloc.id})" class="text-red-400 hover:text-red-600"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
         }
