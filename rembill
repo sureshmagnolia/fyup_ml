@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calicut University Remuneration Bill Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #27ae60;
+            --bg-color: #f4f7f6;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: var(--primary-color);
+        }
+        h2 { font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px;}
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .full-width { grid-column: span 2; }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; 
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .items-table th, .items-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .items-table th { background-color: #f8f9fa; }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 20px;
+            display: block;
+            width: 100%;
+        }
+        .btn:hover { background-color: #34495e; }
+        .btn-add { background-color: var(--accent-color); width: auto; display: inline-block; margin-top: 10px; font-size: 0.8rem;}
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Remuneration Bill Generator</h1>
+    [span_1](start_span)<p style="text-align: center; color: #666;">University of Calicut[span_1](end_span)</p>
+
+    <h2>Exam Details</h2>
+    <div class="form-grid">
+        <div class="full-width">
+            <label>Name of Examination (Semester & Degree)</label>
+            <input type="text" id="examName" value="4th Semester M. Sc. Botany Degree Core Examinations" placeholder="e.g. 4th Sem M.Sc Botany">
+        </div>
+    </div>
+
+    <h2>Claimant Details (Dr. Suresh V)</h2>
+    <div class="form-grid">
+        <div>
+            <label>Name (Block Letters)</label>
+            <input type="text" id="claimentName" value="SURESH V">
+        </div>
+        <div>
+            <label>Teacher Unique ID</label>
+            <input type="text" id="teacherId" value="SBO114459">
+        </div>
+        <div>
+            <label>Designation</label>
+            <input type="text" id="designation" value="Assistant Professor">
+        </div>
+        <div>
+            <label>Basic Pay</label>
+            <input type="number" id="basicPay" value="95300">
+        </div>
+        <div>
+            <label>Institution Type</label>
+            <select id="instType">
+                <option value="Govt">Govt</option>
+                <option value="Aided">Aided</option>
+            </select>
+        </div>
+        <div>
+            <label>PAN</label>
+            <input type="text" id="pan" value="DPKPS8489M">
+        </div>
+    </div>
+
+    <h3>Contact & Bank Details</h3>
+    <div class="form-grid">
+        <div class="full-width">
+            <label>Office Address</label>
+            <input type="text" id="officeAddr" value="Department of Botany, Govt. Victoria College, Palakkad">
+        </div>
+        <div class="full-width">
+            <label>Home Address</label>
+            <input type="text" id="homeAddr" value="Nedumani, Nenmeni PO, Kollengode, Palakkad - 678506">
+        </div>
+        <div>
+            <label>Mobile</label>
+            <input type="text" id="mobile" value="8547363449">
+        </div>
+        <div>
+            <label>Email</label>
+            <input type="email" id="email" value="sureshmagnolia@gmail.com">
+        </div>
+        <div>
+            <label>Bank Name & Branch</label>
+            <input type="text" id="bankName" value="SBI, Victoria College Road">
+        </div>
+        <div>
+            <label>Account No</label>
+            <input type="text" id="accNo" value="30003630389">
+        </div>
+        <div>
+            <label>IFS Code</label>
+            <input type="text" id="ifsCode" value="SBIN0012886">
+        </div>
+    </div>
+
+    <h2>Bill Details (QP Setting)</h2>
+    <table class="items-table" id="qpTable">
+        <thead>
+            <tr>
+                <th>Programme Name</th>
+                <th>Course Code & Title</th>
+                <th>No. QPs</th>
+                <th>Rate/Amt</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input type="text" class="prog-input" value="BSC BOTANY HONORS"></td>
+                <td><input type="text" class="course-input" value="BOTIMN103 ECONOMIC BOTANY"></td>
+                <td><input type="number" class="count-input" value="1"></td>
+                <td><input type="number" class="amt-input" value="1000"></td>
+                <td><button type="button" onclick="removeRow(this)">X</button></td>
+            </tr>
+        </tbody>
+    </table>
+    <button type="button" class="btn btn-add" onclick="addRow()">+ Add Another Paper</button>
+
+    <div style="margin-top: 20px; text-align: right; font-weight: bold; font-size: 1.2em;">
+        Total: Rs. <span id="displayTotal">1000</span>/-
+    </div>
+
+    <button type="button" class="btn" onclick="generatePDF()">Download PDF Bill</button>
+</div>
+
+<script>
+    const { jsPDF } = window.jspdf;
+
+    // Update total on input change
+    document.addEventListener('input', function(e) {
+        if(e.target.classList.contains('amt-input')) {
+            calculateTotal();
+        }
+    });
+
+    function calculateTotal() {
+        let total = 0;
+        document.querySelectorAll('.amt-input').forEach(input => {
+            total += Number(input.value);
+        });
+        document.getElementById('displayTotal').innerText = total;
+        return total;
+    }
+
+    function addRow() {
+        const tbody = document.querySelector('#qpTable tbody');
+        const row = `<tr>
+                <td><input type="text" class="prog-input"></td>
+                <td><input type="text" class="course-input"></td>
+                <td><input type="number" class="count-input" value="1"></td>
+                <td><input type="number" class="amt-input" value="0"></td>
+                <td><button type="button" onclick="removeRow(this)">X</button></td>
+            </tr>`;
+        tbody.insertAdjacentHTML('beforeend', row);
+    }
+
+    function removeRow(btn) {
+        btn.closest('tr').remove();
+        calculateTotal();
+    }
+
+    function numberToWords(number) {
+        // Simple placeholder for num-to-words. 
+        // For production, a robust library is better, but this handles basic cases.
+        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+        const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+        
+        if (number === 0) return "Zero";
+        return "Rupees (See figure)"; // Keeping it simple for the single file script
+    }
+
+    function generatePDF() {
+        const doc = new jsPDF();
+        
+        // --- 1. Header ---
+        doc.setFontSize(14);
+        doc.setFont("helvetica", "bold");
+        doc.text("UNIVERSITY OF CALICUT", 105, 15, null, null, "center");
+        
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("REMUNERATION BILL for Setting of Question papers / Valuation", 105, 22, null, null, "center");
+        doc.setFont("helvetica", "bold");
+        doc.text(document.getElementById('examName').value, 105, 28, null, null, "center");
+
+        // --- 2. Personal Details Grid ---
+        const startY = 35;
+        
+        const personalData = [
+            [
+                { content: '1a. Name: ' + document.getElementById('claimentName').value, styles: { fontStyle: 'bold' } },
+                { content: '1b. Teacher ID: ' + document.getElementById('teacherId').value }
+            ],
+            [
+                { content: '2a. Desig & Pay: ' + document.getElementById('designation').value + ', ' + document.getElementById('basicPay').value },
+                { content: '2b. Type: ' + document.getElementById('instType').value }
+            ],
+            [
+                { content: '3. Office Address:\n' + document.getElementById('officeAddr').value },
+                { content: 'Home Address:\n' + document.getElementById('homeAddr').value }
+            ],
+            [
+                { content: '4. Mobile: ' + document.getElementById('mobile').value + '\nEmail: ' + document.getElementById('email').value },
+                { content: 'PAN: ' + document.getElementById('pan').value }
+            ],
+            [
+                { content: 'Bank: ' + document.getElementById('bankName').value + '\nA/C: ' + document.getElementById('accNo').value },
+                { content: 'IFS Code: ' + document.getElementById('ifsCode').value }
+            ]
+        ];
+
+        doc.autoTable({
+            startY: startY,
+            body: personalData,
+            theme: 'grid',
+            styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1 },
+            columnStyles: { 0: { cellWidth: 95 }, 1: { cellWidth: 95 } }
+        });
+
+        // --- 3. Transaction Details (QP Setting) ---
+        // Collecting table data
+        let tableRows = [];
+        document.querySelectorAll('#qpTable tbody tr').forEach(row => {
+            let prog = row.querySelector('.prog-input').value;
+            let course = row.querySelector('.course-input').value;
+            let qpCount = row.querySelector('.count-input').value;
+            let amt = row.querySelector('.amt-input').value;
+            tableRows.push([prog, course, qpCount, amt]);
+        });
+
+        // Add Total Row
+        let grandTotal = calculateTotal();
+        tableRows.push([{ content: 'Total Remuneration', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } }, grandTotal]);
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 10,
+            head: [['Name of Programme', 'Course / QP Details', 'No. of QPs', 'Remuneration (Rs.)']],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.1 },
+            styles: { lineColor: [0, 0, 0], lineWidth: 0.1 }
+        });
+
+        // --- 4. Footer & Certification ---
+        let finalY = doc.lastAutoTable.finalY + 10;
+        
+        doc.setFontSize(10);
+        doc.text(`Grand Total: Rs. ${grandTotal}/-`, 15, finalY);
+        // Add words manually or via function
+        // doc.text(`(Rupees ${numberToWords(grandTotal)} Only)`, 15, finalY + 5); 
+
+        finalY += 15;
+        doc.setFont("helvetica", "bold");
+        doc.text("Certificate", 105, finalY, null, null, "center");
+        
+        finalY += 7;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
+        const splitText = doc.splitTextToSize(certText, 180);
+        doc.text(splitText, 15, finalY);
+
+        finalY += 25;
+        doc.text("Signature of Chairperson", 15, finalY);
+        doc.text("Signature of Claimant (QP Setter)", 130, finalY);
+        
+        // Add date
+        const today = new Date().toLocaleDateString('en-GB');
+        doc.text(`Date: ${today}`, 15, finalY + 10);
+
+        // --- Save ---
+        doc.save('Remuneration_Bill_CalicutUniv.pdf');
+    }
+</script>
+
+</body>
+</html>
