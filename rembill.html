@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calicut Univ Bill - Exact Replica</title>
+    <title>Calicut Univ Bill - FIXED</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    
     <style>
         :root { --primary: #003366; --border: #ccc; }
         body { font-family: 'Arial', sans-serif; background: #e9ecef; padding: 20px; font-size: 13px; }
@@ -18,7 +20,6 @@
         .section-title { background: #f1f3f5; padding: 8px 12px; font-weight: bold; border-left: 4px solid var(--primary); margin: 20px 0 10px 0; }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
         
         label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #495057; }
         input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 3px; box-sizing: border-box; }
@@ -36,8 +37,6 @@
         .btn-add { background: #28a745; color: white; }
         .btn-del { background: #dc3545; color: white; width: 30px; }
         .btn-gen { background: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px; margin-top: 30px; }
-
-        .note { font-size: 11px; color: #dc3545; font-style: italic; margin-top: 5px; }
     </style>
 </head>
 <body>
@@ -45,18 +44,12 @@
 <div class="app-container">
     <div class="header">
         <h2>Remuneration Bill Generator</h2>
-        <span class="version-tag" id="verDisplay">App Version: REF-2025-DEC-11-V3</span>
+        <span class="version-tag" id="verDisplay">App Version: FIX-DEBUG-V4</span>
     </div>
 
     <div class="grid-2">
-        <div>
-            <label>Name of Examination (e.g., 4th Semester M. Sc. Botany...)</label>
-            <input type="text" id="examName" value="4th Semester M. Sc. Botany Degree Core Examinations">
-        </div>
-        <div>
-            <label>Semester / Header Line</label>
-            <input type="text" id="semName" value="4th Semester M. Sc.">
-        </div>
+        <div><label>Name of Examination</label><input type="text" id="examName" value="4th Semester M. Sc. Botany Degree Core Examinations"></div>
+        <div><label>Semester / Header Line</label><input type="text" id="semName" value="4th Semester M. Sc."></div>
     </div>
 
     <div class="section-title">1. Claimant Details (Dr. Suresh V)</div>
@@ -90,7 +83,6 @@
     <div class="btn-row"><button class="btn btn-add" onclick="addQP()">+ Add QP Work</button></div>
 
     <div class="section-title">12. Valuation / Revaluation</div>
-    <div class="note">* Ensure you separate Remuneration for Scripts (P), Discussion (Q), and Handling (R) columns.</div>
     <div class="table-input-wrapper">
         <table id="t_val">
             <thead>
@@ -118,13 +110,12 @@
     </div>
     <div class="btn-row"><button class="btn btn-add" onclick="addPrac()">+ Add Practical</button></div>
 
-    <button class="btn btn-gen" onclick="generateReplica()">Generate Exact Replica PDF</button>
+    <button class="btn btn-gen" onclick="generateReplica()">Generate PDF</button>
 </div>
 
 <script>
-    const APP_VERSION = "Trace-ID: DOC-20251210-WA0009_REV_3";
+    const APP_VERSION = "Trace-ID: DOC-20251210-WA0009_REV_4_DEBUG";
 
-    // --- Row Logic ---
     function addQP() {
         const row = `<tr>
             <td><input type="text" value="BSC BOTANY HONORS"></td>
@@ -170,307 +161,290 @@
         document.querySelector('#t_prac tbody').insertAdjacentHTML('beforeend', row);
     }
 
-    // Auto-Calculate totals on input change
-    document.addEventListener('input', (e) => {
-        const row = e.target.closest('tr');
-        if (!row) return;
-
-        if (row.closest('#t_qp')) {
-            // Logic for QP: Just creating a placeholder sum for now
-            // In PDF gen we sum specific cols, here just visual
-        } else if (row.closest('#t_val')) {
-            const inputs = row.querySelectorAll('input');
-            // Index: 5(RateP), 6(Q), 7(R), 9(RemS)
-            const tot = (parseFloat(inputs[5].value)||0) + (parseFloat(inputs[6].value)||0) + (parseFloat(inputs[7].value)||0) + (parseFloat(inputs[9].value)||0);
-            row.querySelector('.val-tot').value = tot;
-        } else if (row.closest('#t_prac')) {
-            const inputs = row.querySelectorAll('input');
-            // Index: 2(P), 3(Q), 4(R), 5(S), 6(T)
-            const tot = (parseFloat(inputs[2].value)||0) + (parseFloat(inputs[3].value)||0) + (parseFloat(inputs[4].value)||0) + (parseFloat(inputs[5].value)||0) + (parseFloat(inputs[6].value)||0);
-            row.querySelector('.prac-tot').value = tot;
-        }
-    });
-
     window.onload = function() { addQP(); addVal(); addPrac(); };
 
     // --- PDF GENERATOR ---
     function generateReplica() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        
-        // Helper to get Element Value
-        const v = (id) => document.getElementById(id).value;
+        // ERROR HANDLING BLOCK
+        if (!window.jspdf) {
+            alert("Error: PDF Library not loaded. Please check your internet connection.");
+            return;
+        }
 
-        // ================= PAGE 1 =================
-        
-        [span_5](start_span)// 1. Header (Centered)[span_5](end_span)
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(14);
-        doc.text("UNIVERSITY OF CALICUT", 105, 12, {align:"center"});
-        
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.text("REMUNERATION BILL for Setting of Question papers, Valuation of answer papers of", 105, 17, {align:"center"});
-        doc.text("Theory/Practical Examinations, Revaluation/Picking out and Despatching of answer papers of", 105, 22, {align:"center"});
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(11);
-        doc.text(v('semName'), 105, 28, {align:"center"});
-        doc.text(v('examName'), 105, 33, {align:"center"});
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Helper to get Element Value safely
+            const v = (id) => {
+                const el = document.getElementById(id);
+                return el ? el.value : "";
+            };
 
-        [span_6](start_span)// 2. Personal Grid (Exact Box Model)[span_6](end_span)
-        // We use AutoTable to draw the lines for 1a to 10
-        const pBody = [
-            [{content: `1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n   ${v('p_name')}`, styles:{fontStyle:'bold'}}, {content: `b Calicut University Teacher Unique ID No.\n   ${v('p_id')}`}],
-            [{content: `2 a Designation and Basic Pay: ${v('p_desig')}`}, {content: `b. Tick whether Govt/Aided/Self Financing: ${v('p_type')}`}],
-            [{content: `3 OFFICE ADDRESS: (IN BLOCK LETTERS)\n   ${v('p_off')}`, colSpan:1}, {content: `HOME: (IN BLOCK LETTERS)\n   ${v('p_home')}`, colSpan:1}],
-            [{content: `4 Mobile Number: ${v('p_mob')}`}, {content: `6 E-mail ID: ${v('p_email')}`}],
-            [{content: `5. Name of the disbursing Officer (Treasury Officer/Principal)\n   ${v('p_disburse')}`}, {content: `7. Bank A/C Number: ${v('p_acc')}`}],
-            [{content: `8 Bank and Branch: ${v('p_bank')}`}, {content: `9. IFS Code: ${v('p_ifs')}`}],
-            [{content: `10 Permanent Account Number (PAN): ${v('p_pan')}`, colSpan:2}]
-        ];
+            // ================= PAGE 1 =================
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text("UNIVERSITY OF CALICUT", 105, 12, {align:"center"});
+            
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text("REMUNERATION BILL for Setting of Question papers, Valuation of answer papers of", 105, 17, {align:"center"});
+            doc.text("Theory/Practical Examinations, Revaluation/Picking out and Despatching of answer papers of", 105, 22, {align:"center"});
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text(v('semName'), 105, 28, {align:"center"});
+            doc.text(v('examName'), 105, 33, {align:"center"});
 
-        doc.autoTable({
-            startY: 36,
-            body: pBody,
-            theme: 'plain',
-            styles: { lineColor: [0,0,0], lineWidth: 0.15, fontSize: 8, cellPadding: 2, textColor: 0 },
-            columnStyles: { 0: {cellWidth: 95}, 1: {cellWidth: 95} }
-        });
+            // 2. Personal Grid
+            const pBody = [
+                [{content: `1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n   ${v('p_name')}`, styles:{fontStyle:'bold'}}, {content: `b Calicut University Teacher Unique ID No.\n   ${v('p_id')}`}],
+                [{content: `2 a Designation and Basic Pay: ${v('p_desig')}`}, {content: `b. Tick whether Govt/Aided/Self Financing: ${v('p_type')}`}],
+                [{content: `3 OFFICE ADDRESS: (IN BLOCK LETTERS)\n   ${v('p_off')}`, colSpan:1}, {content: `HOME: (IN BLOCK LETTERS)\n   ${v('p_home')}`, colSpan:1}],
+                [{content: `4 Mobile Number: ${v('p_mob')}`}, {content: `6 E-mail ID: ${v('p_email')}`}],
+                [{content: `5. Name of the disbursing Officer (Treasury Officer/Principal)\n   ${v('p_disburse')}`}, {content: `7. Bank A/C Number: ${v('p_acc')}`}],
+                [{content: `8 Bank and Branch: ${v('p_bank')}`}, {content: `9. IFS Code: ${v('p_ifs')}`}],
+                [{content: `10 Permanent Account Number (PAN): ${v('p_pan')}`, colSpan:2}]
+            ];
 
-        let y = doc.lastAutoTable.finalY + 4;
+            doc.autoTable({
+                startY: 36,
+                body: pBody,
+                theme: 'plain',
+                styles: { lineColor: [0,0,0], lineWidth: 0.15, fontSize: 8, cellPadding: 2, textColor: 0 },
+                columnStyles: { 0: {cellWidth: 95}, 1: {cellWidth: 95} }
+            });
 
-        [span_7](start_span)// 3. TABLE 11 (QP)[span_7](end_span)
-        doc.setFont("helvetica", "bold");
-        doc.text("*11 For setting question papers", 14, y);
-        y += 2;
+            let y = doc.lastAutoTable.finalY + 4;
 
-        let qpRows = [];
-        let grandQP = 0;
-        document.querySelectorAll('#t_qp tbody tr').forEach(tr => {
-            const i = tr.querySelectorAll('input');
-            const amt = parseFloat(i[4].value) || 0;
-            grandQP += amt;
-            qpRows.push([i[0].value, i[1].value, i[2].value, "", amt.toFixed(2)]);
-        });
-        qpRows.push([{content: 'Total:', colSpan: 3, styles: {halign: 'right', fontStyle: 'bold'}}, "", grandQP.toFixed(2)]);
+            // 3. TABLE 11 (QP)
+            doc.setFont("helvetica", "bold");
+            doc.text("*11 For setting question papers", 14, y);
+            y += 2;
 
-        doc.autoTable({
-            startY: y,
-            head: [[
-                {content:'Name of the\nProgramme', rowSpan:2}, 
-                {content:'Details of Courses and\nquestion papers', rowSpan:2}, 
-                {content:'No. of Answer keys\nNo. of QP set', colSpan:2}, 
-                {content:'Remuneration (Rs.)\nFor QPs     For Keys', colSpan:1}
-            ]],
-            body: qpRows,
-            theme: 'grid',
-            headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:8},
-            styles: {lineColor:0, lineWidth:0.1, fontSize: 8},
-        });
-        
-        y = doc.lastAutoTable.finalY + 6;
+            let qpRows = [];
+            let grandQP = 0;
+            document.querySelectorAll('#t_qp tbody tr').forEach(tr => {
+                const i = tr.querySelectorAll('input');
+                const amt = parseFloat(i[4].value) || 0;
+                grandQP += amt;
+                qpRows.push([i[0].value, i[1].value, i[2].value, "", amt.toFixed(2)]);
+            });
+            qpRows.push([{content: 'Total:', colSpan: 3, styles: {halign: 'right', fontStyle: 'bold'}}, "", grandQP.toFixed(2)]);
 
-        [span_8](start_span)// 4. TABLE 12 (VALUATION)[span_8](end_span)
-        doc.setFont("helvetica", "bold");
-        doc.text("*12 For Valuation/Revaluation/Picking out/Despatching of answer papers", 14, y);
-        y += 2;
+            doc.autoTable({
+                startY: y,
+                head: [[
+                    {content:'Name of the\nProgramme', rowSpan:2}, 
+                    {content:'Details of Courses and\nquestion papers', rowSpan:2}, 
+                    {content:'No. of Answer keys\nNo. of QP set', colSpan:2}, 
+                    {content:'Remuneration (Rs.)\nFor QPs     For Keys', colSpan:1}
+                ]],
+                body: qpRows,
+                theme: 'grid',
+                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:8},
+                styles: {lineColor:0, lineWidth:0.1, fontSize: 8},
+            });
+            
+            y = doc.lastAutoTable.finalY + 6;
 
-        let valRows = [];
-        let grandVal = 0;
-        document.querySelectorAll('#t_val tbody tr').forEach(tr => {
-            const i = tr.querySelectorAll('input');
-            const tot = parseFloat(i[10].value) || 0;
-            grandVal += tot;
-            // Only add if there is data
-            if (i[0].value || tot > 0) {
-                valRows.push([
-                    i[0].value, i[1].value, i[2].value, i[3].value, i[4].value, 
-                    i[5].value, i[6].value, i[7].value, 
-                    i[8].value, i[9].value, tot.toFixed(2)
-                ]);
-            }
-        });
+            // 4. TABLE 12 (VALUATION)
+            doc.setFont("helvetica", "bold");
+            doc.text("*12 For Valuation/Revaluation/Picking out/Despatching of answer papers", 14, y);
+            y += 2;
 
-        // Exact Headers from Source 8, 9, 10
-        doc.autoTable({
-            startY: y,
-            head: [
-                [
-                    {content:'Name of Programme', rowSpan:2}, 
-                    {content:'False No.\nanswer scripts', rowSpan:2}, 
-                    {content:'Duration', rowSpan:2}, 
-                    {content:'No Scripts\n(a)', rowSpan:2}, 
-                    {content:'Mandatory\nMin (b)', rowSpan:2}, 
-                    {content:'Remuneration (Rs.)', colSpan:6}
+            let valRows = [];
+            let grandVal = 0;
+            document.querySelectorAll('#t_val tbody tr').forEach(tr => {
+                const i = tr.querySelectorAll('input');
+                const tot = parseFloat(i[10].value) || 0;
+                grandVal += tot;
+                if (i[0].value || tot > 0) {
+                    valRows.push([
+                        i[0].value, i[1].value, i[2].value, i[3].value, i[4].value, 
+                        i[5].value, i[6].value, i[7].value, 
+                        i[8].value, i[9].value, tot.toFixed(2)
+                    ]);
+                }
+            });
+
+            doc.autoTable({
+                startY: y,
+                head: [
+                    [
+                        {content:'Name of Programme', rowSpan:2}, 
+                        {content:'False No.\nanswer scripts', rowSpan:2}, 
+                        {content:'Duration', rowSpan:2}, 
+                        {content:'No Scripts\n(a)', rowSpan:2}, 
+                        {content:'Mandatory\nMin (b)', rowSpan:2}, 
+                        {content:'Remuneration (Rs.)', colSpan:6}
+                    ],
+                    ['(a-b)\n(P)', 'Disc.\n(Q)', 'Handl.\n(R)', 'Picked\n(S)', 'Remun\nS', 'Total\n(P+Q+R+S)']
                 ],
-                ['(a-b)\n(P)', 'Disc.\n(Q)', 'Handl.\n(R)', 'Picked\n(S)', 'Remun\nS', 'Total\n(P+Q+R+S)']
-            ],
-            body: valRows,
-            theme: 'grid',
-            headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
-            styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
-            columnStyles: {0: {halign: 'left'}}
-        });
+                body: valRows,
+                theme: 'grid',
+                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
+                styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
+                columnStyles: {0: {halign: 'left'}}
+            });
 
-        y = doc.lastAutoTable.finalY + 6;
+            y = doc.lastAutoTable.finalY + 6;
 
-        [span_9](start_span)// 5. TABLE 13 (PRACTICALS)[span_9](end_span)
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(10);
-        doc.text("*13. For practical/viva Examinations of ....................", 14, y);
-        y += 2;
+            // 5. TABLE 13 (PRACTICALS)
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
+            doc.text("*13. For practical/viva Examinations of ....................", 14, y);
+            y += 2;
 
-        let pracRows = [];
-        let grandPrac = 0;
-        document.querySelectorAll('#t_prac tbody tr').forEach(tr => {
-            const i = tr.querySelectorAll('input');
-            const tot = parseFloat(i[7].value) || 0;
-            grandPrac += tot;
-            if (i[0].value || tot > 0) {
-                pracRows.push([i[0].value, i[1].value, i[2].value, i[3].value, i[4].value, i[5].value, i[6].value, tot.toFixed(2)]);
-            }
-        });
+            let pracRows = [];
+            let grandPrac = 0;
+            document.querySelectorAll('#t_prac tbody tr').forEach(tr => {
+                const i = tr.querySelectorAll('input');
+                const tot = parseFloat(i[7].value) || 0;
+                grandPrac += tot;
+                if (i[0].value || tot > 0) {
+                    pracRows.push([i[0].value, i[1].value, i[2].value, i[3].value, i[4].value, i[5].value, i[6].value, tot.toFixed(2)]);
+                }
+            });
 
-        doc.autoTable({
-            startY: y,
-            head: [
-                [
-                    {content:'No. of Batches', rowSpan:2}, 
-                    {content:'No. of Candidates\nReg / Pres', rowSpan:2}, 
-                    {content:'Remuneration for', colSpan:6}
+            doc.autoTable({
+                startY: y,
+                head: [
+                    [
+                        {content:'No. of Batches', rowSpan:2}, 
+                        {content:'No. of Candidates\nReg / Pres', rowSpan:2}, 
+                        {content:'Remuneration for', colSpan:6}
+                    ],
+                    ['Prescribing\n(P)', 'Preparing\n(Q)', 'Conducting\n(R)', 'Records\n(S)', 'Viva\n(T)', 'Total']
                 ],
-                ['Prescribing\n(P)', 'Preparing\n(Q)', 'Conducting\n(R)', 'Records\n(S)', 'Viva\n(T)', 'Total']
-            ],
-            body: pracRows,
-            theme: 'grid',
-            headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
-            styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
-            columnStyles: {0: {halign: 'left'}}
-        });
+                body: pracRows,
+                theme: 'grid',
+                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
+                styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
+                columnStyles: {0: {halign: 'left'}}
+            });
 
-        [span_10](start_span)// 6. TOTAL & CERTIFICATE (Bottom of Page 1)[span_10](end_span)
-        y = doc.lastAutoTable.finalY + 10;
-        const finalTotal = grandQP + grandVal + grandPrac;
-        
-        doc.setFontSize(11);
-        doc.setFont("helvetica", "bold");
-        doc.text(`Grant Total of Theory and Practicals: Rs. ${finalTotal.toFixed(2)}/-`, 14, y);
-        
-        y += 8;
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        doc.text("14 Name and signature of", 14, y);
-        
-        y += 8;
-        // Signature Titles
-        doc.text("Chairperson", 40, y);
-        doc.text("Chief Examiner", 80, y);
-        doc.text("Additional Examiner", 120, y);
-        doc.text("QP setter", 160, y);
-        
-        y += 10;
-        doc.setFont("helvetica", "bold");
-        doc.text("Certificate", 105, y, {align: 'center'});
-        
-        y += 5;
-        doc.setFont("helvetica", "normal");
-        const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
-        doc.text(doc.splitTextToSize(certText, 180), 14, y);
-        
-        // Version Tag (Page 1)
-        doc.setFontSize(7);
-        doc.setTextColor(150);
-        doc.text(APP_VERSION + " - PG 1", 195, 290, {align:'right'});
-        doc.setTextColor(0);
+            // 6. TOTAL & CERTIFICATE
+            y = doc.lastAutoTable.finalY + 10;
+            const finalTotal = grandQP + grandVal + grandPrac;
+            
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Grant Total of Theory and Practicals: Rs. ${finalTotal.toFixed(2)}/-`, 14, y);
+            
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            doc.text("14 Name and signature of", 14, y);
+            
+            y += 8;
+            doc.text("Chairperson", 40, y);
+            doc.text("Chief Examiner", 80, y);
+            doc.text("Additional Examiner", 120, y);
+            doc.text("QP setter", 160, y);
+            
+            y += 10;
+            doc.setFont("helvetica", "bold");
+            doc.text("Certificate", 105, y, {align: 'center'});
+            
+            y += 5;
+            doc.setFont("helvetica", "normal");
+            const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
+            doc.text(doc.splitTextToSize(certText, 180), 14, y);
+            
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text(APP_VERSION + " - PG 1", 195, 290, {align:'right'});
+            doc.setTextColor(0);
 
-        // ================= PAGE 2 =================
-        doc.addPage();
-        
-        [span_11](start_span)// 7. RECEIPTS & STAMP[span_11](end_span)
-        doc.setFontSize(10);
-        doc.text("Contents received", 14, 20);
-        doc.text("Signature of the Examiner/Chief/Chairperson/ QP Setter with date", 120, 20, {align:'center'});
+            // ================= PAGE 2 =================
+            doc.addPage();
+            
+            doc.setFontSize(10);
+            doc.text("Contents received", 14, 20);
+            doc.text("Signature of the Examiner/Chief/Chairperson/ QP Setter with date", 120, 20, {align:'center'});
 
-        // Revenue Stamp Box
-        doc.setDrawColor(0);
-        doc.rect(140, 30, 40, 30); // x, y, w, h
-        doc.setFontSize(8);
-        doc.text("Affix Revenue\nstamp for claims\nexceeding\nRs. 5000/-", 160, 45, {align: 'center'});
+            doc.setDrawColor(0);
+            doc.rect(140, 30, 40, 30);
+            doc.setFontSize(8);
+            doc.text("Affix Revenue\nstamp for claims\nexceeding\nRs. 5000/-", 160, 45, {align: 'center'});
 
-        [span_12](start_span)// 8. OFFICE USE SECTION (Grid)[span_12](end_span)
-        doc.autoTable({
-            startY: 70,
-            head: [[{content: 'FOR OFFICE USE ONLY (Pareeksha Bhavan)', colSpan: 2, styles: {halign: 'center', fontStyle: 'bold'}}]],
-            body: [
-                ['1. Received ............ QPs / Answer keys / Mark Sheets', '2. No. of Answer scripts revalued/picked/dispatched...'],
-                [{content: 'Signature of SO/AR/CE with Date:\nDesignation:', colSpan: 2}]
-            ],
-            theme: 'grid',
-            styles: {lineColor: 0, lineWidth: 0.1, cellPadding: 4}
-        });
-        
-        doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 5,
-            head: [[{content: 'Pre-Audit/ Payment by Finance Branch', colSpan: 4, styles: {halign: 'center', fontStyle: 'bold'}}]],
-            body: [
-               [{content: 'Rs. ............................... (Rupees .......................................................................... only)\nfound admissible and passed for payment/paid', colSpan: 4}],
-               ['\nAsst.', '\nS.O.', '\nAR/DR/JR/FO', 'Payment by Pareeksha Bhaven\nPaid the amount passed for payment'] 
-            ],
-            theme: 'grid',
-            styles: {lineColor: 0, lineWidth: 0.1, cellPadding: 4}
-        });
+            doc.autoTable({
+                startY: 70,
+                head: [[{content: 'FOR OFFICE USE ONLY (Pareeksha Bhavan)', colSpan: 2, styles: {halign: 'center', fontStyle: 'bold'}}]],
+                body: [
+                    ['1. Received ............ QPs / Answer keys / Mark Sheets', '2. No. of Answer scripts revalued/picked/dispatched...'],
+                    [{content: 'Signature of SO/AR/CE with Date:\nDesignation:', colSpan: 2}]
+                ],
+                theme: 'grid',
+                styles: {lineColor: 0, lineWidth: 0.1, cellPadding: 4}
+            });
+            
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 5,
+                head: [[{content: 'Pre-Audit/ Payment by Finance Branch', colSpan: 4, styles: {halign: 'center', fontStyle: 'bold'}}]],
+                body: [
+                [{content: 'Rs. ............................... (Rupees .......................................................................... only)\nfound admissible and passed for payment/paid', colSpan: 4}],
+                ['\nAsst.', '\nS.O.', '\nAR/DR/JR/FO', 'Payment by Pareeksha Bhaven\nPaid the amount passed for payment'] 
+                ],
+                theme: 'grid',
+                styles: {lineColor: 0, lineWidth: 0.1, cellPadding: 4}
+            });
 
-        [cite_start]// 9. INSTRUCTIONS [cite: 15-27]
-        y = doc.lastAutoTable.finalY + 10;
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text("Important instructions to Examiners/ Chief / Chairpersons / QP setters", 14, y);
-        y += 6;
-        
-        doc.setFont("helvetica", "normal");
-        doc.setFontSize(9);
-        const instructions = [
-            "1. The teachers drawing UGC scale pay shall value the mandatory number of answerscripts as part of duty without any remuneration.",
-            "2. The examiners are not eligible for reimbursement of any expenses with respect to the picking out and dispatching of answerscripts over and above the remuneration fixed.",
-            "3. The examiners are eligible for TA/DA for attending CV camps as per rules.",
-            "4. Revenue stamp is to be affixed in the bill when the total amount exceeds Rs 5000/-.",
-            "5. The remuneration will be sanctioned by the University and credited directly to the Bank account mentioned in the bill.",
-            "6. The payment of remuneration by this office is an income for the purpose of income tax. This may be included in the taxable income while computing annual income.",
-            "7. For further details Examiners are requested to refer the University Orders issued from time to time."
-        ];
-        
-        instructions.forEach(txt => {
-            const split = doc.splitTextToSize(txt, 180);
-            doc.text(split, 14, y);
-            y += (split.length * 5) + 2;
-        });
-        
-        y += 5;
-        doc.setFont("helvetica", "bold");
-        doc.text("Additional Instructions to QP Setters", 14, y);
-        y += 6;
-        doc.setFont("helvetica", "normal");
-        
-        const qpInst = [
-            "1. The Chairman of Board of Question Papers may claim Chairman's fee, Postage and Stationery charges (enclosing signed vouchers) etc. in his bill.",
-            "2. All question paper setters should forward their remuneration bills to the Controller of Examinations through the Chairperson, as soon as the QP setting work is over.",
-            "3. All remuneration bills must bear the signature of the Chairperson. If there is no separate Chairperson, the fact may be noted in the space provided.",
-            "4. The chairperson must forward all the remuneration bills of the QP setting board in one lot within one month positively."
-        ];
+            // INSTRUCTIONS
+            y = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "bold");
+            doc.text("Important instructions to Examiners/ Chief / Chairpersons / QP setters", 14, y);
+            y += 6;
+            
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
+            const instructions = [
+                "1. The teachers drawing UGC scale pay shall value the mandatory number of answerscripts as part of duty without any remuneration.",
+                "2. The examiners are not eligible for reimbursement of any expenses with respect to the picking out and dispatching of answerscripts over and above the remuneration fixed.",
+                "3. The examiners are eligible for TA/DA for attending CV camps as per rules.",
+                "4. Revenue stamp is to be affixed in the bill when the total amount exceeds Rs 5000/-.",
+                "5. The remuneration will be sanctioned by the University and credited directly to the Bank account mentioned in the bill.",
+                "6. The payment of remuneration by this office is an income for the purpose of income tax. This may be included in the taxable income while computing annual income.",
+                "7. For further details Examiners are requested to refer the University Orders issued from time to time."
+            ];
+            
+            instructions.forEach(txt => {
+                const split = doc.splitTextToSize(txt, 180);
+                doc.text(split, 14, y);
+                y += (split.length * 5) + 2;
+            });
+            
+            y += 5;
+            doc.setFont("helvetica", "bold");
+            doc.text("Additional Instructions to QP Setters", 14, y);
+            y += 6;
+            doc.setFont("helvetica", "normal");
+            
+            const qpInst = [
+                "1. The Chairman of Board of Question Papers may claim Chairman's fee, Postage and Stationery charges (enclosing signed vouchers) etc. in his bill.",
+                "2. All question paper setters should forward their remuneration bills to the Controller of Examinations through the Chairperson, as soon as the QP setting work is over.",
+                "3. All remuneration bills must bear the signature of the Chairperson. If there is no separate Chairperson, the fact may be noted in the space provided.",
+                "4. The chairperson must forward all the remuneration bills of the QP setting board in one lot within one month positively."
+            ];
 
-        qpInst.forEach(txt => {
-            const split = doc.splitTextToSize(txt, 180);
-            doc.text(split, 14, y);
-            y += (split.length * 5) + 2;
-        });
+            qpInst.forEach(txt => {
+                const split = doc.splitTextToSize(txt, 180);
+                doc.text(split, 14, y);
+                y += (split.length * 5) + 2;
+            });
 
-        // Version Tag (Page 2)
-        doc.setFontSize(7);
-        doc.setTextColor(150);
-        doc.text(APP_VERSION + " - PG 2", 195, 290, {align:'right'});
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text(APP_VERSION + " - PG 2", 195, 290, {align:'right'});
 
-        doc.save('calicut_remuneration_bill_exact.pdf');
+            doc.save('Calicut_Univ_Remuneration_Bill_Exact.pdf');
+        
+        } catch(err) {
+            alert("An error occurred during PDF generation:\n" + err.message);
+            console.error(err);
+        }
     }
 </script>
 
