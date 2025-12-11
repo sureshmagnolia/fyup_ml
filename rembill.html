@@ -3,344 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calicut University Remuneration Bill Generator</title>
+    <title>University of Calicut Remuneration Bill</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #27ae60;
-            --bg-color: #f4f7f6;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1, h2 {
-            text-align: center;
-            color: var(--primary-color);
-        }
-        h2 { font-size: 1.2rem; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 30px;}
+        body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1, h2 { text-align: center; color: #333; }
+        h2 { font-size: 16px; border-bottom: 2px solid #ddd; padding-bottom: 10px; margin-top: 20px; }
         
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-        
-        .full-width { grid-column: span 2; }
-        
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box; 
-        }
+        .section-toggle { background: #eee; padding: 10px; cursor: pointer; margin-bottom: 5px; font-weight: bold; border: 1px solid #ccc; }
+        .section-content { display: none; padding: 15px; border: 1px solid #ccc; border-top: none; }
+        .section-content.active { display: block; }
 
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        .items-table th, .items-table td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        .items-table th { background-color: #f8f9fa; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 10px; }
+        .form-group { flex: 1; }
+        label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;}
         
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin-top: 20px;
-            display: block;
-            width: 100%;
-        }
-        .btn:hover { background-color: #34495e; }
-        .btn-add { background-color: var(--accent-color); width: auto; display: inline-block; margin-top: 10px; font-size: 0.8rem;}
-
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f9f9f9; }
+        
+        .btn { display: block; width: 100%; padding: 12px; background: #007bff; color: white; border: none; font-size: 16px; cursor: pointer; margin-top: 20px; }
+        .btn:hover { background: #0056b3; }
+        .btn-add { width: auto; background: #28a745; margin-top: 5px; padding: 5px 10px; font-size: 12px; }
+        .btn-del { background: #dc3545; color: white; border: none; padding: 4px 8px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>Remuneration Bill Generator</h1>
-    [span_1](start_span)<p style="text-align: center; color: #666;">University of Calicut[span_1](end_span)</p>
+    <h1>Calicut University Bill Generator</h1>
+    
+    <div class="form-group">
+        <label>Examination Name (e.g., 4th Semester M. Sc. Botany Degree Core Examinations)</label>
+        <input type="text" id="examDetails" value="4th Semester M. Sc. Botany Degree Core Examinations">
+    </div>
 
-    <h2>Exam Details</h2>
-    <div class="form-grid">
-        <div class="full-width">
-            <label>Name of Examination (Semester & Degree)</label>
-            <input type="text" id="examName" value="4th Semester M. Sc. Botany Degree Core Examinations" placeholder="e.g. 4th Sem M.Sc Botany">
+    <div class="section-toggle" onclick="toggle('personal')">1. Personal & Bank Details (Dr. Suresh V) ▼</div>
+    <div id="personal" class="section-content active">
+        <div class="form-row">
+            <div class="form-group"><label>1a. Name</label><input type="text" id="name" value="SURESH V"></div>
+            <div class="form-group"><label>1b. Teacher ID</label><input type="text" id="teacherId" value="SBO114459"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>2a. Designation & Pay</label><input type="text" id="desig" value="Assistant Professor, 95300/-"></div>
+            <div class="form-group"><label>2b. Institution Type</label><input type="text" id="instType" value="Govt."></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>3. Office Address</label><input type="text" id="offAddr" value="DEPARTMENT OF BOTANY, GOVT. VICTORIA COLLEGE, PALAKKAD"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Home Address</label><input type="text" id="homeAddr" value="NEDUMANI, NENMENI PO, KOLLENGODE, PALAKKAD, PIN: 678506"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>4. Mobile No</label><input type="text" id="mobile" value="8547363449"></div>
+            <div class="form-group"><label>6. Email ID</label><input type="text" id="email" value="sureshmagnolia@gmail.com"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>8. Bank & Branch</label><input type="text" id="bankBranch" value="Victoria College Road"></div>
+            <div class="form-group"><label>10. PAN</label><input type="text" id="pan" value="DPKPS8489M"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>5. Disbursing Officer</label><input type="text" id="disburseOfficer" value="Principal, Govt. Victoria College, Palakkad"></div>
+            <div class="form-group"><label>7. Bank A/C No</label><input type="text" id="accNo" value="30003630389"></div>
+            <div class="form-group"><label>9. IFS Code</label><input type="text" id="ifs" value="SBIN0012886"></div>
         </div>
     </div>
 
-    <h2>Claimant Details (Dr. Suresh V)</h2>
-    <div class="form-grid">
-        <div>
-            <label>Name (Block Letters)</label>
-            <input type="text" id="claimentName" value="SURESH V">
-        </div>
-        <div>
-            <label>Teacher Unique ID</label>
-            <input type="text" id="teacherId" value="SBO114459">
-        </div>
-        <div>
-            <label>Designation</label>
-            <input type="text" id="designation" value="Assistant Professor">
-        </div>
-        <div>
-            <label>Basic Pay</label>
-            <input type="number" id="basicPay" value="95300">
-        </div>
-        <div>
-            <label>Institution Type</label>
-            <select id="instType">
-                <option value="Govt">Govt</option>
-                <option value="Aided">Aided</option>
-            </select>
-        </div>
-        <div>
-            <label>PAN</label>
-            <input type="text" id="pan" value="DPKPS8489M">
-        </div>
+    <div class="section-toggle" onclick="toggle('qp')">11. For Setting Question Papers ▼</div>
+    <div id="qp" class="section-content">
+        <table id="qpTable">
+            <thead>
+                <tr><th>Programme</th><th>Course Details</th><th>No. Keys/QPs</th><th>Remuneration</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn btn-add" onclick="addQP()">+ Add Row</button>
     </div>
 
-    <h3>Contact & Bank Details</h3>
-    <div class="form-grid">
-        <div class="full-width">
-            <label>Office Address</label>
-            <input type="text" id="officeAddr" value="Department of Botany, Govt. Victoria College, Palakkad">
-        </div>
-        <div class="full-width">
-            <label>Home Address</label>
-            <input type="text" id="homeAddr" value="Nedumani, Nenmeni PO, Kollengode, Palakkad - 678506">
-        </div>
-        <div>
-            <label>Mobile</label>
-            <input type="text" id="mobile" value="8547363449">
-        </div>
-        <div>
-            <label>Email</label>
-            <input type="email" id="email" value="sureshmagnolia@gmail.com">
-        </div>
-        <div>
-            <label>Bank Name & Branch</label>
-            <input type="text" id="bankName" value="SBI, Victoria College Road">
-        </div>
-        <div>
-            <label>Account No</label>
-            <input type="text" id="accNo" value="30003630389">
-        </div>
-        <div>
-            <label>IFS Code</label>
-            <input type="text" id="ifsCode" value="SBIN0012886">
-        </div>
+    <div class="section-toggle" onclick="toggle('val')">12. For Valuation / Revaluation ▼</div>
+    <div id="val" class="section-content">
+        <table id="valTable">
+            <thead>
+                <tr><th>Programme/Paper</th><th>False No (From-To)</th><th>Duration</th><th>Scripts(a)</th><th>Min(b)</th><th>Rate(P)</th><th>Total</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn btn-add" onclick="addVal()">+ Add Row</button>
     </div>
 
-    <h2>Bill Details (QP Setting)</h2>
-    <table class="items-table" id="qpTable">
-        <thead>
-            <tr>
-                <th>Programme Name</th>
-                <th>Course Code & Title</th>
-                <th>No. QPs</th>
-                <th>Rate/Amt</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><input type="text" class="prog-input" value="BSC BOTANY HONORS"></td>
-                <td><input type="text" class="course-input" value="BOTIMN103 ECONOMIC BOTANY"></td>
-                <td><input type="number" class="count-input" value="1"></td>
-                <td><input type="number" class="amt-input" value="1000"></td>
-                <td><button type="button" onclick="removeRow(this)">X</button></td>
-            </tr>
-        </tbody>
-    </table>
-    <button type="button" class="btn btn-add" onclick="addRow()">+ Add Another Paper</button>
-
-    <div style="margin-top: 20px; text-align: right; font-weight: bold; font-size: 1.2em;">
-        Total: Rs. <span id="displayTotal">1000</span>/-
+    <div class="section-toggle" onclick="toggle('prac')">13. For Practical / Viva ▼</div>
+    <div id="prac" class="section-content">
+        <table id="pracTable">
+            <thead>
+                <tr><th>Batch/Work</th><th>Candidates</th><th>Prescribe(P)</th><th>Prepare(Q)</th><th>Conduct(R)</th><th>Total</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <button class="btn btn-add" onclick="addPrac()">+ Add Row</button>
     </div>
 
-    <button type="button" class="btn" onclick="generatePDF()">Download PDF Bill</button>
+    <button class="btn" onclick="generatePDF()">Download Exact Format PDF</button>
 </div>
 
 <script>
     const { jsPDF } = window.jspdf;
-
-    // Update total on input change
-    document.addEventListener('input', function(e) {
-        if(e.target.classList.contains('amt-input')) {
-            calculateTotal();
-        }
-    });
-
-    function calculateTotal() {
-        let total = 0;
-        document.querySelectorAll('.amt-input').forEach(input => {
-            total += Number(input.value);
-        });
-        document.getElementById('displayTotal').innerText = total;
-        return total;
+    
+    function toggle(id) {
+        document.getElementById(id).classList.toggle('active');
     }
 
-    function addRow() {
-        const tbody = document.querySelector('#qpTable tbody');
+    // --- Helper to add rows ---
+    function addQP() {
         const row = `<tr>
-                <td><input type="text" class="prog-input"></td>
-                <td><input type="text" class="course-input"></td>
-                <td><input type="number" class="count-input" value="1"></td>
-                <td><input type="number" class="amt-input" value="0"></td>
-                <td><button type="button" onclick="removeRow(this)">X</button></td>
-            </tr>`;
-        tbody.insertAdjacentHTML('beforeend', row);
+            <td><input type="text" value="BSC BOTANY HONORS"></td>
+            <td><input type="text" value="BOTIMN103 ECONOMIC BOTANY"></td>
+            <td><input type="number" value="1"></td>
+            <td><input type="number" class="sum-qp" value="1000"></td>
+            <td><button class="btn-del" onclick="this.closest('tr').remove()">x</button></td>
+        </tr>`;
+        document.querySelector('#qpTable tbody').insertAdjacentHTML('beforeend', row);
+    }
+    
+    function addVal() {
+        const row = `<tr>
+            <td><input type="text" placeholder="Paper Name"></td>
+            <td><input type="text" placeholder="1001-1050"></td>
+            <td><input type="text" placeholder="3 hrs"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" class="sum-val" value="0"></td>
+            <td><button class="btn-del" onclick="this.closest('tr').remove()">x</button></td>
+        </tr>`;
+        document.querySelector('#valTable tbody').insertAdjacentHTML('beforeend', row);
     }
 
-    function removeRow(btn) {
-        btn.closest('tr').remove();
-        calculateTotal();
+    function addPrac() {
+        const row = `<tr>
+            <td><input type="text" placeholder="Practicals FN"></td>
+            <td><input type="number" placeholder="Count"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" value="0"></td>
+            <td><input type="number" class="sum-prac" value="0"></td>
+            <td><button class="btn-del" onclick="this.closest('tr').remove()">x</button></td>
+        </tr>`;
+        document.querySelector('#pracTable tbody').insertAdjacentHTML('beforeend', row);
     }
 
-    function numberToWords(number) {
-        // Simple placeholder for num-to-words. 
-        // For production, a robust library is better, but this handles basic cases.
-        const units = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-        const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-        const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-        
-        if (number === 0) return "Zero";
-        return "Rupees (See figure)"; // Keeping it simple for the single file script
-    }
+    // Initialize with one QP row as per user context
+    addQP();
 
     function generatePDF() {
         const doc = new jsPDF();
         
-        // --- 1. Header ---
+        // --- HEADER ---
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
-        doc.text("UNIVERSITY OF CALICUT", 105, 15, null, null, "center");
-        
+        doc.text("UNIVERSITY OF CALICUT", 105, 12, null, null, "center");
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
-        doc.text("REMUNERATION BILL for Setting of Question papers / Valuation", 105, 22, null, null, "center");
-        doc.setFont("helvetica", "bold");
-        doc.text(document.getElementById('examName').value, 105, 28, null, null, "center");
-
-        // --- 2. Personal Details Grid ---
-        const startY = 35;
+        doc.text("REMUNERATION BILL for Setting of Question papers, Valuation of answer papers of", 105, 18, null, null, "center");
+        doc.text("Theory/Practical Examinations, Revaluation/Picking out and Despatching of answer papers of", 105, 23, null, null, "center");
         
-        const personalData = [
-            [
-                { content: '1a. Name: ' + document.getElementById('claimentName').value, styles: { fontStyle: 'bold' } },
-                { content: '1b. Teacher ID: ' + document.getElementById('teacherId').value }
-            ],
-            [
-                { content: '2a. Desig & Pay: ' + document.getElementById('designation').value + ', ' + document.getElementById('basicPay').value },
-                { content: '2b. Type: ' + document.getElementById('instType').value }
-            ],
-            [
-                { content: '3. Office Address:\n' + document.getElementById('officeAddr').value },
-                { content: 'Home Address:\n' + document.getElementById('homeAddr').value }
-            ],
-            [
-                { content: '4. Mobile: ' + document.getElementById('mobile').value + '\nEmail: ' + document.getElementById('email').value },
-                { content: 'PAN: ' + document.getElementById('pan').value }
-            ],
-            [
-                { content: 'Bank: ' + document.getElementById('bankName').value + '\nA/C: ' + document.getElementById('accNo').value },
-                { content: 'IFS Code: ' + document.getElementById('ifsCode').value }
-            ]
-        ];
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(document.getElementById('examDetails').value, 105, 29, null, null, "center");
 
+        // --- SECTION 1: PERSONAL GRID (Recreating precise layout) ---
+        const startY = 35;
+        const v = (id) => document.getElementById(id).value;
+        
         doc.autoTable({
             startY: startY,
-            body: personalData,
-            theme: 'grid',
-            styles: { fontSize: 9, cellPadding: 2, lineColor: [0, 0, 0], lineWidth: 0.1 },
-            columnStyles: { 0: { cellWidth: 95 }, 1: { cellWidth: 95 } }
+            theme: 'plain',
+            styles: { lineColor: [0, 0, 0], lineWidth: 0.2, fontSize: 9, cellPadding: 2, textColor: 0 },
+            body: [
+                [
+                    { content: '1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n' + v('name').toUpperCase(), styles: { fontStyle: 'bold' } },
+                    { content: 'b Calicut University Teacher Unique ID No.\n' + v('teacherId') }
+                ],
+                [
+                    { content: '2 a Designation and Basic Pay: ' + v('desig') },
+                    { content: 'b. Tick whether Govt/Aided/Self Financing: ' + v('instType') }
+                ],
+                [
+                    { content: '3 OFFICE ADDRESS: (IN BLOCK LETTERS)\n' + v('offAddr'), colSpan: 2 }
+                ],
+                [
+                    { content: 'HOME: (IN BLOCK LETTERS)\n' + v('homeAddr'), colSpan: 2 }
+                ],
+                [
+                    { content: '4 Mobile Number: ' + v('mobile'), styles: { cellWidth: 95 } },
+                    { content: '6 E-mail ID: ' + v('email') }
+                ],
+                [
+                    { content: '8 Bank and Branch: ' + v('bankBranch') },
+                    { content: '10 Permanent Account Number (PAN): ' + v('pan') }
+                ],
+                [
+                    { content: '5. Name of the disbursing Officer (Treasury Officer/Principal)\n' + v('disburseOfficer') },
+                    { content: '7. Bank A/C Number: ' + v('accNo') + '\n\n9. IFS Code: ' + v('ifs') }
+                ]
+            ],
+            columnStyles: {
+                0: { cellWidth: 95 },
+                1: { cellWidth: 95 }
+            }
         });
 
-        // --- 3. Transaction Details (QP Setting) ---
-        // Collecting table data
-        let tableRows = [];
-        document.querySelectorAll('#qpTable tbody tr').forEach(row => {
-            let prog = row.querySelector('.prog-input').value;
-            let course = row.querySelector('.course-input').value;
-            let qpCount = row.querySelector('.count-input').value;
-            let amt = row.querySelector('.amt-input').value;
-            tableRows.push([prog, course, qpCount, amt]);
-        });
+        let currentY = doc.lastAutoTable.finalY + 5;
 
-        // Add Total Row
-        let grandTotal = calculateTotal();
-        tableRows.push([{ content: 'Total Remuneration', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold' } }, grandTotal]);
+        // --- SECTION 11: QP SETTING ---
+        doc.setFont("helvetica", "bold");
+        doc.text("*11 For setting question papers", 14, currentY);
+        
+        let qpRows = [];
+        let qpTotal = 0;
+        document.querySelectorAll('#qpTable tbody tr').forEach(tr => {
+            let inps = tr.querySelectorAll('input');
+            let amt = parseFloat(inps[3].value) || 0;
+            qpTotal += amt;
+            qpRows.push([inps[0].value, inps[1].value, inps[2].value, amt.toFixed(2)]);
+        });
 
         doc.autoTable({
-            startY: doc.lastAutoTable.finalY + 10,
-            head: [['Name of Programme', 'Course / QP Details', 'No. of QPs', 'Remuneration (Rs.)']],
-            body: tableRows,
+            startY: currentY + 2,
+            head: [['Name of the Programme', 'Details of Courses and question papers', 'No. of Answer keys\nNo. of QP set', 'Remuneration (Rs.)\nFor QPs | For Keys']],
+            body: qpRows,
             theme: 'grid',
-            headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.1 },
-            styles: { lineColor: [0, 0, 0], lineWidth: 0.1 }
+            headStyles: { fillColor: [255, 255, 255], textColor: 0, lineColor: 0, lineWidth: 0.1, fontStyle: 'bold' },
+            styles: { lineColor: 0, lineWidth: 0.1, fontSize: 8 },
+        });
+        
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total: ${qpTotal}`, 160, doc.lastAutoTable.finalY + 5);
+        currentY = doc.lastAutoTable.finalY + 10;
+
+        // --- SECTION 12: VALUATION ---
+        doc.text("*12 For Valuation/Revaluation/Picking out/Despatching of answer papers", 14, currentY);
+        
+        let valRows = [];
+        let valTotal = 0;
+        document.querySelectorAll('#valTable tbody tr').forEach(tr => {
+            let inps = tr.querySelectorAll('input');
+            let amt = parseFloat(inps[6].value) || 0;
+            valTotal += amt;
+            valRows.push([inps[0].value, inps[1].value, inps[2].value, inps[3].value, inps[4].value, inps[5].value, "", "", amt.toFixed(2)]);
         });
 
-        // --- 4. Footer & Certification ---
-        let finalY = doc.lastAutoTable.finalY + 10;
-        
-        doc.setFontSize(10);
-        doc.text(`Grand Total: Rs. ${grandTotal}/-`, 15, finalY);
-        // Add words manually or via function
-        // doc.text(`(Rupees ${numberToWords(grandTotal)} Only)`, 15, finalY + 5); 
+        doc.autoTable({
+            startY: currentY + 2,
+            head: [['Name of Programme', 'False No.\n(From - To)', 'Duration', 'No. Scripts\n(a)', 'Mandatory\nMin (b)', 'Remun.\n(a-b)', 'Discussion', 'Handling', 'Total']],
+            body: valRows,
+            theme: 'grid',
+            headStyles: { fillColor: [255, 255, 255], textColor: 0, lineColor: 0, lineWidth: 0.1 },
+            styles: { lineColor: 0, lineWidth: 0.1, fontSize: 8 }
+        });
+        currentY = doc.lastAutoTable.finalY + 10;
 
-        finalY += 15;
+        // --- SECTION 13: PRACTICALS ---
         doc.setFont("helvetica", "bold");
-        doc.text("Certificate", 105, finalY, null, null, "center");
+        doc.text("*13. For practical/viva Examinations of ....................", 14, currentY);
         
-        finalY += 7;
+        let pracRows = [];
+        let pracTotal = 0;
+        document.querySelectorAll('#pracTable tbody tr').forEach(tr => {
+            let inps = tr.querySelectorAll('input');
+            let amt = parseFloat(inps[5].value) || 0;
+            pracTotal += amt;
+            pracRows.push([inps[0].value, "", inps[1].value, inps[2].value, inps[3].value, inps[4].value, "", "", amt.toFixed(2)]);
+        });
+
+        doc.autoTable({
+            startY: currentY + 2,
+            head: [['No. of Batches', 'Registered', 'Present', 'Prescribing', 'Preparing', 'Conducting', 'Valuation', 'Viva', 'Total']],
+            body: pracRows,
+            theme: 'grid',
+            headStyles: { fillColor: [255, 255, 255], textColor: 0, lineColor: 0, lineWidth: 0.1 },
+            styles: { lineColor: 0, lineWidth: 0.1, fontSize: 8 }
+        });
+        currentY = doc.lastAutoTable.finalY + 10;
+
+        // --- TOTAL & CERTIFICATE ---
+        let grandTotal = qpTotal + valTotal + pracTotal;
+        doc.setFontSize(10);
+        doc.text(`Grand Total of Theory and Practicals: Rs. ${grandTotal}/-`, 14, currentY);
+
+        currentY += 10;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9);
+        doc.text("14 Name and signature of", 14, currentY);
+        
+        currentY += 10;
+        doc.text("Chairperson             Chief Examiner             Additional Examiner             QP setter", 40, currentY);
+        
+        currentY += 10;
+        doc.setFont("helvetica", "bold");
+        doc.text("Certificate", 105, currentY, null, null, "center");
+        
+        currentY += 5;
+        doc.setFont("helvetica", "normal");
         const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
         const splitText = doc.splitTextToSize(certText, 180);
-        doc.text(splitText, 15, finalY);
+        doc.text(splitText, 14, currentY);
 
-        finalY += 25;
-        doc.text("Signature of Chairperson", 15, finalY);
-        doc.text("Signature of Claimant (QP Setter)", 130, finalY);
-        
-        // Add date
-        const today = new Date().toLocaleDateString('en-GB');
-        doc.text(`Date: ${today}`, 15, finalY + 10);
+        // --- SIGNATURE AREA ---
+        currentY += 20;
+        doc.text("Signature of the Examiner/Chief/Chairperson/ QP Setter with date", 120, currentY);
 
-        // --- Save ---
-        doc.save('Remuneration_Bill_CalicutUniv.pdf');
+        doc.save('calicut_remuneration_bill_exact.pdf');
     }
 </script>
 
