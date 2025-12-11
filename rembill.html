@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calicut Univ Bill (V5 - B&W)</title>
+    <title>Calicut Univ Bill (V6 - Fix)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -12,26 +12,19 @@
         :root { --primary: #333; --border: #ccc; }
         body { font-family: 'Arial', sans-serif; background: #f4f4f4; padding: 20px; font-size: 13px; }
         .app-container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
         .version-tag { font-family: monospace; font-size: 11px; color: #666; background: #eee; padding: 4px 8px; border-radius: 4px; }
-        
         h2 { margin: 0; color: var(--primary); font-size: 18px; }
         .section-title { background: #eee; padding: 8px 12px; font-weight: bold; border-left: 4px solid var(--primary); margin: 20px 0 10px 0; color: #000; }
-        
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        
         label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #000; }
         input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 0; box-sizing: border-box; }
-        
-        /* Table Input Styling */
         .table-input-wrapper { overflow-x: auto; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: 11px; }
         th { background: #fff; border: 1px solid #000; padding: 8px; text-align: center; color: #000; }
         td { border: 1px solid #000; padding: 0; }
         td input { border: none; padding: 8px; width: 100%; }
         td input:focus { background: #eee; outline: none; }
-        
         .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
         .btn { padding: 8px 16px; border: none; border-radius: 0; cursor: pointer; font-weight: bold; border: 1px solid #000;}
         .btn-add { background: #fff; color: #000; }
@@ -45,7 +38,7 @@
 <div class="app-container">
     <div class="header">
         <h2>Remuneration Bill (B&W)</h2>
-        <span class="version-tag" id="verDisplay">App Version: REF-2025-V5-BW</span>
+        <span class="version-tag">App Version: REF-2025-V6-FIX</span>
     </div>
 
     <div class="grid-2">
@@ -115,8 +108,6 @@
 </div>
 
 <script>
-    const APP_VERSION = "Trace-ID: DOC-20251210-V5-BW";
-
     function addQP() {
         const row = `<tr>
             <td><input type="text" value="BSC BOTANY HONORS"></td>
@@ -167,7 +158,7 @@
     // --- PDF GENERATOR ---
     function generateReplica() {
         if (!window.jspdf) {
-            alert("Error: PDF Library not loaded. Please check your internet connection.");
+            alert("Error: PDF Library not loaded.");
             return;
         }
 
@@ -175,27 +166,12 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            const v = (id) => {
-                const el = document.getElementById(id);
-                return el ? el.value : "";
-            };
+            const v = (id) => document.getElementById(id).value || "";
 
-            // === STYLING CONFIG (B&W) ===
-            const bwStyle = {
-                fillColor: false, // No background
-                textColor: 0,     // Black text
-                lineColor: 0,     // Black lines
-                lineWidth: 0.1,
-                fontStyle: 'bold'
-            };
-            
-            const bodyStyle = {
-                textColor: 0,
-                lineColor: 0,
-                lineWidth: 0.1
-            };
+            const bwStyle = { fillColor: false, textColor: 0, lineColor: 0, lineWidth: 0.1, fontStyle: 'bold' };
+            const bodyStyle = { textColor: 0, lineColor: 0, lineWidth: 0.1 };
 
-            // ================= PAGE 1 =================
+            // HEADER
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
             doc.text("UNIVERSITY OF CALICUT", 105, 12, {align:"center"});
@@ -210,15 +186,34 @@
             doc.text(v('semName'), 105, 28, {align:"center"});
             doc.text(v('examName'), 105, 33, {align:"center"});
 
-            // Personal Grid
+            // --- PERSONAL DETAILS (Fixed Grid) ---
+            // The fix: Avoid complex rowSpans mixed with colSpans in a way autotable dislikes.
+            // We draw 2 columns.
             const pBody = [
-                [{content: `1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n   ${v('p_name')}`, styles:{fontStyle:'bold'}}, {content: `b Calicut University Teacher Unique ID No.\n   ${v('p_id')}`}],
-                [{content: `2 a Designation and Basic Pay: ${v('p_desig')}`}, {content: `b. Tick whether Govt/Aided/Self Financing: ${v('p_type')}`}],
-                [{content: `3 OFFICE ADDRESS: (IN BLOCK LETTERS)\n   ${v('p_off')}`, colSpan:1}, {content: `HOME: (IN BLOCK LETTERS)\n   ${v('p_home')}`, colSpan:1}],
-                [{content: `4 Mobile Number: ${v('p_mob')}`}, {content: `6 E-mail ID: ${v('p_email')}`}],
-                [{content: `5. Name of the disbursing Officer (Treasury Officer/Principal)\n   ${v('p_disburse')}`}, {content: `7. Bank A/C Number: ${v('p_acc')}`}],
-                [{content: `8 Bank and Branch: ${v('p_bank')}`}, {content: `9. IFS Code: ${v('p_ifs')}`}],
-                [{content: `10 Permanent Account Number (PAN): ${v('p_pan')}`, colSpan:2}]
+                [
+                    { content: `1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n   ${v('p_name')}`, styles:{fontStyle:'bold'} },
+                    { content: `b Calicut University Teacher Unique ID No.\n   ${v('p_id')}` }
+                ],
+                [
+                    { content: `2 a Designation and Basic Pay: ${v('p_desig')}` },
+                    { content: `b. Tick whether Govt/Aided/Self Financing: ${v('p_type')}` }
+                ],
+                // Manual Split for Address to avoid rowspan confusion
+                [ { content: `3 OFFICE ADDRESS: (IN BLOCK LETTERS)\n   ${v('p_off')}`, colSpan: 2 } ],
+                [ { content: `HOME: (IN BLOCK LETTERS)\n   ${v('p_home')}`, colSpan: 2 } ],
+                [
+                    { content: `4 Mobile Number: ${v('p_mob')}` },
+                    { content: `6 E-mail ID: ${v('p_email')}` }
+                ],
+                [
+                    { content: `5. Name of the disbursing Officer (Treasury Officer/Principal)\n   ${v('p_disburse')}` },
+                    { content: `7. Bank A/C Number: ${v('p_acc')}` }
+                ],
+                [
+                    { content: `8 Bank and Branch: ${v('p_bank')}` },
+                    { content: `9. IFS Code: ${v('p_ifs')}` }
+                ],
+                [ { content: `10 Permanent Account Number (PAN): ${v('p_pan')}`, colSpan: 2 } ]
             ];
 
             doc.autoTable({
@@ -338,23 +333,21 @@
                 columnStyles: {0: {halign: 'left'}}
             });
 
-            // FINAL TOTAL (Page 1 Bottom)
+            // FINAL TOTAL
             y = doc.lastAutoTable.finalY + 10;
             const finalTotal = grandQP + grandVal + grandPrac;
-            
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text(`Grant Total of Theory and Practicals: Rs. ${finalTotal.toFixed(2)}/-`, 14, y);
 
             doc.setFontSize(7);
             doc.setTextColor(150);
-            doc.text(APP_VERSION + " - PG 1", 195, 290, {align:'right'});
+            doc.text("App Version: REF-2025-V6-FIX - PG 1", 195, 290, {align:'right'});
             doc.setTextColor(0);
 
             // ================= PAGE 2 =================
             doc.addPage();
             
-            [span_0](start_span)// 14. SIGNATURES (Moved to Page 2 Top)[span_0](end_span)
             y = 20;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
@@ -375,7 +368,6 @@
             const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
             doc.text(doc.splitTextToSize(certText, 180), 14, y);
 
-            // RECEIPTS & STAMP
             y += 20;
             doc.setFontSize(10);
             doc.text("Contents received", 14, y);
@@ -386,7 +378,6 @@
             doc.setFontSize(8);
             doc.text("Affix Revenue\nstamp for claims\nexceeding\nRs. 5000/-", 160, y + 20, {align: 'center'});
 
-            // OFFICE USE
             y += 45;
             doc.autoTable({
                 startY: y,
@@ -456,7 +447,7 @@
 
             doc.setFontSize(7);
             doc.setTextColor(150);
-            doc.text(APP_VERSION + " - PG 2", 195, 290, {align:'right'});
+            doc.text("App Version: REF-2025-V6-FIX - PG 2", 195, 290, {align:'right'});
 
             doc.save('Calicut_Univ_Remuneration_Bill_Exact.pdf');
         
