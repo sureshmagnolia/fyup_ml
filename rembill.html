@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calicut Univ Bill (V8 - Complete Tables)</title>
+    <title>Calicut Univ Bill (V9 - Pagination)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -38,8 +38,8 @@
 
 <div class="app-container">
     <div class="header">
-        <h2>Remuneration Bill (Complete Table Structure)</h2>
-        <span class="version-tag">App Version: REF-2025-V8-FINAL</span>
+        <h2>Remuneration Bill (V9 - Pagination Fix)</h2>
+        <span class="version-tag">App Version: REF-2025-V9-PAGINATION</span>
     </div>
 
     <div class="grid-2">
@@ -111,7 +111,7 @@
     </div>
     <div class="btn-row"><button class="btn btn-add" onclick="addPrac()">+ Add Practical</button></div>
 
-    <button class="btn btn-gen" onclick="generateReplica()">Generate PDF (Final)</button>
+    <button class="btn btn-gen" onclick="generateReplica()">Generate PDF (V9)</button>
 </div>
 
 <script>
@@ -150,7 +150,6 @@
 
     // --- ROW LOGIC ---
     function addQP() {
-        // UPDATED QP ROW with 4 numeric inputs
         const row = `<tr>
             <td class="text-left"><input type="text" value="BSC BOTANY HONORS"></td>
             <td class="text-left"><input type="text" value="BOTIMN103 ECONOMIC BOTANY"></td>
@@ -250,7 +249,7 @@
 
             let y = doc.lastAutoTable.finalY + 4;
 
-            // TABLE 11 (QP) - COMPLETELY REDESIGNED FOR COMPLETENESS
+            // TABLE 11 (QP)
             doc.setFont("helvetica", "bold");
             doc.text("*11 For setting question papers", 14, y);
             y += 2;
@@ -259,13 +258,11 @@
             let grandQP = 0;
             document.querySelectorAll('#t_qp tbody tr').forEach(tr => {
                 const i = tr.querySelectorAll('input');
-                // Indices: 0=Prog, 1=Course, 2=QP#, 3=Key#, 4=AmtQP, 5=AmtKey
                 const qpAmt = parseFloat(i[4].value) || 0;
                 const keyAmt = parseFloat(i[5].value) || 0;
                 const rowTot = qpAmt + keyAmt;
                 grandQP += rowTot;
                 
-                // Pushing 6 distinct columns
                 qpRows.push([
                     i[0].value, 
                     i[1].value, 
@@ -275,7 +272,6 @@
                     keyAmt > 0 ? keyAmt.toFixed(2) : ''
                 ]);
             });
-            // Total Row
             qpRows.push([{content: 'Total:', colSpan: 4, styles: {halign: 'right', fontStyle: 'bold'}}, {content: grandQP.toFixed(2), colSpan: 2, styles: {fontStyle: 'bold'}}]);
 
             doc.autoTable({ 
@@ -346,16 +342,9 @@
             doc.setFont("helvetica", "bold");
             doc.text(`Grant Total of Theory and Practicals: Rs. ${finalTotal}/-`, 14, y);
             doc.text(totalInWords, 14, y + 6);
-
-            doc.setFontSize(7);
-            doc.setTextColor(150);
-            doc.text("App Version: REF-2025-V8-FINAL - PG 1", 195, 290, {align:'right'});
-            doc.setTextColor(0);
-
-            // ================= PAGE 2 =================
-            doc.addPage();
             
-            y = 20;
+            // --- MOVED ITEM 14 TO PAGE 1 ---
+            y += 18;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.text("14 Name and signature of", 14, y);
@@ -364,12 +353,22 @@
             doc.text("Chief Examiner", 80, y);
             doc.text("Additional Examiner", 120, y);
             doc.text("QP setter", 160, y);
-            
-            y += 10;
+
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text("App Version: REF-2025-V9-PAGINATION - PG 1", 195, 290, {align:'right'});
+            doc.setTextColor(0);
+
+            // ================= PAGE 2 =================
+            doc.addPage();
+            y = 20;
+
             doc.setFont("helvetica", "bold");
+            doc.setFontSize(10);
             doc.text("Certificate", 105, y, {align: 'center'});
             y += 5;
             doc.setFont("helvetica", "normal");
+            doc.setFontSize(9);
             const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
             doc.text(doc.splitTextToSize(certText, 180), 14, y);
 
@@ -410,7 +409,7 @@
 
             doc.setFontSize(7);
             doc.setTextColor(150);
-            doc.text("App Version: REF-2025-V8-FINAL - PG 2", 195, 290, {align:'right'});
+            doc.text("App Version: REF-2025-V9-PAGINATION - PG 2", 195, 290, {align:'right'});
 
             doc.save('Calicut_Univ_Remuneration_Bill_Exact.pdf');
         
