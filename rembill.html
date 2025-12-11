@@ -3,48 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calicut Univ Bill - FIXED</title>
+    <title>Calicut Univ Bill (V5 - B&W)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --primary: #003366; --border: #ccc; }
-        body { font-family: 'Arial', sans-serif; background: #e9ecef; padding: 20px; font-size: 13px; }
+        :root { --primary: #333; --border: #ccc; }
+        body { font-family: 'Arial', sans-serif; background: #f4f4f4; padding: 20px; font-size: 13px; }
         .app-container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         
         .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
         .version-tag { font-family: monospace; font-size: 11px; color: #666; background: #eee; padding: 4px 8px; border-radius: 4px; }
         
         h2 { margin: 0; color: var(--primary); font-size: 18px; }
-        .section-title { background: #f1f3f5; padding: 8px 12px; font-weight: bold; border-left: 4px solid var(--primary); margin: 20px 0 10px 0; }
+        .section-title { background: #eee; padding: 8px 12px; font-weight: bold; border-left: 4px solid var(--primary); margin: 20px 0 10px 0; color: #000; }
         
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         
-        label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #495057; }
-        input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 3px; box-sizing: border-box; }
+        label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #000; }
+        input { width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 0; box-sizing: border-box; }
         
         /* Table Input Styling */
         .table-input-wrapper { overflow-x: auto; border: 1px solid var(--border); }
         table { width: 100%; border-collapse: collapse; min-width: 900px; font-size: 11px; }
-        th { background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px; text-align: center; }
-        td { border: 1px solid #dee2e6; padding: 0; }
-        td input { border: none; padding: 8px; width: 100%; border-radius: 0; }
-        td input:focus { background: #e7f1ff; outline: none; }
+        th { background: #fff; border: 1px solid #000; padding: 8px; text-align: center; color: #000; }
+        td { border: 1px solid #000; padding: 0; }
+        td input { border: none; padding: 8px; width: 100%; }
+        td input:focus { background: #eee; outline: none; }
         
         .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
-        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-add { background: #28a745; color: white; }
-        .btn-del { background: #dc3545; color: white; width: 30px; }
-        .btn-gen { background: var(--primary); color: white; width: 100%; font-size: 16px; padding: 15px; margin-top: 30px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 0; cursor: pointer; font-weight: bold; border: 1px solid #000;}
+        .btn-add { background: #fff; color: #000; }
+        .btn-add:hover { background: #eee; }
+        .btn-del { background: #000; color: white; width: 30px; }
+        .btn-gen { background: #000; color: white; width: 100%; font-size: 16px; padding: 15px; margin-top: 30px; }
     </style>
 </head>
 <body>
 
 <div class="app-container">
     <div class="header">
-        <h2>Remuneration Bill Generator</h2>
-        <span class="version-tag" id="verDisplay">App Version: FIX-DEBUG-V4</span>
+        <h2>Remuneration Bill (B&W)</h2>
+        <span class="version-tag" id="verDisplay">App Version: REF-2025-V5-BW</span>
     </div>
 
     <div class="grid-2">
@@ -110,11 +111,11 @@
     </div>
     <div class="btn-row"><button class="btn btn-add" onclick="addPrac()">+ Add Practical</button></div>
 
-    <button class="btn btn-gen" onclick="generateReplica()">Generate PDF</button>
+    <button class="btn btn-gen" onclick="generateReplica()">Generate PDF (Black & White)</button>
 </div>
 
 <script>
-    const APP_VERSION = "Trace-ID: DOC-20251210-WA0009_REV_4_DEBUG";
+    const APP_VERSION = "Trace-ID: DOC-20251210-V5-BW";
 
     function addQP() {
         const row = `<tr>
@@ -165,7 +166,6 @@
 
     // --- PDF GENERATOR ---
     function generateReplica() {
-        // ERROR HANDLING BLOCK
         if (!window.jspdf) {
             alert("Error: PDF Library not loaded. Please check your internet connection.");
             return;
@@ -175,10 +175,24 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Helper to get Element Value safely
             const v = (id) => {
                 const el = document.getElementById(id);
                 return el ? el.value : "";
+            };
+
+            // === STYLING CONFIG (B&W) ===
+            const bwStyle = {
+                fillColor: false, // No background
+                textColor: 0,     // Black text
+                lineColor: 0,     // Black lines
+                lineWidth: 0.1,
+                fontStyle: 'bold'
+            };
+            
+            const bodyStyle = {
+                textColor: 0,
+                lineColor: 0,
+                lineWidth: 0.1
             };
 
             // ================= PAGE 1 =================
@@ -196,7 +210,7 @@
             doc.text(v('semName'), 105, 28, {align:"center"});
             doc.text(v('examName'), 105, 33, {align:"center"});
 
-            // 2. Personal Grid
+            // Personal Grid
             const pBody = [
                 [{content: `1 a Name of QP setter/Examiner/Chief/Chairperson (in block letters)\n   ${v('p_name')}`, styles:{fontStyle:'bold'}}, {content: `b Calicut University Teacher Unique ID No.\n   ${v('p_id')}`}],
                 [{content: `2 a Designation and Basic Pay: ${v('p_desig')}`}, {content: `b. Tick whether Govt/Aided/Self Financing: ${v('p_type')}`}],
@@ -217,7 +231,7 @@
 
             let y = doc.lastAutoTable.finalY + 4;
 
-            // 3. TABLE 11 (QP)
+            // TABLE 11 (QP)
             doc.setFont("helvetica", "bold");
             doc.text("*11 For setting question papers", 14, y);
             y += 2;
@@ -242,13 +256,13 @@
                 ]],
                 body: qpRows,
                 theme: 'grid',
-                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:8},
-                styles: {lineColor:0, lineWidth:0.1, fontSize: 8},
+                headStyles: bwStyle,
+                styles: bodyStyle,
             });
             
             y = doc.lastAutoTable.finalY + 6;
 
-            // 4. TABLE 12 (VALUATION)
+            // TABLE 12 (VALUATION)
             doc.setFont("helvetica", "bold");
             doc.text("*12 For Valuation/Revaluation/Picking out/Despatching of answer papers", 14, y);
             y += 2;
@@ -283,14 +297,14 @@
                 ],
                 body: valRows,
                 theme: 'grid',
-                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
-                styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
+                headStyles: { ...bwStyle, halign: 'center', fontSize: 7 },
+                styles: { ...bodyStyle, fontSize: 7, halign: 'center' },
                 columnStyles: {0: {halign: 'left'}}
             });
 
             y = doc.lastAutoTable.finalY + 6;
 
-            // 5. TABLE 13 (PRACTICALS)
+            // TABLE 13 (PRACTICALS)
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
             doc.text("*13. For practical/viva Examinations of ....................", 14, y);
@@ -319,20 +333,29 @@
                 ],
                 body: pracRows,
                 theme: 'grid',
-                headStyles: {fillColor:[255,255,255], textColor:0, lineColor:0, lineWidth:0.1, halign:'center', fontSize:7},
-                styles: {lineColor:0, lineWidth:0.1, fontSize: 7, halign: 'center'},
+                headStyles: { ...bwStyle, halign: 'center', fontSize: 7 },
+                styles: { ...bodyStyle, fontSize: 7, halign: 'center' },
                 columnStyles: {0: {halign: 'left'}}
             });
 
-            // 6. TOTAL & CERTIFICATE
+            // FINAL TOTAL (Page 1 Bottom)
             y = doc.lastAutoTable.finalY + 10;
             const finalTotal = grandQP + grandVal + grandPrac;
             
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text(`Grant Total of Theory and Practicals: Rs. ${finalTotal.toFixed(2)}/-`, 14, y);
+
+            doc.setFontSize(7);
+            doc.setTextColor(150);
+            doc.text(APP_VERSION + " - PG 1", 195, 290, {align:'right'});
+            doc.setTextColor(0);
+
+            // ================= PAGE 2 =================
+            doc.addPage();
             
-            y += 8;
+            [span_0](start_span)// 14. SIGNATURES (Moved to Page 2 Top)[span_0](end_span)
+            y = 20;
             doc.setFont("helvetica", "normal");
             doc.setFontSize(9);
             doc.text("14 Name and signature of", 14, y);
@@ -351,27 +374,23 @@
             doc.setFont("helvetica", "normal");
             const certText = "Certified that the amount in this bill has not been claimed previously and it is paid to me provisionally and I shall refund to the university any amount received which is subsequently disallowed by audit.";
             doc.text(doc.splitTextToSize(certText, 180), 14, y);
-            
-            doc.setFontSize(7);
-            doc.setTextColor(150);
-            doc.text(APP_VERSION + " - PG 1", 195, 290, {align:'right'});
-            doc.setTextColor(0);
 
-            // ================= PAGE 2 =================
-            doc.addPage();
-            
+            // RECEIPTS & STAMP
+            y += 20;
             doc.setFontSize(10);
-            doc.text("Contents received", 14, 20);
-            doc.text("Signature of the Examiner/Chief/Chairperson/ QP Setter with date", 120, 20, {align:'center'});
+            doc.text("Contents received", 14, y);
+            doc.text("Signature of the Examiner/Chief/Chairperson/ QP Setter with date", 120, y, {align:'center'});
 
             doc.setDrawColor(0);
-            doc.rect(140, 30, 40, 30);
+            doc.rect(140, y + 5, 40, 30);
             doc.setFontSize(8);
-            doc.text("Affix Revenue\nstamp for claims\nexceeding\nRs. 5000/-", 160, 45, {align: 'center'});
+            doc.text("Affix Revenue\nstamp for claims\nexceeding\nRs. 5000/-", 160, y + 20, {align: 'center'});
 
+            // OFFICE USE
+            y += 45;
             doc.autoTable({
-                startY: 70,
-                head: [[{content: 'FOR OFFICE USE ONLY (Pareeksha Bhavan)', colSpan: 2, styles: {halign: 'center', fontStyle: 'bold'}}]],
+                startY: y,
+                head: [[{content: 'FOR OFFICE USE ONLY (Pareeksha Bhavan)', colSpan: 2, styles: {halign: 'center', fontStyle: 'bold', fillColor: false, textColor: 0}}]],
                 body: [
                     ['1. Received ............ QPs / Answer keys / Mark Sheets', '2. No. of Answer scripts revalued/picked/dispatched...'],
                     [{content: 'Signature of SO/AR/CE with Date:\nDesignation:', colSpan: 2}]
@@ -382,7 +401,7 @@
             
             doc.autoTable({
                 startY: doc.lastAutoTable.finalY + 5,
-                head: [[{content: 'Pre-Audit/ Payment by Finance Branch', colSpan: 4, styles: {halign: 'center', fontStyle: 'bold'}}]],
+                head: [[{content: 'Pre-Audit/ Payment by Finance Branch', colSpan: 4, styles: {halign: 'center', fontStyle: 'bold', fillColor: false, textColor: 0}}]],
                 body: [
                 [{content: 'Rs. ............................... (Rupees .......................................................................... only)\nfound admissible and passed for payment/paid', colSpan: 4}],
                 ['\nAsst.', '\nS.O.', '\nAR/DR/JR/FO', 'Payment by Pareeksha Bhaven\nPaid the amount passed for payment'] 
